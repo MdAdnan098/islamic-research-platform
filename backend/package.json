@@ -1,0 +1,17 @@
+{
+  "name": "islamic-research-backend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "verify:db": "node scripts/verify-db-connection.mjs"
+  },
+  "dependencies": {
+    "mongodb": "^6.9.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.141.0"
+  }
+}

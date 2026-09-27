@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment / secrets
+.env
+.env.local
+.dev.vars
+
+# Wrangler
+.wrangler/
+
+# Editor/OS
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*

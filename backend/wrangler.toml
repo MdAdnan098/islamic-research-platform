@@ -1,0 +1,21 @@
+name = "islamic-research-backend"
+main = "src/index.js"
+
+# Node.js compatibility (needed by the MongoDB Node.js driver for
+# `cloudflare:sockets` support) is enabled by default for any
+# compatibility_date of 2026-08-04 or later, so no explicit
+# `nodejs_compat` compatibility flag is needed or accepted here.
+# Keep this set to today's date when you touch this file.
+compatibility_date = "2026-09-27"
+
+# Non-secret configuration. Real secrets (MONGODB_URI, etc.) must be set with
+# `wrangler secret put <NAME>` and must never be committed here.
+[vars]
+ENVIRONMENT = "development"
+ALLOWED_ORIGIN = "http://localhost:5173"
+
+# R2 bucket binding for scanned pages / images / PDFs.
+# Create the bucket first with: wrangler r2 bucket create islamic-research-media
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "islamic-research-media"

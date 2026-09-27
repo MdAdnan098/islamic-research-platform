@@ -1,0 +1,19 @@
+name = "islamic-research-backend"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+# Required for the MongoDB Node.js driver to run on Workers
+# (enables Node APIs + TCP sockets via `cloudflare:sockets`).
+compatibility_flags = ["nodejs_compat"]
+
+# Non-secret configuration. Real secrets (MONGODB_URI, etc.) must be set with
+# `wrangler secret put <NAME>` and must never be committed here.
+[vars]
+ENVIRONMENT = "development"
+ALLOWED_ORIGIN = "http://localhost:5173"
+
+# R2 bucket binding for scanned pages / images / PDFs.
+# Create the bucket first with: wrangler r2 bucket create islamic-research-media
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "islamic-research-media"

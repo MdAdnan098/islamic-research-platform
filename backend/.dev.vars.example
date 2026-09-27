@@ -1,0 +1,9 @@
+# Copy this file to .dev.vars for local `wrangler dev` runs.
+# .dev.vars is gitignored and must never be committed.
+
+# MongoDB Atlas connection string (use a database user with least privilege).
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster-host>/?retryWrites=true&w=majority
+MONGODB_DB_NAME=islamic_research
+
+# Reserved for future admin authentication (not implemented yet).
+ADMIN_JWT_SECRET=replace-with-a-long-random-value
