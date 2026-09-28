@@ -16,6 +16,3 @@ ALLOWED_ORIGIN = "http://localhost:5173"
 
 # R2 bucket binding for scanned pages / images / PDFs.
 # Create the bucket first with: wrangler r2 bucket create islamic-research-media
-[[r2_buckets]]
-binding = "MEDIA_BUCKET"
-bucket_name = "islamic-research-media"
