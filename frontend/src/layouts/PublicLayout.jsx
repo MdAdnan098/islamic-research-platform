@@ -1,19 +1,17 @@
 import { Outlet } from "react-router-dom";
+import Header from "../components/public/Header.jsx";
+import Footer from "../components/public/Footer.jsx";
 
 export default function PublicLayout() {
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-900">
-      <header className="border-b p-4">
-        <h1 className="text-lg font-semibold">Islamic Research Platform</h1>
-      </header>
+    <div className="flex min-h-screen flex-col bg-white text-slate-900">
+      <Header />
 
-      <main className="flex-1 p-4">
+      <main className="flex-1">
         <Outlet />
       </main>
 
-      <footer className="border-t p-4 text-sm text-gray-500">
-        Public research portal
-      </footer>
+      <Footer />
     </div>
   );
 }

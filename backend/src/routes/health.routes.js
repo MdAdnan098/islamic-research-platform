@@ -15,7 +15,7 @@ export async function healthCheck(request, env) {
     await db.command({ ping: 1 });
     dbStatus = "connected";
   } catch (err) {
-    dbStatus = `unavailable: ${err?.message || "unknown error"}`;
+    dbStatus = "unavailable";
   }
 
   return jsonSuccess(
