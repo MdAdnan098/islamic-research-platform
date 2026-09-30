@@ -14,6 +14,9 @@ import * as adminRoutes from "./routes/admin.routes.js";
 const routes = [
   ["GET", "/health", healthCheck],
   ["GET", "/api/public/ping", publicRoutes.ping],
+  ["POST", "/api/admin/login", adminRoutes.login],
+  ["POST", "/api/admin/logout", adminRoutes.logout],
+  ["GET", "/api/admin/me", adminRoutes.me],
   ["GET", "/api/admin/ping", adminRoutes.ping],
 ];
 

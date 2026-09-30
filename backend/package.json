@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "verify:db": "node scripts/verify-db-connection.mjs"
+    "verify:db": "node scripts/verify-db-connection.mjs",
+    "create:admin": "node scripts/create-admin.mjs"
   },
   "dependencies": {
     "mongodb": "^6.9.0"

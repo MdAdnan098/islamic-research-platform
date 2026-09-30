@@ -20,3 +20,18 @@ export const LANGUAGES = [
   { code: "hi", label: "Hindi" },
   { code: "ur", label: "Urdu" },
 ];
+
+/**
+ * Admin sidebar navigation. Only Dashboard is a real, working route in
+ * this phase — the rest are listed as upcoming sections (disabled) so
+ * the sidebar's final shape is visible without building their CRUD yet.
+ */
+export const ADMIN_NAV_LINKS = [
+  { key: "dashboard", label: "Dashboard", href: "/admin/dashboard", enabled: true },
+  { key: "articles", label: "Articles", href: "/admin/articles", enabled: false },
+  { key: "categories", label: "Categories", href: "/admin/categories", enabled: false },
+  { key: "topics", label: "Topics", href: "/admin/topics", enabled: false },
+  { key: "references", label: "References", href: "/admin/references", enabled: false },
+  { key: "media", label: "Media", href: "/admin/media", enabled: false },
+  { key: "settings", label: "Settings", href: "/admin/settings", enabled: false },
+];

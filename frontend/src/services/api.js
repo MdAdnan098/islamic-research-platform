@@ -10,6 +10,9 @@ async function request(path, options = {}) {
   let response;
   try {
     response = await fetch(url, {
+      // Needed so the admin session (HttpOnly) cookie is sent/received
+      // cross-origin between the Vite dev server and the Worker.
+      credentials: "include",
       headers: { "Content-Type": "application/json", ...options.headers },
       ...options,
     });
@@ -22,7 +25,10 @@ async function request(path, options = {}) {
 
   if (!response.ok) {
     const message = body?.error?.message || `Request to ${path} failed with status ${response.status}`;
-    throw new Error(message);
+    const err = new Error(message);
+    err.code = body?.error?.code || null;
+    err.status = response.status;
+    throw err;
   }
 
   return body;

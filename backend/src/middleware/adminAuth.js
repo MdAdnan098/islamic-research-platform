@@ -1,32 +1,59 @@
+import { verifyJwt } from "../utils/jwt.js";
+import { parseCookies, ADMIN_SESSION_COOKIE } from "../utils/cookies.js";
+
 /**
- * Placeholder for admin authentication.
+ * Admin session lifetime. Exported so the login route signs tokens with
+ * the same value used to validate them here.
+ */
+export const SESSION_TTL_SECONDS = 2 * 60 * 60; // 2 hours
+
+/**
+ * Verifies the admin session cookie and returns its decoded payload
+ * ({ sub, email, role, iat, exp }).
  *
- * Real implementation (to be added in a later phase) will:
- *   - Verify a JWT/session token from the Authorization header
- *   - Look up the admin user
- *   - Attach it to the request context
- *
- * For now this only defines the shape every admin route will call through,
- * and intentionally rejects all requests so no route is accidentally left
- * open before real auth exists.
+ * Same signature/contract as before (throws on failure, returns on
+ * success) so existing callers (e.g. the /api/admin/ping route) keep
+ * working unchanged — only the internal logic is now real.
  *
  * @param {Request} request
  * @param {object} env
- * @returns {Promise<{ id: string, email: string } | null>}
+ * @returns {Promise<{ sub: string, email: string, role: string }>}
  */
 export async function requireAdmin(request, env) {
-  const authHeader = request.headers.get("Authorization");
-
-  if (!authHeader) {
-    const err = new Error("Missing Authorization header.");
-    err.status = 401;
-    err.code = "UNAUTHORIZED";
+  if (!env.ADMIN_JWT_SECRET) {
+    const err = new Error("Admin authentication is not configured on this environment.");
+    err.status = 500;
+    err.code = "CONFIG_ERROR";
     throw err;
   }
 
-  // TODO: verify JWT using env.ADMIN_JWT_SECRET once auth is implemented.
-  const err = new Error("Admin authentication is not implemented yet.");
-  err.status = 501;
-  err.code = "NOT_IMPLEMENTED";
-  throw err;
+  const cookies = parseCookies(request);
+  const token = cookies[ADMIN_SESSION_COOKIE];
+
+  if (!token) {
+    const err = new Error("Not authenticated.");
+    err.status = 401;
+    err.code = "UNAUTHENTICATED";
+    throw err;
+  }
+
+  // verifyJwt already throws a well-formed 401 for invalid/expired tokens.
+  return verifyJwt(token, env.ADMIN_JWT_SECRET);
+}
+
+/**
+ * Optional role gate, layered on top of requireAdmin for routes that need
+ * more than "any authenticated admin" (not used yet in this phase, but
+ * kept here so future modules can reuse it instead of duplicating checks).
+ *
+ * @param {{ role: string }} session - result of requireAdmin
+ * @param {string[]} allowedRoles
+ */
+export function requireRole(session, allowedRoles) {
+  if (!allowedRoles.includes(session.role)) {
+    const err = new Error("You do not have permission to perform this action.");
+    err.status = 403;
+    err.code = "FORBIDDEN";
+    throw err;
+  }
 }
