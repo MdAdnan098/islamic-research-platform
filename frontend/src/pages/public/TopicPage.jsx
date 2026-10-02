@@ -1,0 +1,96 @@
+import { useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useI18n } from "../../i18n/index.jsx";
+import { PATH_TYPE, loadSection, publicApi } from "../../services/public.js";
+import { useAsync } from "../../lib/useAsync.js";
+import { useMeta } from "../../lib/useMeta.js";
+import { mediaUrl } from "../../lib/media.js";
+import { Text } from "../../components/ui/Text.jsx";
+import { CardSkeletons, EmptyState, ErrorState, NotFoundState } from "../../components/ui/feedback.jsx";
+import { ArticleCard } from "../../components/public/Cards.jsx";
+import { LogoMark } from "../../components/brand/Logo.jsx";
+
+function Group({ title, items, category, empty, showLang }) {
+  const { t } = useI18n();
+  return (
+    <section className="mt-14">
+      <div className="mb-6 flex items-end justify-between gap-4 border-b border-rule pb-3">
+        <h2 className="font-display text-2xl font-semibold sm:text-3xl">{title}</h2>
+        <span className="text-sm text-mute">{items.length}</span>
+      </div>
+      {items.length === 0 ? <EmptyState>{empty || t.topic.noItems}</EmptyState> : (
+        <div className="grid gap-5 sm:grid-cols-2">{items.map((a) => <ArticleCard key={a.id} article={a} category={category} showLang={showLang} />)}</div>
+      )}
+    </section>
+  );
+}
+
+/** /aqaid/:topicSlug, /masail/:topicSlug — Intro → Dalail → Radd. */
+export default function TopicPage({ section }) {
+  const { topicSlug } = useParams();
+  const { t, contentLang } = useI18n();
+  const [allLangs, setAllLangs] = useState(false);
+  const type = PATH_TYPE[section];
+
+  const { data, error, loading, reload } = useAsync(async (signal) => {
+    const cats = await loadSection(type, signal);
+    const category = cats.find((c) => c.topics.some((x) => x.slug === topicSlug));
+    return { category, topic: category?.topics.find((x) => x.slug === topicSlug) };
+  }, [type, topicSlug]);
+
+  const topic = data?.topic;
+  const arts = useAsync(
+    (signal) => (topic ? publicApi.articles({ topicId: topic.id, language: allLangs ? undefined : contentLang, limit: 100 }, signal) : []),
+    [topic?.id, allLangs, contentLang]
+  );
+  useMeta({ title: topic?.title, description: topic?.intro, image: mediaUrl(topic?.coverKey) });
+
+  if (loading && !data) return <div className="container-page py-16"><CardSkeletons count={2} /></div>;
+  if (error && !data) return <div className="container-page py-16"><ErrorState error={error} onRetry={reload} /></div>;
+  if (!topic) return <NotFoundState />;
+
+  const list = arts.data || [];
+  const by = (s) => list.filter((a) => (s ? a.section === s : !["dalail", "radd"].includes(a.section)));
+  const cover = mediaUrl(topic.coverKey);
+  const sectionLabel = section === "aqaid" ? t.nav.aqaid : t.nav.masail;
+
+  return (
+    <div className="pb-8">
+      <div className="container-page max-w-5xl pt-10 sm:pt-14">
+        <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap gap-2 text-xs text-mute">
+          <Link to={`/${section}`} className="hover:text-bronze">{sectionLabel}</Link><span aria-hidden="true">/</span>
+          <span>{data.category.name}</span>
+        </nav>
+        <div className="overflow-hidden rounded-2xl border border-rule bg-rule/30">
+          {cover ? <img src={cover} alt="" className="aspect-[21/9] w-full object-cover" /> : (
+            <div className="grid aspect-[21/9] place-items-center text-mute/40"><LogoMark size={84} /></div>
+          )}
+        </div>
+        <Text as="h1" className="mt-8 font-display text-3xl font-semibold leading-tight sm:text-5xl">{topic.title}</Text>
+
+        {topic.intro && (
+          <div className="mt-8 rounded-xl border border-rule border-s-4 border-s-gold bg-card p-6 sm:p-8">
+            <p className="eyebrow">{t.topic.intro}</p>
+            <div className="reading mt-3">
+              {topic.intro.split(/\n{2,}/).map((p, i) => <Text key={i} as="p" className="whitespace-pre-line">{p}</Text>)}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-10 flex justify-end">
+          <button onClick={() => setAllLangs((v) => !v)} aria-pressed={allLangs} className={`rounded-full border px-4 py-1.5 text-xs transition-colors ${allLangs ? "border-gold text-bronze" : "border-rule text-mute hover:text-ink"}`}>
+            {t.topic.allLangs}
+          </button>
+        </div>
+
+        {arts.loading && !arts.data ? <div className="mt-8"><CardSkeletons count={2} /></div> : arts.error ? <div className="mt-8"><ErrorState error={arts.error} onRetry={arts.reload} /></div> : (
+          <>
+            <Group title={t.topic.dalail} items={by("dalail")} category={data.category} showLang={allLangs} />
+            <Group title={t.topic.radd} items={by("radd")} category={data.category} showLang={allLangs} />
+            {by(null).length > 0 && <Group title={t.topic.more} items={by(null)} category={data.category} showLang={allLangs} />}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

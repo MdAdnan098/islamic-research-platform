@@ -1,60 +1,33 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { api } from "../services/api.js";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { adminApi } from "../services/admin.js";
 
 const AuthContext = createContext(null);
 
-/**
- * Real admin auth state, backed by the Worker's HttpOnly session cookie.
- * On mount it checks GET /api/admin/me once to see if a valid session
- * already exists (e.g. after a page refresh), before anything tries to
- * render protected content.
- */
+/** Mounted only around /admin routes, so the public site never calls /me. */
 export function AuthProvider({ children }) {
-  const [adminUser, setAdminUser] = useState(null);
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
-
-  const checkSession = useCallback(async () => {
-    try {
-      const res = await api.get("/api/admin/me");
-      setAdminUser(res?.data?.admin || null);
-    } catch {
-      setAdminUser(null);
-    } finally {
-      setIsCheckingSession(false);
-    }
-  }, []);
+  const [state, setState] = useState({ status: "loading", admin: null });
 
   useEffect(() => {
-    checkSession();
-  }, [checkSession]);
+    const ctrl = new AbortController();
+    adminApi.me(ctrl.signal)
+      .then((admin) => setState({ status: "authed", admin }))
+      .catch((e) => e?.name !== "AbortError" && setState({ status: "anon", admin: null }));
+    const onUnauthorized = () => setState({ status: "anon", admin: null });
+    window.addEventListener("fs:unauthorized", onUnauthorized);
+    return () => { ctrl.abort(); window.removeEventListener("fs:unauthorized", onUnauthorized); };
+  }, []);
 
   const login = useCallback(async (email, password) => {
-    const res = await api.post("/api/admin/login", { email, password });
-    setAdminUser(res?.data?.admin || null);
-    return res?.data?.admin;
+    const admin = await adminApi.login(email, password);
+    setState({ status: "authed", admin });
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      await api.post("/api/admin/logout", {});
-    } finally {
-      setAdminUser(null);
-    }
+    try { await adminApi.logout(); } finally { setState({ status: "anon", admin: null }); }
   }, []);
 
-  const value = {
-    adminUser,
-    isAuthenticated: Boolean(adminUser),
-    isCheckingSession,
-    login,
-    logout,
-  };
-
+  const value = useMemo(() => ({ ...state, login, logout }), [state, login, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
-  return ctx;
-}
+export const useAuth = () => useContext(AuthContext);

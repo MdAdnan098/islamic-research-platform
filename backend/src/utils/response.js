@@ -9,7 +9,7 @@ function withCors(headers, allowedOrigin) {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": allowedOrigin || "*",
     "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     ...headers,
   };

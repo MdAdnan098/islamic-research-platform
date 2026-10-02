@@ -1,19 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="A verified Islamic research platform covering Aqeedah, Masail, and structured scholarly references."
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fahm-e-Salaf — فہمِ سلف</title>
+    <meta name="description" content="Quran, Sunnat aur mustanad hawalon ki bunyaad par Islami aqaid, masail aur tahqiqi mazameen." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Noto+Nastaliq+Urdu:wght@400;600&family=Noto+Sans+Devanagari:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <title>Islamic Research Platform</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("fs_theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.classList.toggle("dark", t === "dark");
+          var l = localStorage.getItem("fs_lang") || "roman";
+          document.documentElement.lang = { roman: "en", hindi: "hi", urdu: "ur" }[l] || "en";
+          document.documentElement.dir = l === "urdu" ? "rtl" : "ltr";
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

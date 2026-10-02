@@ -112,6 +112,11 @@ export async function createArticle(config, input) {
     status,
     authorId: new ObjectId(data.authorId),
     references: (data.references || []).map((id) => new ObjectId(id)),
+    section: data.section || null,
+    excerpt: data.excerpt || null,
+    seoTitle: data.seoTitle || null,
+    seoDescription: data.seoDescription || null,
+    coverKey: data.coverKey || null,
     createdAt: now,
     updatedAt: now,
     publishedAt: status === "published" ? now : null,
@@ -194,7 +199,7 @@ export async function updateArticle(config, id, updates) {
   const collection = await getArticlesCollection(config);
   const $set = { updatedAt: new Date() };
 
-  for (const key of ["title", "slug", "blocks", "language", "status"]) {
+  for (const key of ["title", "slug", "blocks", "language", "status", "section", "excerpt", "seoTitle", "seoDescription", "coverKey"]) {
     if (data[key] !== undefined) {
       $set[key] = typeof data[key] === "string" ? data[key].trim() : data[key];
     }
@@ -257,6 +262,11 @@ export function toSafeArticle(article) {
     status: article.status,
     authorId: String(article.authorId),
     references: (article.references || []).map((r) => String(r)),
+    section: article.section || null,
+    excerpt: article.excerpt || null,
+    seoTitle: article.seoTitle || null,
+    seoDescription: article.seoDescription || null,
+    coverKey: article.coverKey || null,
     createdAt: article.createdAt,
     updatedAt: article.updatedAt,
     publishedAt: article.publishedAt || null,

@@ -64,6 +64,8 @@ export async function createTopic(config, input) {
     slug: data.slug,
     status: data.status || "active",
     ordering: typeof data.ordering === "number" ? data.ordering : 0,
+    intro: typeof data.intro === "string" ? data.intro.trim() : null,
+    coverKey: data.coverKey || null,
     createdAt: now,
     updatedAt: now,
   };
@@ -121,7 +123,7 @@ export async function updateTopic(config, id, updates) {
 
   const collection = await getTopicsCollection(config);
   const $set = { updatedAt: new Date() };
-  for (const key of ["title", "slug", "status", "ordering"]) {
+  for (const key of ["title", "slug", "status", "ordering", "intro", "coverKey"]) {
     if (data[key] !== undefined) $set[key] = typeof data[key] === "string" ? data[key].trim() : data[key];
   }
   if (data.categoryId !== undefined) $set.categoryId = new ObjectId(data.categoryId);
@@ -182,6 +184,8 @@ export function toSafeTopic(topic) {
     slug: topic.slug,
     status: topic.status,
     ordering: topic.ordering,
+    intro: topic.intro || null,
+    coverKey: topic.coverKey || null,
     createdAt: topic.createdAt,
     updatedAt: topic.updatedAt,
   };

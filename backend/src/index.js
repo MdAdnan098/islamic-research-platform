@@ -9,6 +9,7 @@ import { routes as adminCategoryRoutes } from "./routes/admin.categories.routes.
 import { routes as adminTopicRoutes } from "./routes/admin.topics.routes.js";
 import { routes as adminArticleRoutes } from "./routes/admin.articles.routes.js";
 import { routes as adminReferenceRoutes } from "./routes/admin.references.routes.js";
+import { routes as mediaRoutes } from "./routes/media.routes.js";
 import { routes as publicContentRoutes } from "./routes/public.content.routes.js";
 
 /**
@@ -31,6 +32,7 @@ const routeDefs = [
   ...adminArticleRoutes,
   ...adminReferenceRoutes,
   ...publicContentRoutes,
+  ...mediaRoutes,
 ];
 
 const router = buildRouter(routeDefs);

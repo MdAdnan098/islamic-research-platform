@@ -1,72 +1,43 @@
-import { NavLink } from "react-router-dom";
-import Container from "../common/Container.jsx";
+import { Link } from "react-router-dom";
+import { BRAND, SOCIAL } from "../../config/env.js";
+import { useI18n } from "../../i18n/index.jsx";
+import { Logo } from "../brand/Logo.jsx";
+import { Icon } from "../ui/icons.jsx";
 
-const FOOTER_COLUMNS = [
-  {
-    title: "Research",
-    links: [
-      { label: "Aqeedah", href: "/aqeedah" },
-      { label: "Masail", href: "/masail" },
-    ],
-  },
-  {
-    title: "Platform",
-    links: [
-      { label: "Home", href: "/" },
-      { label: "Admin", href: "/admin/login" },
-    ],
-  },
-];
-
-export default function Footer() {
-  const year = new Date().getFullYear();
-
+export function Footer() {
+  const { t } = useI18n();
+  const links = [["/", t.nav.home], ["/aqaid", t.nav.aqaid], ["/masail", t.nav.masail]];
   return (
-    <footer className="border-t border-slate-800 bg-slate-900 text-slate-300">
-      <Container className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="sm:col-span-2 lg:col-span-2">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-800 font-serif text-base font-bold text-white">
-              IR
-            </span>
-            <span className="font-serif text-lg font-semibold text-white">Islamic Research</span>
-          </div>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
-            A structured, source-referenced research platform for Aqeedah and
-            Masail, built for accuracy and clarity.
-          </p>
-        </div>
-
-        {FOOTER_COLUMNS.map((column) => (
-          <div key={column.title}>
-            <h3 className="text-sm font-semibold text-white">{column.title}</h3>
-            <ul className="mt-4 space-y-2.5">
-              {column.links.map((link) => (
-                <li key={link.href}>
-                  <NavLink to={link.href} className="text-sm text-slate-400 hover:text-emerald-400">
-                    {link.label}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-
+    <footer className="mt-24 border-t border-rule bg-card">
+      <div className="container-page grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
-          <h3 className="text-sm font-semibold text-white">Languages</h3>
-          <ul className="mt-4 space-y-2.5 text-sm text-slate-400">
-            <li>Roman</li>
-            <li>Hindi</li>
-            <li>Urdu</li>
+          <Logo size={44} />
+          <p className="mt-5 max-w-sm text-sm text-mute">{t.footer.about}</p>
+        </div>
+        <div>
+          <p className="eyebrow">{t.footer.links}</p>
+          <ul className="mt-4 space-y-2.5 text-sm">
+            {links.map(([to, label]) => (
+              <li key={to}><Link to={to} className="text-mute transition-colors hover:text-ink">{label}</Link></li>
+            ))}
           </ul>
         </div>
-      </Container>
-
-      <div className="border-t border-slate-800">
-        <Container className="flex flex-col items-center justify-between gap-3 py-6 text-xs text-slate-500 sm:flex-row">
-          <p>&copy; {year} Islamic Research Platform. All rights reserved.</p>
-          <p>Every reference is reviewed before publication.</p>
-        </Container>
+        <div>
+          <p className="eyebrow">{t.footer.follow}</p>
+          <div className="mt-4 flex gap-3">
+            {[["youtube", "YouTube", SOCIAL.youtube], ["instagram", "Instagram", SOCIAL.instagram]].map(([icon, label, href]) => (
+              <a key={icon} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="grid h-10 w-10 place-items-center rounded-full border border-rule text-mute transition-colors hover:border-gold hover:text-bronze">
+                <Icon name={icon} size={18} />
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-rule">
+        <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-mute sm:flex-row">
+          <span>© {new Date().getFullYear()} {BRAND.name} · {t.footer.rights}</span>
+          <span>{BRAND.tagline}</span>
+        </div>
       </div>
     </footer>
   );
