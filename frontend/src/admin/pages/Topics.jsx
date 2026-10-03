@@ -45,7 +45,7 @@ export default function Topics() {
 
   async function move(i, to) {
     const next = moveItem(data, i, to); setData(next);
-    try { await adminApi.topics.reorder(toOrdering(next)); } catch (e) { toast(e.message, "error"); reload(); }
+    try { await adminApi.topics.reorder(activeCat, toOrdering(next)); } catch (e) { toast(e.message, "error"); reload(); }
   }
   async function archive(t) {
     if (!(await confirm({ title: "Archive topic", message: `“${t.title}” will be hidden from the public site.`, confirm: "Archive", danger: true }))) return;

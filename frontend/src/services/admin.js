@@ -24,7 +24,7 @@ export const adminApi = {
   topics: {
     ...crud("/api/admin/topics", "topics", "topic"),
     archive: (id) => request(`/api/admin/topics/${id}/archive`, json("POST", {})).then((d) => d.topic),
-    reorder: (items) => request("/api/admin/topics/reorder", json("POST", { items })),
+    reorder: (categoryId, items) => request("/api/admin/topics/reorder", json("POST", { categoryId, items })),
   },
   articles: {
     ...crud("/api/admin/articles", "articles", "article"),
