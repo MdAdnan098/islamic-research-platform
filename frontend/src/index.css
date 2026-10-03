@@ -21,12 +21,9 @@
     --ad-rule: 40 46 58; --ad-brand: 96 135 196; --ad-danger: 232 106 92; --ad-ok: 80 190 140; --ad-warn: 226 168 70;
     color-scheme: dark;
   }
-  html[lang="ur"] { --font-body: "Noto Nastaliq Urdu", serif; --font-display: "Noto Nastaliq Urdu", serif; }
-  html[lang="hi"] { --font-body: "Noto Sans Devanagari", sans-serif; --font-display: "Noto Sans Devanagari", sans-serif; }
 
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body { @apply bg-paper font-sans text-ink antialiased; }
-  html[lang="ur"] body { line-height: 2; }
   ::selection { background: rgb(var(--gold) / .3); }
   :focus-visible { outline: 2px solid rgb(var(--gold)); outline-offset: 2px; border-radius: 4px; }
   img { @apply max-w-full; }
@@ -49,9 +46,9 @@
   .btn-ghost { @apply btn text-mute hover:text-ink; }
 
   /* Script-aware typography (applied automatically via <Text/>) */
-  .script-arabic { font-family: "Amiri", "Noto Naskh Arabic", serif; line-height: 2.1; }
-  .script-urdu { font-family: "Noto Nastaliq Urdu", serif; line-height: 2.4; }
-  .script-deva { font-family: "Noto Sans Devanagari", sans-serif; line-height: 1.9; }
+  .script-arabic { font-family: "Amiri", "Noto Naskh Arabic", serif !important; line-height: 2.1 !important; }
+  .script-urdu { font-family: "Noto Nastaliq Urdu", serif !important; line-height: 2.3 !important; }
+  .script-deva { font-family: "Noto Sans Devanagari", sans-serif !important; line-height: 1.9 !important; }
   .script-latin { font-family: "Inter", system-ui, sans-serif; line-height: 1.8; }
 
   .reading { font-size: 1.0625rem; }

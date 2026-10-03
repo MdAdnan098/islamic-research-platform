@@ -9,11 +9,11 @@ import { TopicCard } from "../../components/public/Cards.jsx";
 
 /** /aqaid and /masail — Category → Topics. */
 export default function SectionPage({ section }) {
-  const { t } = useI18n();
+  const { t, contentLang } = useI18n();
   const type = PATH_TYPE[section];
   const title = section === "aqaid" ? t.nav.aqaid : t.nav.masail;
   useMeta({ title });
-  const { data, error, loading, reload } = useAsync((signal) => loadSection(type, signal), [type]);
+  const { data, error, loading, reload } = useAsync((signal) => loadSection(type, { language: contentLang, signal }), [type, contentLang]);
   const multi = (data?.length || 0) > 1;
 
   return (
@@ -25,7 +25,7 @@ export default function SectionPage({ section }) {
 
       <div className="mt-12 space-y-14">
         {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : data.length === 0 || data.every((c) => !c.topics.length) ? (
-          <EmptyState>{t.topic.noTopics}</EmptyState>
+          <EmptyState>{t.topic.noTopicsLang}</EmptyState>
         ) : (
           data.filter((c) => c.topics.length).map((c) => (
             <section key={c.id}>

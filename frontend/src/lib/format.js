@@ -1,9 +1,7 @@
-const LOCALES = { roman: "en-IN", hindi: "hi-IN", urdu: "ur-PK" };
-
-export function formatDate(value, lang = "roman") {
+export function formatDate(value) {
   if (!value) return "";
   try {
-    return new Intl.DateTimeFormat(LOCALES[lang] || "en-IN", { day: "numeric", month: "long", year: "numeric" }).format(new Date(value));
+    return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", year: "numeric" }).format(new Date(value));
   } catch {
     return "";
   }

@@ -1,6 +1,5 @@
 export default {
-  code: "en", dir: "ltr", label: "Roman", contentLang: "en",
-  nav: { home: "Home", aqaid: "Aqaid", masail: "Masail", menu: "Menu", close: "Band karein", language: "Zubaan", theme: "Theme" },
+  nav: { home: "Home", aqaid: "Aqaid", masail: "Masail", menu: "Menu", close: "Band karein", language: "Content ki zubaan", theme: "Theme" },
   hero: {
     title: "Quran Aur Sunnat, Fahm-e-Salaf Ke Saath",
     desc: "Quran, Sunnat aur Mustanad Hawalon ki Bunyaad par Islami Aqaid, Masail aur Tahqiqi Mazameen",
@@ -14,9 +13,8 @@ export default {
   },
   topic: {
     topics: "Topics", intro: "Mukhtasar Taaruf", dalail: "Hamare Dalail", radd: "Dalail Ka Jaiza / Radd",
-    more: "Mazeed Mazameen", noTopics: "Abhi koi topic maujood nahi.", noItems: "Is hisse mein abhi koi tahqeeq nahi.",
+    more: "Mazeed Mazameen", noTopics: "Abhi koi topic maujood nahi.", noTopicsLang: "Is zubaan mein abhi koi topic maujood nahi.", noItems: "Is hisse mein abhi koi tahqeeq nahi.",
     inCategory: "Category",
-    allLangs: "Sab zubanein",
   },
   article: {
     readMore: "Padhein", published: "Shaya", reference: "Hawala", book: "Kitab", author: "Musannif",

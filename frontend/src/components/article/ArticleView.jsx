@@ -25,7 +25,7 @@ function ReadingProgress() {
 
 /** Shared by the public article page and the admin preview. */
 export function ArticleView({ article, references, crumbs = [], banner }) {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const cover = mediaUrl(article.coverKey);
   useMeta({ title: article.seoTitle || article.title, description: article.seoDescription || article.excerpt, image: cover });
 
@@ -47,7 +47,7 @@ export function ArticleView({ article, references, crumbs = [], banner }) {
         <Text as="h1" className="font-display text-3xl font-semibold leading-[1.25] sm:text-5xl">{article.title}</Text>
         {article.excerpt && <Text as="p" className="mt-5 text-lg text-mute">{article.excerpt}</Text>}
         <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-y border-rule py-3 text-xs text-mute">
-          <span>{formatDate(article.publishedAt || article.createdAt, lang)}</span>
+          <span>{formatDate(article.publishedAt || article.createdAt)}</span>
           <span>{readMinutes(article.blocks)} {t.article.minRead}</span>
           <span className="rounded-full border border-rule px-2 py-0.5">{LANG[article.language] || article.language}</span>
         </div>

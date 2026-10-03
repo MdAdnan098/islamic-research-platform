@@ -1,4 +1,5 @@
-import { useParams } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
 import { SECTION_PATH, publicApi } from "../../services/public.js";
 import { useAsync } from "../../lib/useAsync.js";
@@ -7,7 +8,8 @@ import { Skeleton, ErrorState, NotFoundState } from "../../components/ui/feedbac
 
 export default function ArticlePage() {
   const { slug } = useParams();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const nav = useNavigate();
   const { data, error, loading, reload } = useAsync(async (signal) => {
     const { article, references } = await publicApi.article(slug, signal);
     const [cats, topics] = await Promise.all([
@@ -23,7 +25,17 @@ export default function ArticlePage() {
       topic && base && { label: topic.title, to: `${base}/${topic.slug}` },
     ].filter(Boolean);
     return { article, references, crumbs };
-  }, [slug, t]);
+  }, [slug]);
+
+  // Switching the content language while reading → go back to that language's list.
+  const crumbsRef = useRef([]);
+  const startLang = useRef(lang);
+  crumbsRef.current = data?.crumbs || [];
+  useEffect(() => {
+    if (lang === startLang.current) return;
+    startLang.current = lang;
+    nav(crumbsRef.current.at(-1)?.to || "/");
+  }, [lang, nav]);
 
   if (loading && !data) {
     return <div className="container-read space-y-4 py-16"><Skeleton className="h-10 w-4/5" /><Skeleton className="h-4 w-1/3" /><Skeleton className="mt-8 h-40 w-full" /></div>;

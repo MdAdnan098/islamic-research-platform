@@ -22,11 +22,30 @@ export const publicApi = {
   article: (slug, signal) => request(`/api/public/articles/${encodeURIComponent(slug)}`, { signal }),
 };
 
-/** Categories of one section type (aqeedah | masail), each with its topics. */
-export async function loadSection(type, signal) {
+/** Ids of topics (in a category) that have published articles in `language`. */
+async function topicIdsWithArticles(categoryId, language, signal) {
+  const ids = new Set();
+  for (let page = 1; page <= 5; page++) {
+    const batch = await publicApi.articles({ categoryId, language, limit: 100, page }, signal);
+    batch.forEach((a) => a.topicId && ids.add(a.topicId));
+    if (batch.length < 100) break;
+  }
+  return ids;
+}
+
+/**
+ * Categories of one section type (aqeedah | masail), each with its topics.
+ * With `language`, topics without any published article in that language are hidden.
+ */
+export async function loadSection(type, { language, signal } = {}) {
   const cats = (await publicApi.categories(signal)).filter((c) => c.type === type).sort((a, b) => a.ordering - b.ordering);
-  const withTopics = await Promise.all(
-    cats.map(async (c) => ({ ...c, topics: (await publicApi.topics(c.id, signal)).sort((a, b) => a.ordering - b.ordering) }))
+  return Promise.all(
+    cats.map(async (c) => {
+      const [topics, allowed] = await Promise.all([
+        publicApi.topics(c.id, signal),
+        language ? topicIdsWithArticles(c.id, language, signal) : null,
+      ]);
+      return { ...c, topics: topics.filter((tp) => !allowed || allowed.has(tp.id)).sort((a, b) => a.ordering - b.ordering) };
+    })
   );
-  return withTopics;
 }

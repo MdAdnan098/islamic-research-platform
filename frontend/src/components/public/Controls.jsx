@@ -1,4 +1,4 @@
-import { LANGS, useI18n } from "../../i18n/index.jsx";
+import { CONTENT_LANGS, useI18n } from "../../i18n/index.jsx";
 import { useTheme } from "../../context/ThemeContext.jsx";
 import { Icon } from "../ui/icons.jsx";
 
@@ -6,7 +6,7 @@ export function LanguageSwitch({ className = "" }) {
   const { lang, setLang, t } = useI18n();
   return (
     <div role="group" aria-label={t.nav.language} className={`inline-flex rounded-full border border-rule p-0.5 text-sm ${className}`}>
-      {Object.entries(LANGS).map(([key, d]) => (
+      {Object.entries(CONTENT_LANGS).map(([key, d]) => (
         <button
           key={key}
           onClick={() => setLang(key)}

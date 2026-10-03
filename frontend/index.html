@@ -17,9 +17,6 @@
         try {
           var t = localStorage.getItem("fs_theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
           document.documentElement.classList.toggle("dark", t === "dark");
-          var l = localStorage.getItem("fs_lang") || "roman";
-          document.documentElement.lang = { roman: "en", hindi: "hi", urdu: "ur" }[l] || "en";
-          document.documentElement.dir = l === "urdu" ? "rtl" : "ltr";
         } catch (e) {}
       })();
     </script>

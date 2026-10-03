@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
 import { PATH_TYPE, loadSection, publicApi } from "../../services/public.js";
@@ -10,7 +9,7 @@ import { CardSkeletons, EmptyState, ErrorState, NotFoundState } from "../../comp
 import { ArticleCard } from "../../components/public/Cards.jsx";
 import { LogoMark } from "../../components/brand/Logo.jsx";
 
-function Group({ title, items, category, empty, showLang }) {
+function Group({ title, items, category, empty }) {
   const { t } = useI18n();
   return (
     <section className="mt-14">
@@ -19,7 +18,7 @@ function Group({ title, items, category, empty, showLang }) {
         <span className="text-sm text-mute">{items.length}</span>
       </div>
       {items.length === 0 ? <EmptyState>{empty || t.topic.noItems}</EmptyState> : (
-        <div className="grid gap-5 sm:grid-cols-2">{items.map((a) => <ArticleCard key={a.id} article={a} category={category} showLang={showLang} />)}</div>
+        <div className="grid gap-5 sm:grid-cols-2">{items.map((a) => <ArticleCard key={a.id} article={a} category={category}  />)}</div>
       )}
     </section>
   );
@@ -29,19 +28,18 @@ function Group({ title, items, category, empty, showLang }) {
 export default function TopicPage({ section }) {
   const { topicSlug } = useParams();
   const { t, contentLang } = useI18n();
-  const [allLangs, setAllLangs] = useState(false);
-  const type = PATH_TYPE[section];
+    const type = PATH_TYPE[section];
 
   const { data, error, loading, reload } = useAsync(async (signal) => {
-    const cats = await loadSection(type, signal);
+    const cats = await loadSection(type, { signal });
     const category = cats.find((c) => c.topics.some((x) => x.slug === topicSlug));
     return { category, topic: category?.topics.find((x) => x.slug === topicSlug) };
   }, [type, topicSlug]);
 
   const topic = data?.topic;
   const arts = useAsync(
-    (signal) => (topic ? publicApi.articles({ topicId: topic.id, language: allLangs ? undefined : contentLang, limit: 100 }, signal) : []),
-    [topic?.id, allLangs, contentLang]
+    (signal) => (topic ? publicApi.articles({ topicId: topic.id, language: contentLang, limit: 100 }, signal) : []),
+    [topic?.id, contentLang]
   );
   useMeta({ title: topic?.title, description: topic?.intro, image: mediaUrl(topic?.coverKey) });
 
@@ -77,17 +75,12 @@ export default function TopicPage({ section }) {
           </div>
         )}
 
-        <div className="mt-10 flex justify-end">
-          <button onClick={() => setAllLangs((v) => !v)} aria-pressed={allLangs} className={`rounded-full border px-4 py-1.5 text-xs transition-colors ${allLangs ? "border-gold text-bronze" : "border-rule text-mute hover:text-ink"}`}>
-            {t.topic.allLangs}
-          </button>
-        </div>
 
         {arts.loading && !arts.data ? <div className="mt-8"><CardSkeletons count={2} /></div> : arts.error ? <div className="mt-8"><ErrorState error={arts.error} onRetry={arts.reload} /></div> : (
           <>
-            <Group title={t.topic.dalail} items={by("dalail")} category={data.category} showLang={allLangs} />
-            <Group title={t.topic.radd} items={by("radd")} category={data.category} showLang={allLangs} />
-            {by(null).length > 0 && <Group title={t.topic.more} items={by(null)} category={data.category} showLang={allLangs} />}
+            <Group title={t.topic.dalail} items={by("dalail")} category={data.category} />
+            <Group title={t.topic.radd} items={by("radd")} category={data.category} />
+            {by(null).length > 0 && <Group title={t.topic.more} items={by(null)} category={data.category} />}
           </>
         )}
       </div>
