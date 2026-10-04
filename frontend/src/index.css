@@ -63,3 +63,20 @@
   .a-btn-danger { @apply a-btn border-ad-danger/40 text-ad-danger hover:bg-ad-danger/10; }
   .a-card { @apply rounded-lg border border-ad-rule bg-ad-card; }
 }
+
+/* Animated "live" border for the Ayat / Hadith cards */
+@property --lb-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes lb-spin { to { --lb-angle: 360deg; } }
+.live-border {
+  position: relative; border-radius: 1rem; padding: 1.5px;
+  background: conic-gradient(from var(--lb-angle), rgb(var(--rule)) 0deg, var(--lb1) 70deg, var(--lb2) 140deg, var(--lb3) 200deg, rgb(var(--rule)) 280deg, rgb(var(--rule)) 360deg);
+  animation: lb-spin 5s linear infinite;
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.live-border::before {
+  content: ""; position: absolute; inset: -2px; z-index: -1; border-radius: inherit;
+  background: inherit; filter: blur(16px); opacity: .18; transition: opacity .3s ease;
+}
+.live-border:hover { transform: translateY(-4px); animation-duration: 2.5s; }
+.live-border:hover::before { opacity: .55; }
+@media (prefers-reduced-motion: reduce) { .live-border { animation: none; transition: none; } .live-border:hover { transform: none; } }
