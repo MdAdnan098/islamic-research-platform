@@ -11,35 +11,37 @@ import { MongoClient } from "mongodb";
  * so it is intentionally not used here. This driver-based approach is
  * Cloudflare's currently recommended way to reach MongoDB from a Worker.
  *
- * The client is cached at module scope so warm isolates reuse the same
- * connection pool instead of reconnecting on every request.
+ * IMPORTANT: Workers can't reuse sockets/I-O objects created in a different
+ * request ("Cannot perform I/O on behalf of a different request"). A client
+ * cached at module scope works for the first request on an isolate and then
+ * hangs/fails later ones, so the client is cached per *request* instead:
+ * every handler builds its own `config` object, and we key the client on it.
  */
 
-let cachedClientPromise = null;
+const clientsByConfig = new WeakMap();
 
 /**
  * @param {{ mongodbUri: string, mongodbDbName: string }} config
  * @returns {Promise<import("mongodb").Db>}
  */
 export async function getDb(config) {
-  if (!cachedClientPromise) {
+  let clientPromise = clientsByConfig.get(config);
+  if (!clientPromise) {
     const client = new MongoClient(config.mongodbUri, {
-      // Workers isolates are short-lived; keep the pool small.
-      maxPoolSize: 5,
+      maxPoolSize: 3,
       // Fail fast with a clear error instead of hanging if Atlas is
       // unreachable (wrong URI, IP not allow-listed, network issue, etc).
       serverSelectionTimeoutMS: 8000,
     });
-    cachedClientPromise = client.connect();
+    clientPromise = client.connect();
+    clientsByConfig.set(config, clientPromise);
   }
 
   try {
-    const client = await cachedClientPromise;
+    const client = await clientPromise;
     return client.db(config.mongodbDbName);
   } catch (err) {
-    // Reset the cache so the next request attempts a fresh connection
-    // instead of permanently reusing a failed one.
-    cachedClientPromise = null;
+    clientsByConfig.delete(config);
     const wrapped = new Error(`Failed to connect to MongoDB: ${err.message}`);
     wrapped.status = 503;
     wrapped.code = "DB_CONNECTION_ERROR";
