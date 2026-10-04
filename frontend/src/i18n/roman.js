@@ -6,7 +6,7 @@ export default {
     cta1: "Aqaid padhein", cta2: "Masail dekhein",
   },
   home: {
-    ayat: "Ayat-e-Quraani", hadith: "Hadith-e-Nabawi", sections: "Research Sections",
+    ayat: "Ayat-e-Quraani", hadith: "Hadees-e-Nabawi", sections: "Research Sections",
     aqaidDesc: "Islami aqaid ki bunyaadi tahqeeq, Quran o Sunnat ke dalail ke saath.",
     masailDesc: "Pesh aane wale masail ka mustanad, hawale-daar jaiza.",
     latest: "Latest Posts", noPosts: "Is zubaan mein abhi koi post maujood nahi.",

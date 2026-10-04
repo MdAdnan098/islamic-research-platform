@@ -9,13 +9,28 @@ import { Icon } from "../../components/ui/icons.jsx";
 import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../../components/ui/feedback.jsx";
 import { ArticleCard, SectionCard } from "../../components/public/Cards.jsx";
 
-function QuoteCard({ label, item }) {
+const TONES = {
+  indigo: {
+    card: "border-indigo-200/70 bg-gradient-to-br from-indigo-50 via-card to-card dark:border-indigo-400/20 dark:from-indigo-500/10",
+    pill: "bg-indigo-100 text-indigo-700 dark:bg-indigo-400/15 dark:text-indigo-300",
+    bar: "from-indigo-500 to-violet-500",
+  },
+  emerald: {
+    card: "border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-card to-card dark:border-emerald-400/20 dark:from-emerald-500/10",
+    pill: "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300",
+    bar: "from-emerald-500 to-teal-500",
+  },
+};
+
+function QuoteCard({ label, item, tone }) {
+  const c = TONES[tone];
   return (
-    <figure className="flex flex-col items-center rounded-2xl border border-rule bg-card px-6 py-8 text-center sm:px-12 sm:py-12">
-      <figcaption className="eyebrow">{label}</figcaption>
-      <Text as="blockquote" force="arabic" className="mt-6 text-[1.65rem] leading-[2.2] sm:text-[2.1rem] md:text-[2.4rem]">{item.text}</Text>
-      <Text as="p" className="mt-5 max-w-3xl text-base text-mute sm:text-lg">{item.translation}</Text>
-      <Text as="p" className="mt-6 border-t border-rule pt-4 text-sm text-bronze">{item.source}</Text>
+    <figure className={`relative flex flex-col items-center overflow-hidden rounded-2xl border px-6 py-9 text-center shadow-soft sm:px-12 sm:py-12 ${c.card}`}>
+      <span className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${c.bar}`} />
+      <figcaption className={`rounded-full px-4 py-1 text-xs font-semibold ${c.pill}`}>{label}</figcaption>
+      <Text as="blockquote" force="arabic" className="mt-7 text-[1.65rem] leading-[2.2] sm:text-[2.1rem] md:text-[2.4rem]">{item.text}</Text>
+      <Text as="p" className="mt-4 max-w-3xl text-base text-mute sm:text-lg">{item.translation}</Text>
+      <Text as="p" className="mt-6 border-t border-black/5 pt-4 text-sm text-bronze dark:border-white/10">{item.source}</Text>
     </figure>
   );
 }
@@ -57,8 +72,8 @@ export default function Home() {
       <section className="container-page py-14 sm:py-20">
         <Text as="p" force="arabic" className="mb-8 text-center text-3xl text-gold sm:text-4xl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
         <div className="mx-auto flex max-w-5xl flex-col gap-5">
-          <QuoteCard label={t.home.ayat} item={FEATURED.ayat} />
-          <QuoteCard label={t.home.hadith} item={FEATURED.hadith} />
+          <QuoteCard label={t.home.ayat} item={FEATURED.ayat} tone="indigo" />
+          <QuoteCard label={t.home.hadith} item={FEATURED.hadith} tone="emerald" />
         </div>
       </section>
 
