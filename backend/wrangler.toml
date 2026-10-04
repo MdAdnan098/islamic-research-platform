@@ -11,8 +11,8 @@ compatibility_date = "2026-09-27"
 # Non-secret configuration. Real secrets (MONGODB_URI, etc.) must be set with
 # `wrangler secret put <NAME>` and must never be committed here.
 [vars]
-ENVIRONMENT = "development"
-ALLOWED_ORIGIN = "http://localhost:5173"
+ENVIRONMENT = "production"
+ALLOWED_ORIGIN = "https://islamic-research-platform.pages.dev"
 
 # R2 bucket binding for scanned pages / images / PDFs.
 # Create the bucket first with: wrangler r2 bucket create islamic-research-media
