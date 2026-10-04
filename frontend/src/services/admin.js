@@ -12,7 +12,9 @@ function crud(base, listKey, itemKey) {
 }
 
 export const adminApi = {
-  login: (email, password) => request("/api/admin/login", json("POST", { email, password })).then((d) => d.admin),
+  login: (username, password) => request("/api/admin/login", json("POST", { username, password })).then((d) => d.admin),
+  register: (username, password, secretKey) => request("/api/admin/register", json("POST", { username, password, secretKey })),
+  resetPassword: (username, secretKey, newPassword) => request("/api/admin/reset-password", json("POST", { username, secretKey, newPassword })),
   logout: () => request("/api/admin/logout", json("POST", {})),
   me: (signal) => request("/api/admin/me", { signal }).then((d) => d.admin),
 

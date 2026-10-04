@@ -18,17 +18,35 @@ async function getAdminsCollection(config) {
 }
 
 /**
- * Creates the unique index on email if it doesn't already exist.
- * Safe to call repeatedly (createIndex is idempotent).
+ * Idempotent. Usernames are unique; the legacy `email` index is replaced
+ * by a partial one so admins created via the register page (no email)
+ * don't collide on a missing/null email.
  */
 export async function ensureAdminIndexes(config) {
   const collection = await getAdminsCollection(config);
-  await collection.createIndex({ email: 1 }, { unique: true });
+  try { await collection.dropIndex("email_1"); } catch { /* already dropped / never existed */ }
+  await collection.createIndex({ username: 1 }, { unique: true, partialFilterExpression: { username: { $type: "string" } } });
+  await collection.createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: "string" } } });
 }
 
-export async function findAdminByEmail(config, email) {
+/** Matches `username`, or a legacy admin's `email` (so old accounts still sign in). */
+export async function findAdminByUsername(config, username) {
   const collection = await getAdminsCollection(config);
-  return collection.findOne({ email: email.trim().toLowerCase() });
+  const u = username.trim().toLowerCase();
+  return collection.findOne({ $or: [{ username: u }, { email: u }] });
+}
+
+export async function createAdmin(config, { username, passwordHash }) {
+  const collection = await getAdminsCollection(config);
+  const now = new Date();
+  const doc = { username: username.trim().toLowerCase(), passwordHash, role: "admin", active: true, createdAt: now, updatedAt: now };
+  await collection.insertOne(doc); // throws E11000 if the username is taken
+  return doc;
+}
+
+export async function setAdminPassword(config, id, passwordHash) {
+  const collection = await getAdminsCollection(config);
+  await collection.updateOne({ _id: new ObjectId(id) }, { $set: { passwordHash, updatedAt: new Date() } });
 }
 
 export async function findAdminById(config, id) {
@@ -68,7 +86,7 @@ export function toSafeAdmin(admin) {
   if (!admin) return null;
   return {
     id: String(admin._id),
-    email: admin.email,
+    username: admin.username || admin.email,
     role: admin.role,
     lastLoginAt: admin.lastLoginAt || null,
   };

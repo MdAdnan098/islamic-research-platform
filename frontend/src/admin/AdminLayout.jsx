@@ -36,7 +36,7 @@ export function AdminLayout() {
         <Link to="/" target="_blank" className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ad-mute hover:bg-ad-bg"><Icon name="external" size={16} />View site</Link>
         <button onClick={toggle} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ad-mute hover:bg-ad-bg"><Icon name={theme === "dark" ? "sun" : "moon"} size={16} />{theme === "dark" ? "Light" : "Dark"} mode</button>
         <button onClick={async () => { await logout(); nav("/admin/login"); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ad-mute hover:bg-ad-bg"><Icon name="logout" size={16} />Sign out</button>
-        <p className="truncate px-3 pt-1 text-xs text-ad-mute/80">{admin?.email}</p>
+        <p className="truncate px-3 pt-1 text-xs text-ad-mute/80">{admin?.username}</p>
       </div>
     </div>
   );

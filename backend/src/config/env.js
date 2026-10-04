@@ -21,6 +21,7 @@ export function loadConfig(env) {
     mongodbUri: env.MONGODB_URI,
     mongodbDbName: env.MONGODB_DB_NAME,
     adminJwtSecret: env.ADMIN_JWT_SECRET || null,
+    adminRegisterKey: env.ADMIN_REGISTER_KEY || null,
     mediaBucket: env.MEDIA_BUCKET || null,
   };
 }

@@ -27,6 +27,7 @@ function keyFor(request, email) {
  * isolate's recent window. Call once per login attempt (success or fail).
  */
 export function enforceLoginRateLimit(request, email) {
+  // `email` is just the bucket label (username or "register"/"reset").
   const key = keyFor(request, email);
   const now = Date.now();
   const entry = attempts.get(key);

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "../context/AuthContext.jsx";
 import { ToastProvider } from "./components/ui.jsx";
 import { AdminLayout } from "./AdminLayout.jsx";
 import Login from "./pages/Login.jsx";
+import AdminAccess from "./pages/AdminAccess.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Articles from "./pages/Articles.jsx";
 import ArticleEditor from "./pages/ArticleEditor.jsx";
@@ -25,6 +26,8 @@ export default function AdminApp() {
       <ToastProvider>
         <Routes>
           <Route path="login" element={<Login />} />
+          <Route path="register" element={<AdminAccess mode="register" />} />
+          <Route path="forgot-password" element={<AdminAccess mode="reset" />} />
           <Route element={<Protected />}>
             <Route element={<AdminLayout />}>
               <Route index element={<Dashboard />} />

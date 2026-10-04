@@ -17,8 +17,8 @@ export function AuthProvider({ children }) {
     return () => { ctrl.abort(); window.removeEventListener("fs:unauthorized", onUnauthorized); };
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    const admin = await adminApi.login(email, password);
+  const login = useCallback(async (username, password) => {
+    const admin = await adminApi.login(username, password);
     setState({ status: "authed", admin });
   }, []);
 

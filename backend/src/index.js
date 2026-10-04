@@ -25,6 +25,8 @@ const routeDefs = [
   ["GET", "/api/public/ping", publicRoutes.ping],
   ["POST", "/api/admin/login", adminRoutes.login],
   ["POST", "/api/admin/logout", adminRoutes.logout],
+  ["POST", "/api/admin/register", adminRoutes.register],
+  ["POST", "/api/admin/reset-password", adminRoutes.resetPassword],
   ["GET", "/api/admin/me", adminRoutes.me],
   ["GET", "/api/admin/ping", adminRoutes.ping],
   ...adminCategoryRoutes,
