@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FEATURED_FALLBACK } from "../../config/featured.js";
+import { FEATURED } from "../../config/featured.js";
 import { useI18n } from "../../i18n/index.jsx";
 import { publicApi } from "../../services/public.js";
 import { useAsync } from "../../lib/useAsync.js";
@@ -9,28 +9,19 @@ import { Icon } from "../../components/ui/icons.jsx";
 import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../../components/ui/feedback.jsx";
 import { ArticleCard, SectionCard } from "../../components/public/Cards.jsx";
 
-function QuoteCard({ label, item, lang }) {
+function QuoteCard({ label, item }) {
   return (
-    <figure className="flex flex-col rounded-2xl border border-rule bg-card p-6 sm:p-9">
+    <figure className="flex flex-col items-center rounded-2xl border border-rule bg-card px-6 py-8 text-center sm:px-12 sm:py-12">
       <figcaption className="eyebrow">{label}</figcaption>
-      <Text as="blockquote" force="arabic" className="mt-5 text-[1.65rem] leading-[2.2] sm:text-[1.9rem]">{item.text}</Text>
-      {item.translation && <Text as="p" className="mt-4 text-sm text-mute">{item.translation[lang] || item.translation.roman}</Text>}
-      <p className="mt-auto pt-5 text-sm text-bronze">{item.source}</p>
+      <Text as="blockquote" force="arabic" className="mt-6 text-[1.65rem] leading-[2.2] sm:text-[2.1rem] md:text-[2.4rem]">{item.text}</Text>
+      <Text as="p" className="mt-5 max-w-3xl text-base text-mute sm:text-lg">{item.translation}</Text>
+      <Text as="p" className="mt-6 border-t border-rule pt-4 text-sm text-bronze">{item.source}</Text>
     </figure>
   );
 }
 
-/** First published quote block of the given kind wins; else the fallback. */
-function pickFeatured(articles, kind) {
-  for (const a of articles || []) {
-    const b = (a.blocks || []).find((x) => x.type === "quote" && x.kind === kind && x.text);
-    if (b) return { text: b.text, source: b.source || a.title };
-  }
-  return FEATURED_FALLBACK[kind];
-}
-
 export default function Home() {
-  const { t, lang, contentLang } = useI18n();
+  const { t, contentLang } = useI18n();
   useMeta({});
   const { data, error, loading, reload } = useAsync(
     async (signal) => {
@@ -65,9 +56,9 @@ export default function Home() {
 
       <section className="container-page py-14 sm:py-20">
         <Text as="p" force="arabic" className="mb-8 text-center text-3xl text-gold sm:text-4xl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
-        <div className="grid gap-5 md:grid-cols-2">
-          <QuoteCard label={t.home.ayat} item={pickFeatured(data?.articles, "ayat")} lang={lang} />
-          <QuoteCard label={t.home.hadith} item={pickFeatured(data?.articles, "hadith")} lang={lang} />
+        <div className="mx-auto flex max-w-5xl flex-col gap-5">
+          <QuoteCard label={t.home.ayat} item={FEATURED.ayat} />
+          <QuoteCard label={t.home.hadith} item={FEATURED.hadith} />
         </div>
       </section>
 
