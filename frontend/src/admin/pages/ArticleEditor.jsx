@@ -38,6 +38,15 @@ export default function ArticleEditor() {
     return a;
   }, [id]);
 
+  // First run: no categories yet -> create "Aqaid" and "Masail" so the dropdown is never empty.
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (!cats.data || cats.data.length || seeded.current) return;
+    seeded.current = true;
+    Promise.all([["Aqaid", "aqaid", "aqeedah"], ["Masail", "masail", "masail"]].map(([name, slug, type], ordering) => adminApi.categories.create({ name, slug, description: null, type, status: "active", ordering })))
+      .then(() => cats.reload()).catch(() => {});
+  }, [cats.data]);
+
   // Default category for brand-new articles.
   useEffect(() => { if (isNew && !f.categoryId && cats.data?.[0]) setF((s) => ({ ...s, categoryId: cats.data[0].id })); }, [isNew, cats.data, f.categoryId]);
 
@@ -114,21 +123,24 @@ export default function ArticleEditor() {
         <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <div className="a-card space-y-3 p-4">
             <h2 className="text-sm font-semibold">Settings</h2>
-            <Field label="Language" hint="Article kis zabaan mein likha hai."><select className="a-input" value={f.language} onChange={set("language")}><option value="ur">Urdu</option><option value="en">Roman (Hinglish)</option><option value="hi">Hindi</option><option value="ar">Arabic</option></select></Field>
-            <Field label="Category *" hint="Aqaid = Islami aqeede (Tauheed, Risalat...). Masail = fiqh ke masail (Namaz, Roza...)."><select className="a-input" value={f.categoryId} onChange={(e) => setF((s) => ({ ...s, categoryId: e.target.value, topicId: "", section: "" }))}>{(cats.data || []).map((c) => <option key={c.id} value={c.id}>{c.name} — {c.type === "aqeedah" ? "Aqaid section mein dikhega" : "Masail section mein dikhega"}</option>)}</select></Field>
-            <Field label="Topic (zaroori nahi)" hint="Category ke andar ka mazmoon, jaise Tauheed. Chunne par article us topic ke page par dikhega."><select className="a-input" value={f.topicId} onChange={(e) => setF((s) => ({ ...s, topicId: e.target.value, section: e.target.value ? s.section : "" }))}><option value="">— Koi topic nahi (sirf category mein dikhega) —</option>{(topics.data || []).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select></Field>
-            <Field label="Topic section" hint={f.topicId ? "Topic page par article kis hisse mein dikhega." : "Pehle topic chuniye, tab ye chunna hoga."}><select className="a-input disabled:opacity-50" value={f.section} onChange={set("section")} disabled={!f.topicId}><option value="">General — "Mazeed Mazameen" mein dikhega</option><option value="dalail">Hamare Dalail — apni daleel ke articles</option><option value="radd">Dalail Ka Jaiza / Radd — doosron ki daleel ka jawab</option></select></Field>
+            <Field label="Language"><select className="a-input" value={f.language} onChange={set("language")}><option value="ur">Urdu</option><option value="en">Roman (Hinglish)</option><option value="hi">Hindi</option><option value="ar">Arabic</option></select></Field>
+            <Field label="Category *"><select className="a-input" value={f.categoryId} onChange={(e) => setF((s) => ({ ...s, categoryId: e.target.value, topicId: "", section: "" }))}>
+              {[["aqeedah", "Aqaid"], ["masail", "Masail"]].map(([type, label]) => {
+                const items = (cats.data || []).filter((c) => c.type === type);
+                return items.length ? <optgroup key={type} label={label}>{items.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup> : null;
+              })}
+            </select></Field>
+            <Field label="Topic"><select className="a-input" value={f.topicId} onChange={(e) => setF((s) => ({ ...s, topicId: e.target.value, section: e.target.value ? s.section : "" }))}><option value="">— Koi topic nahi —</option>{(topics.data || []).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select></Field>
+            <Field label="Topic section"><select className="a-input" value={f.section} onChange={set("section")}><option value="">General — Mazeed Mazameen</option><option value="dalail">Hamare Dalail — apni daleel</option><option value="radd">Dalail Ka Jaiza / Radd — doosron ki daleel ka jawab</option></select></Field>
             <div>
               <span className="a-label">Article ka link</span>
-              <p className="break-all text-xs text-ad-ink" dir="ltr">/article/{f.slug || "(save karte waqt apne aap ban jayega)"}</p>
-              <p className="mt-1 text-xs text-ad-mute">Ye link apne aap ban jata hai, badalne ki zaroorat nahi. <button type="button" className="text-ad-brand hover:underline" onClick={() => setEditSlug((v) => !v)}>{editSlug ? "Band karein" : "Badlein"}</button></p>
-              {editSlug && <input className="a-input mt-2" dir="ltr" placeholder="chhote-english-letters-aur-hyphen" value={f.slug} onChange={(e) => { setSlugTouched(true); set("slug")(e); }} />}
+              <p className="break-all text-xs text-ad-ink" dir="ltr">/article/{f.slug || "…"} <button type="button" className="ms-1 text-ad-brand hover:underline" onClick={() => setEditSlug((v) => !v)}>{editSlug ? "Band" : "Badlein"}</button></p>
+              {editSlug && <input className="a-input mt-2" dir="ltr" value={f.slug} onChange={(e) => { setSlugTouched(true); set("slug")(e); }} />}
             </div>
           </div>
           <div className="a-card space-y-3 p-4">
-            <h2 className="text-sm font-semibold">Excerpt & cover</h2>
-            <Field label="Excerpt"><textarea className="a-input min-h-20" dir="auto" value={f.excerpt} onChange={set("excerpt")} /></Field>
-            <div><span className="a-label">Cover image</span><MediaUploader value={f.coverKey} onChange={(coverKey) => setF((s) => ({ ...s, coverKey }))} label="Upload cover" /></div>
+            <h2 className="text-sm font-semibold">Cover image</h2>
+            <div><MediaUploader value={f.coverKey} onChange={(coverKey) => setF((s) => ({ ...s, coverKey }))} label="Upload cover" /></div>
           </div>
         </aside>
       </div>
