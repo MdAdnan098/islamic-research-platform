@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
@@ -6,6 +7,8 @@ import { isSlug, slugify } from "../../lib/format.js";
 import { newBlock, referenceIdsOf, withIds } from "../../lib/blocks.js";
 import { BlockEditor } from "../components/BlockEditor.jsx";
 import { MediaUploader } from "../components/MediaUploader.jsx";
+import { ArticleView } from "../../components/article/ArticleView.jsx";
+import { Icon } from "../../components/ui/icons.jsx";
 import { ErrorBox, Field, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 
 const BLANK = { title: "", slug: "", language: "ur", categoryId: "", topicId: "", section: "", excerpt: "", seoTitle: "", seoDescription: "", coverKey: "", status: "draft" };
@@ -21,6 +24,8 @@ export default function ArticleEditor() {
   const [blocks, setBlocks] = useState(() => [newBlock("text")]);
   const [slugTouched, setSlugTouched] = useState(!isNew);
   const [busy, setBusy] = useState(false);
+  const [editSlug, setEditSlug] = useState(false);
+  const [preview, setPreview] = useState(null);
   const saved = useRef("");
 
   const cats = useAsync((s) => adminApi.categories.list({ status: "active" }, s), []);
@@ -47,10 +52,13 @@ export default function ArticleEditor() {
 
   async function save() {
     if (!f.title.trim()) return toast("Title is required", "error"), null;
-    if (!isSlug(f.slug)) return toast("Slug must be lowercase letters/numbers with hyphens", "error"), null;
-    if (!f.categoryId) return toast("Choose a category", "error"), null;
+    if (!f.categoryId) return toast("Category chuniye (Aqaid ya Masail)", "error"), null;
+    // The link name is created automatically; Urdu/Hindi titles get a random one.
+    let slug = isSlug(f.slug) ? f.slug : slugify(f.slug || f.title);
+    if (!isSlug(slug)) slug = "article-" + Math.random().toString(36).slice(2, 8);
+    if (slug !== f.slug) setF((s) => ({ ...s, slug }));
     const body = {
-      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), slug: f.slug, language: f.language, blocks,
+      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), slug, language: f.language, blocks,
       references: referenceIdsOf(blocks), section: f.section || null, excerpt: f.excerpt.trim() || null,
       seoTitle: f.seoTitle.trim() || null, seoDescription: f.seoDescription.trim() || null, coverKey: f.coverKey || null,
     };
@@ -62,8 +70,14 @@ export default function ArticleEditor() {
       if (isNew) nav(`/admin/articles/${a.id}`, { replace: true });
       else { setF(pick(a)); loaded.reload(); }
       return a;
-    } catch (e) { toast(e.message, "error"); return null; }
+    } catch (e) { if (/slug/i.test(e.message)) setEditSlug(true); toast(e.message, "error"); return null; }
     finally { setBusy(false); }
+  }
+
+  async function openPreview() {
+    setPreview({ refs: [] });
+    const refs = (await Promise.all(referenceIdsOf(blocks).map((r) => adminApi.references.get(r).catch(() => null)))).filter(Boolean);
+    setPreview({ refs });
   }
 
   async function transition(name) {
@@ -84,7 +98,7 @@ export default function ArticleEditor() {
       <div className="sticky top-0 z-30 -mx-4 mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-ad-rule bg-ad-bg/95 px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex items-center gap-3"><Link to="/admin/articles" className="text-sm text-ad-mute hover:text-ad-ink">← Articles</Link>{!isNew && <StatusBadge status={live} />}{dirty && <span className="text-xs text-ad-warn">Unsaved changes</span>}</div>
         <div className="flex flex-wrap gap-2">
-          {!isNew && <button className="a-btn" onClick={() => window.open(`/admin/preview/${id}`, "_blank")}>Preview</button>}
+          <button className="a-btn inline-flex items-center gap-1.5" onClick={openPreview} title="Ab tak jitna likha hai uska preview"><Icon name="eye" size={16} />Preview</button>
           <button className="a-btn" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save draft"}</button>
           {live === "published" ? <button className="a-btn" onClick={() => transition("unpublish")}>Unpublish</button> : <button className="a-btn-primary" onClick={() => transition("publish")} disabled={busy}>Publish</button>}
           {!isNew && live !== "archived" && <button className="a-btn-danger" onClick={archive}>Archive</button>}
@@ -100,25 +114,35 @@ export default function ArticleEditor() {
         <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <div className="a-card space-y-3 p-4">
             <h2 className="text-sm font-semibold">Settings</h2>
-            <Field label="Slug *" hint="Used in the URL: /article/slug (must be unique)"><input className="a-input" value={f.slug} onChange={(e) => { setSlugTouched(true); set("slug")(e); }} /></Field>
-            <Field label="Language"><select className="a-input" value={f.language} onChange={set("language")}><option value="ur">Urdu</option><option value="en">Roman (Hinglish)</option><option value="hi">Hindi</option><option value="ar">Arabic</option></select></Field>
-            <Field label="Category *"><select className="a-input" value={f.categoryId} onChange={(e) => setF((s) => ({ ...s, categoryId: e.target.value, topicId: "" }))}>{(cats.data || []).map((c) => <option key={c.id} value={c.id}>{c.name} ({c.type === "aqeedah" ? "Aqaid" : "Masail"})</option>)}</select></Field>
-            <Field label="Topic"><select className="a-input" value={f.topicId} onChange={set("topicId")}><option value="">— none —</option>{(topics.data || []).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select></Field>
-            <Field label="Topic section" hint="Where it appears on the topic page"><select className="a-input" value={f.section} onChange={set("section")}><option value="">General (More articles)</option><option value="dalail">Hamare Dalail</option><option value="radd">Dalail Ka Jaiza / Radd</option></select></Field>
+            <Field label="Language" hint="Article kis zabaan mein likha hai."><select className="a-input" value={f.language} onChange={set("language")}><option value="ur">Urdu</option><option value="en">Roman (Hinglish)</option><option value="hi">Hindi</option><option value="ar">Arabic</option></select></Field>
+            <Field label="Category *" hint="Aqaid = Islami aqeede (Tauheed, Risalat...). Masail = fiqh ke masail (Namaz, Roza...)."><select className="a-input" value={f.categoryId} onChange={(e) => setF((s) => ({ ...s, categoryId: e.target.value, topicId: "", section: "" }))}>{(cats.data || []).map((c) => <option key={c.id} value={c.id}>{c.name} — {c.type === "aqeedah" ? "Aqaid section mein dikhega" : "Masail section mein dikhega"}</option>)}</select></Field>
+            <Field label="Topic (zaroori nahi)" hint="Category ke andar ka mazmoon, jaise Tauheed. Chunne par article us topic ke page par dikhega."><select className="a-input" value={f.topicId} onChange={(e) => setF((s) => ({ ...s, topicId: e.target.value, section: e.target.value ? s.section : "" }))}><option value="">— Koi topic nahi (sirf category mein dikhega) —</option>{(topics.data || []).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select></Field>
+            <Field label="Topic section" hint={f.topicId ? "Topic page par article kis hisse mein dikhega." : "Pehle topic chuniye, tab ye chunna hoga."}><select className="a-input disabled:opacity-50" value={f.section} onChange={set("section")} disabled={!f.topicId}><option value="">General — "Mazeed Mazameen" mein dikhega</option><option value="dalail">Hamare Dalail — apni daleel ke articles</option><option value="radd">Dalail Ka Jaiza / Radd — doosron ki daleel ka jawab</option></select></Field>
+            <div>
+              <span className="a-label">Article ka link</span>
+              <p className="break-all text-xs text-ad-ink" dir="ltr">/article/{f.slug || "(save karte waqt apne aap ban jayega)"}</p>
+              <p className="mt-1 text-xs text-ad-mute">Ye link apne aap ban jata hai, badalne ki zaroorat nahi. <button type="button" className="text-ad-brand hover:underline" onClick={() => setEditSlug((v) => !v)}>{editSlug ? "Band karein" : "Badlein"}</button></p>
+              {editSlug && <input className="a-input mt-2" dir="ltr" placeholder="chhote-english-letters-aur-hyphen" value={f.slug} onChange={(e) => { setSlugTouched(true); set("slug")(e); }} />}
+            </div>
           </div>
           <div className="a-card space-y-3 p-4">
             <h2 className="text-sm font-semibold">Excerpt & cover</h2>
             <Field label="Excerpt"><textarea className="a-input min-h-20" dir="auto" value={f.excerpt} onChange={set("excerpt")} /></Field>
             <div><span className="a-label">Cover image</span><MediaUploader value={f.coverKey} onChange={(coverKey) => setF((s) => ({ ...s, coverKey }))} label="Upload cover" /></div>
           </div>
-          <div className="a-card space-y-3 p-4">
-            <h2 className="text-sm font-semibold">SEO</h2>
-            <Field label="SEO title" hint={`${f.seoTitle.length}/60`}><input className="a-input" dir="auto" value={f.seoTitle} onChange={set("seoTitle")} /></Field>
-            <Field label="Meta description" hint={`${f.seoDescription.length}/160`}><textarea className="a-input min-h-20" dir="auto" value={f.seoDescription} onChange={set("seoDescription")} /></Field>
-          </div>
         </aside>
       </div>
       {dialog}
+      {preview && createPortal(
+        <div className="fixed inset-0 z-[70] overflow-y-auto bg-paper font-sans text-ink">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-rule bg-card/95 px-4 py-2.5 backdrop-blur">
+            <span className="text-sm font-medium">Preview — abhi tak ka likha hua (save nahi hua)</span>
+            <button className="rounded-lg border border-rule px-3 py-1 text-sm hover:border-accent/60" onClick={() => setPreview(null)}>✕ Band karein</button>
+          </div>
+          <ArticleView article={{ ...f, title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs} />
+        </div>,
+        document.body
+      )}
     </>
   );
 }
