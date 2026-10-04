@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { BRAND } from "../../config/env.js";
 import { FEATURED_FALLBACK } from "../../config/featured.js";
 import { useI18n } from "../../i18n/index.jsx";
 import { publicApi } from "../../services/public.js";
@@ -12,7 +11,7 @@ import { ArticleCard, SectionCard } from "../../components/public/Cards.jsx";
 
 function QuoteCard({ label, item, lang }) {
   return (
-    <figure className="flex flex-col rounded-2xl border border-rule bg-card p-7 sm:p-9">
+    <figure className="flex flex-col rounded-2xl border border-rule bg-card p-6 sm:p-9">
       <figcaption className="eyebrow">{label}</figcaption>
       <Text as="blockquote" force="arabic" className="mt-5 text-[1.65rem] leading-[2.2] sm:text-[1.9rem]">{item.text}</Text>
       {item.translation && <Text as="p" className="mt-4 text-sm text-mute">{item.translation[lang] || item.translation.roman}</Text>}
@@ -44,30 +43,29 @@ export default function Home() {
     [contentLang]
   );
 
+  const [heroA, heroB] = t.hero.title.split(", ");
   const cats = data?.categories || [];
   const catById = Object.fromEntries(cats.map((c) => [c.id, c]));
   const descOf = (type, fallback) => cats.find((c) => c.type === type)?.description || fallback;
 
   return (
     <>
-      <section className="relative overflow-hidden border-b border-rule">
-        <svg aria-hidden="true" viewBox="0 0 400 300" className="pointer-events-none absolute -bottom-10 end-[-60px] hidden w-[520px] text-gold/20 lg:block" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M40 300V190C40 110 110 50 200 50s160 60 160 140v110" /><path d="M200 50V20" /><path d="M80 300V200C80 135 130 90 200 90s120 45 120 110v100" />
-        </svg>
-        <div className="container-page relative py-16 text-center sm:py-24">
-          <Text as="p" force="arabic" className="animate-fade-up text-3xl text-gold sm:text-4xl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
-          <p className="eyebrow mt-8 animate-fade-up [animation-delay:80ms]">{BRAND.tagline}</p>
-          <h1 className="mx-auto mt-5 max-w-3xl animate-fade-up font-display text-4xl font-semibold leading-[1.15] [animation-delay:140ms] sm:text-6xl">{t.hero.title}</h1>
-          <p className="mx-auto mt-6 max-w-2xl animate-fade-up text-base text-mute [animation-delay:200ms] sm:text-lg">{t.hero.desc}</p>
-          <div className="mt-9 flex animate-fade-up flex-wrap justify-center gap-3 [animation-delay:260ms]">
+      <section className="border-b border-rule">
+        <div className="container-page py-16 text-center sm:py-24">
+          <h1 className="mx-auto max-w-3xl animate-fade-up text-4xl font-bold leading-[1.12] tracking-tight sm:text-6xl">
+            {heroA}{heroB && <>, <span className="text-gold">{heroB}</span></>}
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl animate-fade-up text-base text-mute [animation-delay:100ms] sm:text-lg">{t.hero.desc}</p>
+          <div className="mt-9 flex animate-fade-up flex-wrap justify-center gap-3 [animation-delay:180ms]">
             <Link to="/aqaid" className="btn-primary">{t.hero.cta1}<Icon name="arrow" size={16} className="rtl:rotate-180" /></Link>
             <Link to="/masail" className="btn-outline">{t.hero.cta2}</Link>
           </div>
         </div>
       </section>
 
-      <section className="container-page py-16 sm:py-20">
-        <div className="grid gap-6 md:grid-cols-2">
+      <section className="container-page py-14 sm:py-20">
+        <Text as="p" force="arabic" className="mb-8 text-center text-3xl text-gold sm:text-4xl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
+        <div className="grid gap-5 md:grid-cols-2">
           <QuoteCard label={t.home.ayat} item={pickFeatured(data?.articles, "ayat")} lang={lang} />
           <QuoteCard label={t.home.hadith} item={pickFeatured(data?.articles, "hadith")} lang={lang} />
         </div>
@@ -75,15 +73,15 @@ export default function Home() {
 
       <section className="container-page pb-4">
         <SectionHeading eyebrow={t.home.sections} title={`${t.nav.aqaid} & ${t.nav.masail}`} />
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
-          <SectionCard to="/aqaid" index="01" title={t.nav.aqaid} desc={descOf("aqeedah", t.home.aqaidDesc)} />
-          <SectionCard to="/masail" index="02" title={t.nav.masail} desc={descOf("masail", t.home.masailDesc)} />
+        <div className="mt-8 grid gap-5 md:grid-cols-2">
+          <SectionCard to="/aqaid" title={t.nav.aqaid} desc={descOf("aqeedah", t.home.aqaidDesc)} />
+          <SectionCard to="/masail" title={t.nav.masail} desc={descOf("masail", t.home.masailDesc)} />
         </div>
       </section>
 
       <section className="container-page py-16 sm:py-20">
         <SectionHeading title={t.home.latest} />
-        <div className="mt-10">
+        <div className="mt-8">
           {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : data.articles.length === 0 ? (
             <EmptyState>{t.home.noPosts}</EmptyState>
           ) : (

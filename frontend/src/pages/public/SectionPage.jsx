@@ -19,8 +19,7 @@ export default function SectionPage({ section }) {
   return (
     <div className="container-page py-12 sm:py-16">
       <p className="eyebrow">{t.home.sections}</p>
-      <h1 className="mt-2 font-display text-4xl font-semibold sm:text-5xl">{title}</h1>
-      <div className="rule-gold mt-5" />
+      <h1 className="mt-1 text-4xl font-bold tracking-tight sm:text-5xl">{title}</h1>
       {!multi && data?.[0]?.description && <Text as="p" className="mt-5 max-w-2xl text-mute">{data[0].description}</Text>}
 
       <div className="mt-12 space-y-14">
@@ -31,7 +30,7 @@ export default function SectionPage({ section }) {
             <section key={c.id}>
               {multi && (
                 <div className="mb-6">
-                  <Text as="h2" className="font-display text-2xl font-semibold">{c.name}</Text>
+                  <Text as="h2" className="font-display text-2xl font-bold">{c.name}</Text>
                   {c.description && <Text as="p" className="mt-1 text-sm text-mute">{c.description}</Text>}
                 </div>
               )}

@@ -7,14 +7,13 @@ import { mediaUrl } from "../../lib/media.js";
 import { Text } from "../../components/ui/Text.jsx";
 import { CardSkeletons, EmptyState, ErrorState, NotFoundState } from "../../components/ui/feedback.jsx";
 import { ArticleCard } from "../../components/public/Cards.jsx";
-import { LogoMark } from "../../components/brand/Logo.jsx";
 
 function Group({ title, items, category, empty }) {
   const { t } = useI18n();
   return (
     <section className="mt-14">
       <div className="mb-6 flex items-end justify-between gap-4 border-b border-rule pb-3">
-        <h2 className="font-display text-2xl font-semibold sm:text-3xl">{title}</h2>
+        <h2 className="font-display text-2xl font-bold sm:text-3xl">{title}</h2>
         <span className="text-sm text-mute">{items.length}</span>
       </div>
       {items.length === 0 ? <EmptyState>{empty || t.topic.noItems}</EmptyState> : (
@@ -59,15 +58,11 @@ export default function TopicPage({ section }) {
           <Link to={`/${section}`} className="hover:text-bronze">{sectionLabel}</Link><span aria-hidden="true">/</span>
           <span>{data.category.name}</span>
         </nav>
-        <div className="overflow-hidden rounded-2xl border border-rule bg-rule/30">
-          {cover ? <img src={cover} alt="" className="aspect-[21/9] w-full object-cover" /> : (
-            <div className="grid aspect-[21/9] place-items-center text-mute/40"><LogoMark size={84} /></div>
-          )}
-        </div>
-        <Text as="h1" className="mt-8 font-display text-3xl font-semibold leading-tight sm:text-5xl">{topic.title}</Text>
+        {cover && <div className="overflow-hidden rounded-2xl border border-rule"><img src={cover} alt="" className="aspect-[21/9] w-full object-cover" /></div>}
+        <Text as="h1" className={`${cover ? "mt-8" : "mt-2"} font-display text-3xl font-bold leading-tight sm:text-5xl`}>{topic.title}</Text>
 
         {topic.intro && (
-          <div className="mt-8 rounded-xl border border-rule border-s-4 border-s-gold bg-card p-6 sm:p-8">
+          <div className="mt-8 rounded-2xl border border-rule border-s-4 border-s-gold bg-card p-6 sm:p-8">
             <p className="eyebrow">{t.topic.intro}</p>
             <div className="reading mt-3">
               {topic.intro.split(/\n{2,}/).map((p, i) => <Text key={i} as="p" className="whitespace-pre-line">{p}</Text>)}

@@ -47,9 +47,8 @@ export function SectionHeading({ eyebrow, title, desc, className = "" }) {
   return (
     <div className={className}>
       {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-      <h2 className="mt-2 font-display text-3xl font-semibold leading-tight sm:text-4xl">{title}</h2>
-      <div className="rule-gold mt-4" />
-      {desc && <p className="mt-4 max-w-2xl text-mute">{desc}</p>}
+      <h2 className="mt-1 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{title}</h2>
+      {desc && <p className="mt-3 max-w-2xl text-mute">{desc}</p>}
     </div>
   );
 }

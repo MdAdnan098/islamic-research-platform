@@ -5,13 +5,13 @@
 @layer base {
   :root {
     /* Public palette — warm ivory, charcoal, antique gold */
-    --paper: 250 247 240; --card: 255 253 248; --ink: 26 26 28; --mute: 107 101 91;
-    --rule: 230 223 208; --gold: 176 141 69; --bronze: 122 93 40; --navy: 31 51 80;
+    --paper: 252 251 248; --card: 255 255 255; --ink: 24 24 27; --mute: 113 113 122;
+    --rule: 234 231 224; --gold: 176 141 69; --bronze: 122 93 40; --navy: 31 51 80;
     /* Admin palette — cool neutral, separate system */
     --ad-bg: 244 245 247; --ad-card: 255 255 255; --ad-ink: 24 29 38; --ad-mute: 98 108 122;
     --ad-rule: 224 228 234; --ad-brand: 31 51 80; --ad-danger: 192 57 43; --ad-ok: 29 130 87; --ad-warn: 176 112 16;
     --font-body: "Inter", system-ui, sans-serif;
-    --font-display: "Fraunces", Georgia, serif;
+    --font-display: "Inter", system-ui, sans-serif;
     color-scheme: light;
   }
   .dark {
@@ -35,14 +35,13 @@
 @layer components {
   .container-page { @apply mx-auto w-full max-w-6xl px-5 sm:px-8; }
   .container-read { @apply mx-auto w-full max-w-3xl px-5 sm:px-6; }
-  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.18em] text-bronze; }
-  [dir="rtl"] .eyebrow { letter-spacing: 0; }
+  .eyebrow { @apply text-sm font-medium text-bronze; }
   .rule-gold { @apply h-px w-12 bg-gold; }
 
   /* Public buttons */
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors duration-200 disabled:opacity-50; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-colors duration-200 disabled:opacity-50; }
   .btn-primary { @apply btn bg-ink text-paper hover:bg-ink/85; }
-  .btn-outline { @apply btn border border-rule text-ink hover:border-gold hover:text-bronze; }
+  .btn-outline { @apply btn border border-rule bg-card text-ink hover:border-gold; }
   .btn-ghost { @apply btn text-mute hover:text-ink; }
 
   /* Script-aware typography (applied automatically via <Text/>) */
@@ -50,10 +49,11 @@
   .script-urdu { font-family: "Noto Nastaliq Urdu", serif !important; line-height: 2.3 !important; }
   .script-deva { font-family: "Noto Sans Devanagari", sans-serif !important; line-height: 1.9 !important; }
   .script-latin { font-family: "Inter", system-ui, sans-serif; line-height: 1.8; }
+  .script-latin.font-display { letter-spacing: -0.02em; line-height: 1.25; }
 
   .reading { font-size: 1.0625rem; }
   .reading p + p { margin-top: 1.1em; }
-  .card-lift { @apply transition duration-300 hover:-translate-y-0.5 hover:border-gold/60 hover:shadow-soft; }
+  .card-lift { @apply transition duration-200 hover:border-gold/70 hover:shadow-soft; }
 
   /* ---------- Admin system ---------- */
   .a-input { @apply w-full rounded-md border border-ad-rule bg-ad-card px-3 py-2 text-sm text-ad-ink placeholder:text-ad-mute/70 focus:border-ad-brand focus:outline-none focus:ring-2 focus:ring-ad-brand/20 disabled:opacity-60; }

@@ -4,7 +4,6 @@ import { formatDate, readMinutes } from "../../lib/format.js";
 import { mediaUrl } from "../../lib/media.js";
 import { Text } from "../ui/Text.jsx";
 import { Icon } from "../ui/icons.jsx";
-import { LogoMark } from "../brand/Logo.jsx";
 
 function snippet(article) {
   if (article.excerpt) return article.excerpt;
@@ -18,11 +17,11 @@ export function ArticleCard({ article, category }) {
   const sectionLabel = category ? (category.type === "aqeedah" ? t.nav.aqaid : t.nav.masail) : null;
   const text = snippet(article);
   return (
-    <Link to={`/article/${article.slug}`} className="card-lift group flex h-full flex-col rounded-xl border border-rule bg-card p-6">
+    <Link to={`/article/${article.slug}`} className="card-lift group flex h-full flex-col rounded-2xl border border-rule bg-card p-6">
       <div className="flex items-center justify-between gap-3 text-xs text-mute">
-        <span className="eyebrow">{sectionLabel || "\u00A0"}</span>
+        <span className="eyebrow !text-xs">{sectionLabel || "\u00A0"}</span>
       </div>
-      <Text as="h3" className="mt-3 font-display text-xl font-semibold leading-snug">{article.title}</Text>
+      <Text as="h3" className="mt-3 font-display text-lg font-semibold leading-snug sm:text-xl">{article.title}</Text>
       {text && <Text as="p" className="mt-3 line-clamp-3 text-sm text-mute">{text}</Text>}
       <div className="mt-auto flex items-center justify-between pt-5 text-xs text-mute">
         <span>{formatDate(article.publishedAt || article.createdAt)} · {readMinutes(article.blocks)} {t.article.minRead}</span>
@@ -35,12 +34,12 @@ export function ArticleCard({ article, category }) {
 export function TopicCard({ topic, to }) {
   const cover = mediaUrl(topic.coverKey);
   return (
-    <Link to={to} className="card-lift group flex h-full flex-col overflow-hidden rounded-xl border border-rule bg-card">
+    <Link to={to} className="card-lift group flex h-full flex-col overflow-hidden rounded-2xl border border-rule bg-card">
       <div className="aspect-[16/9] w-full bg-rule/40">
         {cover ? (
           <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
         ) : (
-          <div className="grid h-full place-items-center text-mute/50"><LogoMark size={52} /></div>
+          <div className="h-full w-full bg-gold/10" />
         )}
       </div>
       <div className="flex flex-1 flex-col p-5">
@@ -52,14 +51,12 @@ export function TopicCard({ topic, to }) {
   );
 }
 
-export function SectionCard({ to, index, title, desc }) {
+export function SectionCard({ to, title, desc }) {
   return (
-    <Link to={to} className="card-lift group relative flex flex-col overflow-hidden rounded-2xl border border-rule bg-card p-8 sm:p-10">
-      <span className="font-display text-6xl font-semibold text-gold/40" aria-hidden="true">{index}</span>
-      <h3 className="mt-6 font-display text-3xl font-semibold">{title}</h3>
-      <div className="rule-gold mt-4" />
-      <p className="mt-4 max-w-sm text-mute">{desc}</p>
-      <span className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-bronze">
+    <Link to={to} className="card-lift group flex flex-col rounded-2xl border border-rule bg-card p-7 sm:p-8">
+      <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h3>
+      <p className="mt-3 max-w-sm text-mute">{desc}</p>
+      <span className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-bronze">
         {title} <Icon name="arrow" size={16} className="transition-transform group-hover:translate-x-1 rtl:rotate-180" />
       </span>
     </Link>
