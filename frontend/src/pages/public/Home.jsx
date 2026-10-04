@@ -10,26 +10,17 @@ import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../../com
 import { ArticleCard, SectionCard } from "../../components/public/Cards.jsx";
 
 const TONES = {
-  indigo: {
-    vars: { "--lb1": "#6366f1", "--lb2": "#a855f7", "--lb3": "#22d3ee" },
-    pill: "bg-indigo-100 text-indigo-700 dark:bg-indigo-400/15 dark:text-indigo-300",
-  },
-  emerald: {
-    vars: { "--lb1": "#10b981", "--lb2": "#14b8a6", "--lb3": "#a3e635" },
-    pill: "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300",
-  },
+  indigo: "bg-indigo-100 text-indigo-700 dark:bg-indigo-400/15 dark:text-indigo-300",
+  emerald: "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300",
 };
 
 function QuoteCard({ label, item, tone, first }) {
-  const c = TONES[tone];
   return (
-    <figure className={`live-border ${first ? "" : "lg:w-0 lg:min-w-full"}`} style={c.vars}>
-      <div className="flex h-full flex-col items-center rounded-[calc(1rem-1.5px)] bg-card px-6 py-9 text-center sm:px-10 sm:py-11 lg:px-[19px]">
-        <figcaption className={`rounded-full px-4 py-1 text-xs font-semibold ${c.pill}`}>{label}</figcaption>
-        <Text as="blockquote" force="arabic" className="mt-7 text-[1.65rem] leading-[2.2] sm:text-[2.1rem] lg:whitespace-nowrap lg:text-[2.4rem]">{item.text}</Text>
-        <Text as="p" className="mt-4 max-w-3xl text-base text-mute sm:text-lg">{item.translation}</Text>
-        <Text as="p" className="mt-6 border-t border-rule pt-4 text-sm text-bronze">{item.source}</Text>
-      </div>
+    <figure className={`flex flex-col items-center rounded-2xl border border-white bg-white/80 px-6 py-9 text-center shadow-soft backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-white/10 dark:bg-white/[0.04] sm:px-10 sm:py-11 lg:px-[19px] ${first ? "" : "lg:w-0 lg:min-w-full"}`}>
+      <figcaption className={`rounded-full px-4 py-1 text-xs font-semibold ${TONES[tone]}`}>{label}</figcaption>
+      <Text as="blockquote" force="arabic" className="mt-7 text-[1.65rem] leading-[2.2] sm:text-[2.1rem] lg:whitespace-nowrap lg:text-[2.4rem]">{item.text}</Text>
+      <Text as="p" className="mt-4 max-w-3xl text-base text-mute sm:text-lg">{item.translation}</Text>
+      <Text as="p" className="mt-6 rounded-full border border-rule bg-card px-4 py-1.5 text-sm text-bronze">{item.source}</Text>
     </figure>
   );
 }
@@ -68,15 +59,17 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="container-page py-14 sm:py-20">
+      <section className="border-b border-accent/10 bg-accent/[0.05]">
+       <div className="container-page py-14 sm:py-20">
         <Text as="p" force="arabic" className="mb-8 text-center text-3xl text-gold sm:text-4xl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
-        <div className="mx-auto grid max-w-5xl gap-6 lg:w-fit lg:max-w-full">
+        <div className="mx-auto grid max-w-5xl gap-5 lg:w-fit lg:max-w-full">
           <QuoteCard label={t.home.ayat} item={FEATURED.ayat} tone="indigo" first />
           <QuoteCard label={t.home.hadith} item={FEATURED.hadith} tone="emerald" />
         </div>
+      </div>
       </section>
 
-      <section className="container-page pb-4">
+      <section className="container-page pb-4 pt-14 sm:pt-20">
         <SectionHeading eyebrow={t.home.sections} title={`${t.nav.aqaid} & ${t.nav.masail}`} />
         <div className="mt-8 grid gap-5 md:grid-cols-2">
           <SectionCard to="/aqaid" title={t.nav.aqaid} desc={descOf("aqeedah", t.home.aqaidDesc)} />
