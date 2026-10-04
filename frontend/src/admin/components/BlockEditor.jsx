@@ -6,7 +6,6 @@ import { Icon } from "../../components/ui/icons.jsx";
 import { Field, IconBtn, Modal, moveItem } from "./ui.jsx";
 import { MediaUploader } from "./MediaUploader.jsx";
 import { ReferenceForm } from "./ReferenceForm.jsx";
-import { targetLangs, isConvertible } from "../../lib/versions.js";
 
 const T = ({ value, onChange, rows = 5, ...p }) => (
   <textarea className="a-input" dir="auto" rows={rows} value={value || ""} onChange={(e) => onChange(e.target.value)} {...p} />
@@ -106,29 +105,6 @@ function Fields({ block, set }) {
   }
 }
 
-/** Under a text block: optional Hindi / Urdu / Roman versions of the same text. */
-function VersionBoxes({ block, set, baseLang }) {
-  const [open, setOpen] = useState({});
-  const langs = targetLangs(baseLang);
-  const put = (code, v) => set({ tr: { ...(block.tr || {}), [code]: v } });
-  return (
-    <div className="mt-3 space-y-3 border-t border-ad-rule pt-3">
-      <div className="flex flex-wrap gap-2">
-        {langs.map(([code, label]) => (
-          <button key={code} type="button" className="a-btn !py-1 text-xs" onClick={() => setOpen((o) => ({ ...o, [code]: !o[code] }))}>
-            {block.tr?.[code]?.trim() ? "✓ " : "+ "}{label} version
-          </button>
-        ))}
-      </div>
-      {langs.map(([code, label]) => open[code] && (
-        <Field key={code} label={`${label} version`}>
-          {block.type === "heading" ? <I value={block.tr?.[code]} onChange={(v) => put(code, v)} /> : <T rows={block.type === "text" ? 6 : 3} value={block.tr?.[code]} onChange={(v) => put(code, v)} />}
-        </Field>
-      ))}
-    </div>
-  );
-}
-
 function AddMenu({ onAdd, label = "Add block" }) {
   const [open, setOpen] = useState(false);
   return (
@@ -150,7 +126,7 @@ function AddMenu({ onAdd, label = "Add block" }) {
   );
 }
 
-export function BlockEditor({ blocks, onChange, baseLang = "ur" }) {
+export function BlockEditor({ blocks, onChange }) {
   const patch = (i, p) => onChange(blocks.map((b, j) => (j === i ? { ...b, ...p } : b)));
   const insert = (at, type) => onChange([...blocks.slice(0, at), newBlock(type), ...blocks.slice(at)]);
 
@@ -167,7 +143,7 @@ export function BlockEditor({ blocks, onChange, baseLang = "ur" }) {
               <IconBtn icon="trash" label="Delete block" danger onClick={() => onChange(blocks.filter((_, j) => j !== i))} />
             </div>
           </header>
-          <div className="p-3.5"><Fields block={b} set={(p) => patch(i, p)} />{(isConvertible(b) || (["heading", "text"].includes(b.type))) && <VersionBoxes block={b} set={(p) => patch(i, p)} baseLang={baseLang} />}</div>
+          <div className="p-3.5"><Fields block={b} set={(p) => patch(i, p)} /></div>
           <footer className="border-t border-ad-rule px-3 py-1.5"><AddMenu label="Insert below" onAdd={(t) => insert(i + 1, t)} /></footer>
         </section>
       ))}

@@ -14,6 +14,19 @@ export const pickVersion = (base, tr, baseLang, want) => (want === baseLang ? ba
 export const isConvertible = (b) =>
   (b.type === "heading" || b.type === "text" || (b.type === "quote" && !["ayat", "hadith"].includes(b.kind))) && String(b.text || "").trim().length > 0;
 
+/** Which script the admin wrote the post in (Latin -> "en", Devanagari -> "hi", Arabic script -> "ur"). */
+export function detectLang(title, blocks) {
+  const sample = [title, ...blocks.filter(isConvertible).map((b) => b.text)].join(" ");
+  let ar = 0, de = 0, la = 0;
+  for (const ch of sample) {
+    if (/[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(ch)) ar++;
+    else if (/[\u0900-\u097F]/.test(ch)) de++;
+    else if (/[A-Za-z]/.test(ch)) la++;
+  }
+  if (!ar && !de && !la) return "en";
+  return ar >= de && ar >= la ? "ur" : de > la ? "hi" : "en";
+}
+
 /** Numbered text for the admin to give to ChatGPT etc. [0] = title, [n] = block n. */
 export function buildCopyText(lang, title, blocks) {
   const parts = [

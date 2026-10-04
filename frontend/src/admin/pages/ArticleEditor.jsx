@@ -10,7 +10,7 @@ import { MediaUploader } from "../components/MediaUploader.jsx";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
 import { VersionsPanel } from "../components/VersionsPanel.jsx";
-import { targetLangs } from "../../lib/versions.js";
+import { detectLang } from "../../lib/versions.js";
 import { ErrorBox, Field, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 
 const BLANK = { titleTr: {}, title: "", slug: "", language: "ur", categoryId: "", topicId: "", section: "", excerpt: "", seoTitle: "", seoDescription: "", coverKey: "", status: "draft" };
@@ -26,6 +26,7 @@ export default function ArticleEditor() {
   const [blocks, setBlocks] = useState(() => [newBlock("text")]);
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(null);
+  const lang = detectLang(f.title, blocks); // the script the admin wrote in
   const saved = useRef("");
 
   const cats = useAsync((s) => adminApi.categories.list({ status: "active" }, s), []);
@@ -67,7 +68,7 @@ export default function ArticleEditor() {
     if (!isSlug(slug)) slug = "article-" + Math.random().toString(36).slice(2, 8);
     if (slug !== f.slug) setF((s) => ({ ...s, slug }));
     const body = {
-      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), titleTr: Object.fromEntries(Object.entries(f.titleTr || {}).filter(([, v]) => v && v.trim())), slug, language: f.language, blocks,
+      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), titleTr: Object.fromEntries(Object.entries(f.titleTr || {}).filter(([, v]) => v && v.trim())), slug, language: lang, blocks,
       references: referenceIdsOf(blocks), section: f.section || null, excerpt: f.excerpt.trim() || null,
       seoTitle: f.seoTitle.trim() || null, seoDescription: f.seoDescription.trim() || null, coverKey: f.coverKey || null,
     };
@@ -124,21 +125,13 @@ export default function ArticleEditor() {
       <div className="grid gap-6 xl:grid-cols-[1fr_330px]">
         <div className="min-w-0 space-y-6">
           <input className="a-input !py-3 !text-xl !font-semibold" dir="auto" placeholder="Article title" value={f.title} onChange={(e) => setF((s) => ({ ...s, title: e.target.value, slug: isNew ? slugify(e.target.value) : s.slug }))} />
-          {targetLangs(f.language).some(([c]) => true) && (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {targetLangs(f.language).map(([c, label]) => (
-                <input key={c} className="a-input" dir="auto" placeholder={`Title — ${label} version (optional)`} value={f.titleTr?.[c] || ""} onChange={(e) => setF((s) => ({ ...s, titleTr: { ...(s.titleTr || {}), [c]: e.target.value } }))} />
-              ))}
-            </div>
-          )}
-          <VersionsPanel baseLang={f.language} title={f.title} titleTr={f.titleTr} setTitleTr={(titleTr) => setF((s) => ({ ...s, titleTr }))} blocks={blocks} setBlocks={setBlocks} toast={toast} />
-          <BlockEditor blocks={blocks} onChange={setBlocks} baseLang={f.language} />
+          <BlockEditor blocks={blocks} onChange={setBlocks} />
+          <VersionsPanel baseLang={lang} title={f.title} titleTr={f.titleTr} setTitleTr={(titleTr) => setF((s) => ({ ...s, titleTr }))} blocks={blocks} setBlocks={setBlocks} toast={toast} />
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <div className="a-card space-y-3 p-4">
             <h2 className="text-sm font-semibold">Settings</h2>
-            <Field label="Language"><select className="a-input" value={f.language} onChange={set("language")}><option value="ur">Urdu</option><option value="en">Roman (Hinglish)</option><option value="hi">Hindi</option><option value="ar">Arabic</option></select></Field>
             <Field label="Category *"><select className="a-input" value={f.categoryId} onChange={(e) => setF((s) => ({ ...s, categoryId: e.target.value, topicId: "", section: "" }))}>
               {[["aqeedah", "Aqaid"], ["masail", "Masail"]].map(([type, label]) => {
                 const items = (cats.data || []).filter((c) => c.type === type);
@@ -161,7 +154,7 @@ export default function ArticleEditor() {
             <span className="text-sm font-medium">Preview — abhi tak ka likha hua (save nahi hua)</span>
             <button className="rounded-lg border border-rule px-3 py-1 text-sm hover:border-accent/60" onClick={() => setPreview(null)}>✕ Band karein</button>
           </div>
-          <ArticleView article={{ ...f, title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs} />
+          <ArticleView article={{ ...f, language: lang, title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs} />
         </div>,
         document.body
       )}
