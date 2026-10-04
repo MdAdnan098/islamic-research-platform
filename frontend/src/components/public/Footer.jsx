@@ -2,7 +2,32 @@ import { Link } from "react-router-dom";
 import { BRAND, SOCIAL } from "../../config/env.js";
 import { useI18n } from "../../i18n/index.jsx";
 import { Logo } from "../brand/Logo.jsx";
-import { Icon } from "../ui/icons.jsx";
+
+const YouTube = () => (
+  <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
+    <rect x="1" y="4.5" width="22" height="15" rx="4.5" fill="#FF0000" /><path d="M10 9l5.5 3-5.5 3z" fill="#fff" />
+  </svg>
+);
+const Instagram = () => (
+  <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
+    <defs><linearGradient id="ig-g" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stopColor="#FEDA75" /><stop offset=".3" stopColor="#FA7E1E" /><stop offset=".55" stopColor="#D62976" /><stop offset=".8" stopColor="#962FBF" /><stop offset="1" stopColor="#4F5BD5" /></linearGradient></defs>
+    <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#ig-g)" />
+    <rect x="6.3" y="6.3" width="11.4" height="11.4" rx="3.6" fill="none" stroke="#fff" strokeWidth="1.6" />
+    <circle cx="12" cy="12" r="2.8" fill="none" stroke="#fff" strokeWidth="1.6" /><circle cx="15.8" cy="8.2" r="1" fill="#fff" />
+  </svg>
+);
+const WhatsApp = () => (
+  <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">
+    <rect x="2" y="2" width="20" height="20" rx="6" fill="#25D366" />
+    <path d="M12 5.6a6.4 6.4 0 0 0-5.5 9.7L5.6 18.4l3.2-.9A6.4 6.4 0 1 0 12 5.6z" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
+    <path d="M9.9 9.2c.2-.3.4-.3.6-.3h.4c.1 0 .3.1.4.3l.5 1.2c0 .2 0 .3-.1.4l-.4.5c-.1.1-.1.2 0 .3.5.8 1.1 1.4 2 1.8.1.1.3 0 .4-.1l.5-.6c.1-.1.3-.2.5-.1l1.1.5c.2.1.3.2.2.4-.1.7-.7 1.2-1.4 1.2-2 0-4-2-4.1-4 0-.5.2-1 .4-1.5z" fill="#fff" />
+  </svg>
+);
+const SOCIALS = [
+  { key: "youtube", label: "YouTube", Logo: YouTube },
+  { key: "instagram", label: "Instagram", Logo: Instagram },
+  { key: "whatsapp", label: "WhatsApp", Logo: WhatsApp },
+];
 
 export function Footer() {
   const { t } = useI18n();
@@ -24,10 +49,10 @@ export function Footer() {
         </div>
         <div>
           <p className="text-sm font-semibold">{t.footer.follow}</p>
-          <div className="mt-4 flex gap-3">
-            {[["youtube", "YouTube", SOCIAL.youtube], ["instagram", "Instagram", SOCIAL.instagram]].map(([icon, label, href]) => (
-              <a key={icon} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="grid h-10 w-10 place-items-center rounded-full border border-rule text-mute transition-colors hover:border-accent/60 hover:text-accent">
-                <Icon name={icon} size={18} />
+          <div className="mt-4 flex flex-wrap gap-2.5">
+            {SOCIALS.map(({ key, label, Logo: Brand }) => (
+              <a key={key} href={SOCIAL[key]} target="_blank" rel="noopener noreferrer" aria-label={label} className="flex items-center gap-2 rounded-full border border-rule bg-card py-1.5 pe-4 ps-1.5 text-sm font-medium transition duration-200 hover:-translate-y-0.5 hover:shadow-soft">
+                <Brand /> {label}
               </a>
             ))}
           </div>
