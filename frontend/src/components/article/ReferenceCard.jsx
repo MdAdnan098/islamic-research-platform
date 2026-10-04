@@ -13,7 +13,7 @@ export function ReferenceCard({ reference: r }) {
   const meta = [[t.article.author, r.author], [t.article.volume, r.volume], [t.article.page, r.page]].filter(([, v]) => v);
 
   return (
-    <aside className="my-9 overflow-hidden rounded-xl border border-rule border-s-4 border-s-gold bg-card shadow-soft">
+    <aside className="my-9 overflow-hidden rounded-xl border border-rule border-s-4 border-s-accent bg-card shadow-soft">
       <div className="p-5 sm:p-7">
         <p className="eyebrow flex items-center gap-2"><Icon name="book" size={14} />{t.article.reference}</p>
         <Text as="h4" className="mt-2 font-display text-xl font-semibold leading-snug sm:text-2xl">{r.book}</Text>
@@ -40,7 +40,7 @@ export function ReferenceCard({ reference: r }) {
           isPdfKey(r.mediaKey) ? (
             <a href={scan} target="_blank" rel="noopener noreferrer" className="btn-outline mt-5"><Icon name="file" size={16} />{t.article.openPdf}</a>
           ) : (
-            <button onClick={() => setOpen(true)} className="group mt-5 block w-full overflow-hidden rounded-lg border border-rule text-start transition hover:border-gold sm:w-72" aria-label={t.article.openScan}>
+            <button onClick={() => setOpen(true)} className="group mt-5 block w-full overflow-hidden rounded-lg border border-rule text-start transition hover:border-accent/60 sm:w-72" aria-label={t.article.openScan}>
               <img src={scan} alt={t.article.scan} loading="lazy" decoding="async" className="max-h-48 w-full bg-rule/30 object-cover object-top" />
               <span className="flex items-center justify-between bg-paper px-3 py-2 text-xs font-medium text-bronze">
                 {t.article.openScan}<Icon name="zoomIn" size={15} />

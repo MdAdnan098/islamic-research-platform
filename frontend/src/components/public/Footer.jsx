@@ -26,7 +26,7 @@ export function Footer() {
           <p className="text-sm font-semibold">{t.footer.follow}</p>
           <div className="mt-4 flex gap-3">
             {[["youtube", "YouTube", SOCIAL.youtube], ["instagram", "Instagram", SOCIAL.instagram]].map(([icon, label, href]) => (
-              <a key={icon} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="grid h-10 w-10 place-items-center rounded-full border border-rule text-mute transition-colors hover:border-gold hover:text-bronze">
+              <a key={icon} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="grid h-10 w-10 place-items-center rounded-full border border-rule text-mute transition-colors hover:border-accent/60 hover:text-accent">
                 <Icon name={icon} size={18} />
               </a>
             ))}

@@ -62,7 +62,7 @@ export default function TopicPage({ section }) {
         <Text as="h1" className={`${cover ? "mt-8" : "mt-2"} font-display text-3xl font-bold leading-tight sm:text-5xl`}>{topic.title}</Text>
 
         {topic.intro && (
-          <div className="mt-8 rounded-2xl border border-rule border-s-4 border-s-gold bg-card p-6 sm:p-8">
+          <div className="mt-8 rounded-2xl border border-rule border-s-4 border-s-accent bg-card p-6 sm:p-8">
             <p className="eyebrow">{t.topic.intro}</p>
             <div className="reading mt-3">
               {topic.intro.split(/\n{2,}/).map((p, i) => <Text key={i} as="p" className="whitespace-pre-line">{p}</Text>)}

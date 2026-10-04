@@ -9,7 +9,7 @@ export default {
       colors: {
         // Public "research library" palette
         paper: c("paper"), card: c("card"), ink: c("ink"), mute: c("mute"),
-        rule: c("rule"), gold: c("gold"), bronze: c("bronze"), navy: c("navy"),
+        rule: c("rule"), accent: c("accent"), gold: c("gold"), bronze: c("bronze"), navy: c("navy"),
         // Admin palette (separate visual system)
         "ad-bg": c("ad-bg"), "ad-card": c("ad-card"), "ad-ink": c("ad-ink"),
         "ad-mute": c("ad-mute"), "ad-rule": c("ad-rule"), "ad-brand": c("ad-brand"),

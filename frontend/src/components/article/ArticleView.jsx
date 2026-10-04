@@ -20,7 +20,7 @@ function ReadingProgress() {
     window.addEventListener("scroll", on, { passive: true });
     return () => window.removeEventListener("scroll", on);
   }, []);
-  return <div className="fixed inset-x-0 top-0 z-50 h-0.5 bg-transparent" aria-hidden="true"><div className="h-full bg-gold transition-[width] duration-100" style={{ width: `${p}%` }} /></div>;
+  return <div className="fixed inset-x-0 top-0 z-50 h-0.5 bg-transparent" aria-hidden="true"><div className="h-full bg-accent transition-[width] duration-100" style={{ width: `${p}%` }} /></div>;
 }
 
 /** Shared by the public article page and the admin preview. */
@@ -32,7 +32,7 @@ export function ArticleView({ article, references, crumbs = [], banner }) {
   return (
     <article>
       <ReadingProgress />
-      {banner && <div className="bg-gold/15 px-4 py-2 text-center text-sm font-medium text-bronze">{banner}</div>}
+      {banner && <div className="bg-accent/10 px-4 py-2 text-center text-sm font-medium text-accent">{banner}</div>}
       <header className="container-read pb-6 pt-10 sm:pt-14">
         {crumbs.length > 0 && (
           <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-mute">

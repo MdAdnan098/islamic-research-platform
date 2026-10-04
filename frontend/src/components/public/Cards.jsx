@@ -39,7 +39,7 @@ export function TopicCard({ topic, to }) {
         {cover ? (
           <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
         ) : (
-          <div className="h-full w-full bg-gold/10" />
+          <div className="h-full w-full bg-rule/40" />
         )}
       </div>
       <div className="flex flex-1 flex-col p-5">

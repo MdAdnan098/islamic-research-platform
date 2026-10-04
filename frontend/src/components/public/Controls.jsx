@@ -24,7 +24,7 @@ export function ThemeToggle({ className = "" }) {
   const { theme, toggle } = useTheme();
   const { t } = useI18n();
   return (
-    <button onClick={toggle} aria-label={t.nav.theme} title={t.nav.theme} className={`grid h-9 w-9 place-items-center rounded-full border border-rule text-mute transition-colors hover:border-gold hover:text-ink ${className}`}>
+    <button onClick={toggle} aria-label={t.nav.theme} title={t.nav.theme} className={`grid h-9 w-9 place-items-center rounded-full border border-rule text-mute transition-colors hover:border-accent/60 hover:text-ink ${className}`}>
       <Icon name={theme === "dark" ? "sun" : "moon"} size={17} />
     </button>
   );

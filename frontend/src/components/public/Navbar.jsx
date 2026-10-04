@@ -17,7 +17,7 @@ export function Navbar() {
     { to: "/masail", label: t.nav.masail },
   ];
   const linkCls = ({ isActive }) =>
-    `rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${isActive ? "bg-gold/15 text-bronze" : "text-mute hover:text-ink"}`;
+    `rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${isActive ? "bg-accent/10 text-accent" : "text-mute hover:text-ink"}`;
 
   return (
     <header className="sticky top-0 z-40 border-b border-rule bg-paper/85 backdrop-blur">
@@ -44,7 +44,7 @@ export function Navbar() {
         <div className="animate-fade border-t border-rule bg-paper md:hidden">
           <nav className="container-page flex flex-col py-3" aria-label="Mobile">
             {links.map((l) => (
-              <NavLink key={l.to} {...l} className={({ isActive }) => `border-b border-rule/60 py-3.5 text-base font-medium ${isActive ? "text-bronze" : "text-ink"}`}>{l.label}</NavLink>
+              <NavLink key={l.to} {...l} className={({ isActive }) => `border-b border-rule/60 py-3.5 text-base font-medium ${isActive ? "text-accent" : "text-ink"}`}>{l.label}</NavLink>
             ))}
             <div className="py-4"><LanguageSwitch /></div>
           </nav>
