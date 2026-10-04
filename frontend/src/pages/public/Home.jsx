@@ -26,17 +26,17 @@ function QuoteCard({ label, item, tone, first }) {
 }
 
 export default function Home() {
-  const { t, contentLang } = useI18n();
+  const { t } = useI18n();
   useMeta({});
   const { data, error, loading, reload } = useAsync(
     async (signal) => {
       const [categories, articles] = await Promise.all([
         publicApi.categories(signal),
-        publicApi.articles({ language: contentLang, limit: 6 }, signal),
+        publicApi.articles({ limit: 6 }, signal),
       ]);
       return { categories, articles };
     },
-    [contentLang]
+    []
   );
 
   const [heroA, heroB] = t.hero.title.split(", ");

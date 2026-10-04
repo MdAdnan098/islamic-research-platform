@@ -6,6 +6,7 @@ import { mediaUrl } from "../../lib/media.js";
 import { useMeta } from "../../lib/useMeta.js";
 import { Text } from "../ui/Text.jsx";
 import { BlockRenderer } from "./BlockRenderer.jsx";
+import { pickVersion } from "../../lib/versions.js";
 
 const LANG = { en: "Roman", hi: "हिन्दी", ur: "اردو", ar: "العربية" };
 
@@ -25,9 +26,10 @@ function ReadingProgress() {
 
 /** Shared by the public article page and the admin preview. */
 export function ArticleView({ article, references, crumbs = [], banner }) {
-  const { t } = useI18n();
+  const { t, contentLang } = useI18n();
+  const title = pickVersion(article.title, article.titleTr, article.language, contentLang);
   const cover = mediaUrl(article.coverKey);
-  useMeta({ title: article.seoTitle || article.title, description: article.seoDescription || article.excerpt, image: cover });
+  useMeta({ title: article.seoTitle || title, description: article.seoDescription || article.excerpt, image: cover });
 
   return (
     <article>
@@ -44,7 +46,7 @@ export function ArticleView({ article, references, crumbs = [], banner }) {
             ))}
           </nav>
         )}
-        <Text as="h1" className="font-display text-3xl font-semibold leading-[1.25] sm:text-5xl">{article.title}</Text>
+        <Text as="h1" className="font-display text-3xl font-semibold leading-[1.25] sm:text-5xl">{title}</Text>
         {article.excerpt && <Text as="p" className="mt-5 text-lg text-mute">{article.excerpt}</Text>}
         <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-y border-rule py-3 text-xs text-mute">
           <span>{formatDate(article.publishedAt || article.createdAt)}</span>
@@ -53,7 +55,7 @@ export function ArticleView({ article, references, crumbs = [], banner }) {
         </div>
       </header>
       {cover && <div className="container-page max-w-4xl"><img src={cover} alt="" className="w-full rounded-xl border border-rule" /></div>}
-      <div className="container-read pb-6 pt-4"><BlockRenderer blocks={article.blocks} references={references} /></div>
+      <div className="container-read pb-6 pt-4"><BlockRenderer blocks={article.blocks} references={references} baseLang={article.language} /></div>
     </article>
   );
 }

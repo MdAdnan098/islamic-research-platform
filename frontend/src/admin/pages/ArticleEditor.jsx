@@ -9,10 +9,12 @@ import { BlockEditor } from "../components/BlockEditor.jsx";
 import { MediaUploader } from "../components/MediaUploader.jsx";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
+import { VersionsPanel } from "../components/VersionsPanel.jsx";
+import { targetLangs } from "../../lib/versions.js";
 import { ErrorBox, Field, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 
-const BLANK = { title: "", slug: "", language: "ur", categoryId: "", topicId: "", section: "", excerpt: "", seoTitle: "", seoDescription: "", coverKey: "", status: "draft" };
-const pick = (a) => ({ ...BLANK, ...Object.fromEntries(Object.keys(BLANK).map((k) => [k, a[k] ?? ""])) });
+const BLANK = { titleTr: {}, title: "", slug: "", language: "ur", categoryId: "", topicId: "", section: "", excerpt: "", seoTitle: "", seoDescription: "", coverKey: "", status: "draft" };
+const pick = (a) => ({ ...BLANK, ...Object.fromEntries(Object.keys(BLANK).map((k) => [k, a[k] ?? ""])), titleTr: a.titleTr || {} });
 
 export default function ArticleEditor() {
   const { id } = useParams();
@@ -22,9 +24,7 @@ export default function ArticleEditor() {
   const [confirm, dialog] = useConfirm();
   const [f, setF] = useState(BLANK);
   const [blocks, setBlocks] = useState(() => [newBlock("text")]);
-  const [slugTouched, setSlugTouched] = useState(!isNew);
   const [busy, setBusy] = useState(false);
-  const [editSlug, setEditSlug] = useState(false);
   const [preview, setPreview] = useState(null);
   const saved = useRef("");
 
@@ -67,19 +67,26 @@ export default function ArticleEditor() {
     if (!isSlug(slug)) slug = "article-" + Math.random().toString(36).slice(2, 8);
     if (slug !== f.slug) setF((s) => ({ ...s, slug }));
     const body = {
-      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), slug, language: f.language, blocks,
+      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), titleTr: Object.fromEntries(Object.entries(f.titleTr || {}).filter(([, v]) => v && v.trim())), slug, language: f.language, blocks,
       references: referenceIdsOf(blocks), section: f.section || null, excerpt: f.excerpt.trim() || null,
       seoTitle: f.seoTitle.trim() || null, seoDescription: f.seoDescription.trim() || null, coverKey: f.coverKey || null,
     };
     setBusy(true);
     try {
-      const a = isNew ? await adminApi.articles.create(body) : await adminApi.articles.update(id, body);
+      let a;
+      try {
+        a = isNew ? await adminApi.articles.create(body) : await adminApi.articles.update(id, body);
+      } catch (e) {
+        // Same link name already used by another article: add a short suffix and retry once.
+        if (!isNew || !/slug/i.test(e.message)) throw e;
+        a = await adminApi.articles.create({ ...body, slug: `${slug}-${Math.random().toString(36).slice(2, 6)}` });
+      }
       saved.current = JSON.stringify([pick(a), withIds(a.blocks)]);
       toast("Saved");
       if (isNew) nav(`/admin/articles/${a.id}`, { replace: true });
       else { setF(pick(a)); loaded.reload(); }
       return a;
-    } catch (e) { if (/slug/i.test(e.message)) setEditSlug(true); toast(e.message, "error"); return null; }
+    } catch (e) { toast(e.message, "error"); return null; }
     finally { setBusy(false); }
   }
 
@@ -116,8 +123,16 @@ export default function ArticleEditor() {
 
       <div className="grid gap-6 xl:grid-cols-[1fr_330px]">
         <div className="min-w-0 space-y-6">
-          <input className="a-input !py-3 !text-xl !font-semibold" dir="auto" placeholder="Article title" value={f.title} onChange={(e) => setF((s) => ({ ...s, title: e.target.value, slug: slugTouched ? s.slug : slugify(e.target.value) }))} />
-          <BlockEditor blocks={blocks} onChange={setBlocks} />
+          <input className="a-input !py-3 !text-xl !font-semibold" dir="auto" placeholder="Article title" value={f.title} onChange={(e) => setF((s) => ({ ...s, title: e.target.value, slug: isNew ? slugify(e.target.value) : s.slug }))} />
+          {targetLangs(f.language).some(([c]) => true) && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {targetLangs(f.language).map(([c, label]) => (
+                <input key={c} className="a-input" dir="auto" placeholder={`Title — ${label} version (optional)`} value={f.titleTr?.[c] || ""} onChange={(e) => setF((s) => ({ ...s, titleTr: { ...(s.titleTr || {}), [c]: e.target.value } }))} />
+              ))}
+            </div>
+          )}
+          <VersionsPanel baseLang={f.language} title={f.title} titleTr={f.titleTr} setTitleTr={(titleTr) => setF((s) => ({ ...s, titleTr }))} blocks={blocks} setBlocks={setBlocks} toast={toast} />
+          <BlockEditor blocks={blocks} onChange={setBlocks} baseLang={f.language} />
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
@@ -132,11 +147,6 @@ export default function ArticleEditor() {
             </select></Field>
             <Field label="Topic"><select className="a-input" value={f.topicId} onChange={(e) => setF((s) => ({ ...s, topicId: e.target.value, section: e.target.value ? s.section : "" }))}><option value="">— Koi topic nahi —</option>{(topics.data || []).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select></Field>
             <Field label="Topic section"><select className="a-input" value={f.section} onChange={set("section")}><option value="">General — Mazeed Mazameen</option><option value="dalail">Hamare Dalail — apni daleel</option><option value="radd">Dalail Ka Jaiza / Radd — doosron ki daleel ka jawab</option></select></Field>
-            <div>
-              <span className="a-label">Article ka link</span>
-              <p className="break-all text-xs text-ad-ink" dir="ltr">/article/{f.slug || "…"} <button type="button" className="ms-1 text-ad-brand hover:underline" onClick={() => setEditSlug((v) => !v)}>{editSlug ? "Band" : "Badlein"}</button></p>
-              {editSlug && <input className="a-input mt-2" dir="ltr" value={f.slug} onChange={(e) => { setSlugTouched(true); set("slug")(e); }} />}
-            </div>
           </div>
           <div className="a-card space-y-3 p-4">
             <h2 className="text-sm font-semibold">Cover image</h2>

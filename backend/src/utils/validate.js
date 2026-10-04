@@ -197,6 +197,12 @@ export function validateArticleInput(data, { partial = false } = {}) {
   if (!partial || data.slug !== undefined) {
     if (!isValidSlugFormat(data.slug)) errors.push(err("slug must be lowercase alphanumeric with single hyphens."));
   }
+  if (data.titleTr !== undefined && data.titleTr !== null) {
+    const t = data.titleTr;
+    const ok = typeof t === "object" && !Array.isArray(t)
+      && Object.entries(t).every(([k, v]) => ["en", "hi", "ur"].includes(k) && typeof v === "string" && v.length <= 300);
+    if (!ok) errors.push(err("titleTr must be an object with en/hi/ur strings (max 300 characters each)."));
+  }
   if (!partial || data.language !== undefined) {
     if (!isValidEnumValue(data.language, LANGUAGES)) {
       errors.push(err(`language must be one of: ${LANGUAGES.join(", ")}.`, "INVALID_LANGUAGE"));

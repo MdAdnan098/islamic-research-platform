@@ -106,6 +106,7 @@ export async function createArticle(config, input) {
     categoryId: new ObjectId(data.categoryId),
     topicId: data.topicId ? new ObjectId(data.topicId) : null,
     title: data.title.trim(),
+    titleTr: data.titleTr || null,
     slug: data.slug,
     blocks: data.blocks,
     language: data.language,
@@ -199,7 +200,7 @@ export async function updateArticle(config, id, updates) {
   const collection = await getArticlesCollection(config);
   const $set = { updatedAt: new Date() };
 
-  for (const key of ["title", "slug", "blocks", "language", "status", "section", "excerpt", "seoTitle", "seoDescription", "coverKey"]) {
+  for (const key of ["title", "titleTr", "slug", "blocks", "language", "status", "section", "excerpt", "seoTitle", "seoDescription", "coverKey"]) {
     if (data[key] !== undefined) {
       $set[key] = typeof data[key] === "string" ? data[key].trim() : data[key];
     }
@@ -256,6 +257,7 @@ export function toSafeArticle(article) {
     categoryId: String(article.categoryId),
     topicId: article.topicId ? String(article.topicId) : null,
     title: article.title,
+    titleTr: article.titleTr || null,
     slug: article.slug,
     blocks: article.blocks,
     language: article.language,

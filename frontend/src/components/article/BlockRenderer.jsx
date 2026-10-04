@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useI18n } from "../../i18n/index.jsx";
 import { mediaUrl } from "../../lib/media.js";
 import { scriptOf } from "../../lib/script.js";
+import { pickVersion } from "../../lib/versions.js";
 import { Text } from "../ui/Text.jsx";
 import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
 
-function Quote({ b }) {
+function Quote({ b, text }) {
   const { t } = useI18n();
   const sacred = b.kind === "ayat" || b.kind === "hadith";
   const s = scriptOf(b.text);
@@ -15,7 +16,7 @@ function Quote({ b }) {
   return (
     <figure className="my-9 rounded-xl border border-rule bg-card px-6 py-7 sm:px-9">
       {sacred && <p className="eyebrow mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
-      <Text as="blockquote" force={big ? "arabic" : undefined} className={big ? "text-[1.7rem] leading-[2.2] sm:text-[2rem]" : "font-display text-xl italic leading-relaxed"}>{b.text}</Text>
+      <Text as="blockquote" force={big ? "arabic" : undefined} className={big ? "text-[1.7rem] leading-[2.2] sm:text-[2rem]" : "font-display text-xl italic leading-relaxed"}>{text}</Text>
       {b.source && <Text as="figcaption" className="mt-4 text-sm text-bronze">— {b.source}</Text>}
     </figure>
   );
@@ -62,7 +63,9 @@ function Pdf({ b }) {
   );
 }
 
-export function BlockRenderer({ blocks = [], references = [] }) {
+export function BlockRenderer({ blocks = [], references = [], baseLang = "ur" }) {
+  const { contentLang } = useI18n();
+  const txt = (b) => (b.kind === "ayat" || b.kind === "hadith" ? b.text : pickVersion(b.text, b.tr, baseLang, contentLang));
   const refMap = Object.fromEntries(references.map((r) => [r.id, r]));
   return (
     <div className="reading">
@@ -71,16 +74,16 @@ export function BlockRenderer({ blocks = [], references = [] }) {
         switch (b.type) {
           case "heading":
             return b.level === 3
-              ? <Text key={key} as="h3" className="mb-3 mt-10 font-display text-xl font-semibold sm:text-2xl">{b.text}</Text>
-              : <Text key={key} as="h2" className="mb-4 mt-14 border-t border-rule pt-8 font-display text-2xl font-semibold sm:text-3xl">{b.text}</Text>;
+              ? <Text key={key} as="h3" className="mb-3 mt-10 font-display text-xl font-semibold sm:text-2xl">{txt(b)}</Text>
+              : <Text key={key} as="h2" className="mb-4 mt-14 border-t border-rule pt-8 font-display text-2xl font-semibold sm:text-3xl">{txt(b)}</Text>;
           case "text":
             return (
               <div key={key} className="my-5">
-                {String(b.text || "").split(/\n{2,}/).filter(Boolean).map((p, j) => <Text key={j} as="p" className="whitespace-pre-line">{p}</Text>)}
+                {String(txt(b) || "").split(/\n{2,}/).filter(Boolean).map((p, j) => <Text key={j} as="p" className="whitespace-pre-line">{p}</Text>)}
               </div>
             );
           case "quote":
-            return <Quote key={key} b={b} />;
+            return <Quote key={key} b={b} text={txt(b)} />;
           case "reference":
             return refMap[b.referenceId] ? <ReferenceCard key={key} reference={refMap[b.referenceId]} /> : null;
           case "image":

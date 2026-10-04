@@ -26,7 +26,7 @@ function Group({ title, items, category, empty }) {
 /** /aqaid/:topicSlug, /masail/:topicSlug — Intro → Dalail → Radd. */
 export default function TopicPage({ section }) {
   const { topicSlug } = useParams();
-  const { t, contentLang } = useI18n();
+  const { t } = useI18n();
     const type = PATH_TYPE[section];
 
   const { data, error, loading, reload } = useAsync(async (signal) => {
@@ -37,8 +37,8 @@ export default function TopicPage({ section }) {
 
   const topic = data?.topic;
   const arts = useAsync(
-    (signal) => (topic ? publicApi.articles({ topicId: topic.id, language: contentLang, limit: 100 }, signal) : []),
-    [topic?.id, contentLang]
+    (signal) => (topic ? publicApi.articles({ topicId: topic.id, limit: 100 }, signal) : []),
+    [topic?.id]
   );
   useMeta({ title: topic?.title, description: topic?.intro, image: mediaUrl(topic?.coverKey) });
 

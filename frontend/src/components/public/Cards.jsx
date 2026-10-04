@@ -2,26 +2,27 @@ import { Link } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
 import { formatDate, readMinutes } from "../../lib/format.js";
 import { mediaUrl } from "../../lib/media.js";
+import { pickVersion } from "../../lib/versions.js";
 import { Text } from "../ui/Text.jsx";
 import { Icon } from "../ui/icons.jsx";
 
-function snippet(article) {
+function snippet(article, lang) {
   if (article.excerpt) return article.excerpt;
   const b = (article.blocks || []).find((x) => x.type === "text" && x.text);
-  const s = (b?.text || "").replace(/\s+/g, " ").trim();
+  const s = (b ? pickVersion(b.text, b.tr, article.language, lang) : "").replace(/\s+/g, " ").trim();
   return s.length > 170 ? `${s.slice(0, 170)}…` : s;
 }
 
 export function ArticleCard({ article, category }) {
-  const { t } = useI18n();
+  const { t, contentLang } = useI18n();
   const sectionLabel = category ? (category.type === "aqeedah" ? t.nav.aqaid : t.nav.masail) : null;
-  const text = snippet(article);
+  const text = snippet(article, contentLang);
   return (
     <Link to={`/article/${article.slug}`} className="card-lift group flex h-full flex-col rounded-2xl border border-rule bg-card p-6">
       <div className="flex items-center justify-between gap-3 text-xs text-mute">
         <span className="eyebrow !text-xs">{sectionLabel || "\u00A0"}</span>
       </div>
-      <Text as="h3" className="mt-3 font-display text-lg font-semibold leading-snug sm:text-xl">{article.title}</Text>
+      <Text as="h3" className="mt-3 font-display text-lg font-semibold leading-snug sm:text-xl">{pickVersion(article.title, article.titleTr, article.language, contentLang)}</Text>
       {text && <Text as="p" className="mt-3 line-clamp-3 text-sm text-mute">{text}</Text>}
       <div className="mt-auto flex items-center justify-between pt-5 text-xs text-mute">
         <span>{formatDate(article.publishedAt || article.createdAt)} · {readMinutes(article.blocks)} {t.article.minRead}</span>
