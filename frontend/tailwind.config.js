@@ -10,6 +10,7 @@ export default {
         // Public "research library" palette
         paper: c("paper"), card: c("card"), ink: c("ink"), mute: c("mute"),
         rule: c("rule"), accent: c("accent"), gold: c("gold"), bronze: c("bronze"), navy: c("navy"),
+        "on-accent": c("on-accent"), tint: c("tint"), soft: c("soft"), hero: c("hero"), field: c("field"), good: c("good"),
         // Admin palette (separate visual system)
         "ad-bg": c("ad-bg"), "ad-card": c("ad-card"), "ad-ink": c("ad-ink"),
         "ad-mute": c("ad-mute"), "ad-rule": c("ad-rule"), "ad-brand": c("ad-brand"),
@@ -18,11 +19,11 @@ export default {
       fontFamily: {
         sans: ["var(--font-body)"],
         display: ["var(--font-display)"],
-        ui: ["Inter", "system-ui", "sans-serif"],
+        ui: ["Figtree", "system-ui", "sans-serif"],
         arabic: ["Amiri", "'Noto Naskh Arabic'", "serif"],
         urdu: ["'Noto Nastaliq Urdu'", "serif"],
       },
-      boxShadow: { soft: "0 1px 2px rgb(0 0 0 / .04), 0 8px 24px -12px rgb(0 0 0 / .12)" },
+      boxShadow: { soft: "var(--shadow-soft)" },
       keyframes: {
         "fade-up": { from: { opacity: 0, transform: "translateY(8px)" }, to: { opacity: 1, transform: "none" } },
         fade: { from: { opacity: 0 }, to: { opacity: 1 } },

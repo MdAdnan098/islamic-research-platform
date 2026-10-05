@@ -25,5 +25,5 @@ export default {
   },
   viewer: { zoomIn: "Bada karein", zoomOut: "Chhota karein", reset: "Reset", prev: "Pichla", next: "Agla", close: "Band karein", pageOf: "Page {n} / {total}" },
   common: { loading: "Load ho raha hai…", error: "Kuch ghalat ho gaya.", retry: "Dobara koshish karein", empty: "Kuch nahi mila.", home: "Home par jayein", notFound: "Safha nahi mila" },
-  footer: { about: "Quran, Sunnat aur salaf ke fahm par mabni tahqiqi library.", links: "Links", follow: "Connect with us", rights: "Tamam huqooq mehfooz" },
+  footer: { about: "Quran, Sunnat aur salaf ke fahm par mabni tahqiqi library.", links: "Links", follow: "Connect with us", rights: "All Rights Reserved" },
 };

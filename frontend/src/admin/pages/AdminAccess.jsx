@@ -41,7 +41,7 @@ export default function AdminAccess({ mode }) {
   return (
     <AdminShell><div className="grid min-h-screen place-items-center p-4">
       <form onSubmit={submit} className="a-card w-full max-w-sm space-y-4 p-7">
-        <div className="flex flex-col items-center gap-2 pb-2"><LogoMark size={46} /><h1 className="text-lg font-semibold">{m.title}</h1><p className="text-center text-xs text-ad-mute">{m.sub}</p></div>
+        <div className="flex flex-col items-center gap-2 pb-2"><LogoMark size={46} /><h1 className="text-xl font-bold">{m.title}</h1><p className="text-center text-xs text-ad-mute">{m.sub}</p></div>
         <Field id="un" label="Username" type="text" autoComplete="username" autoCapitalize="none" value={f.username} onChange={set("username")} />
         <Field id="sk" label="Admin secret key" type="password" autoComplete="off" value={f.secretKey} onChange={set("secretKey")} />
         <Field id="pw" label={mode === "reset" ? "New password" : "Password"} type="password" autoComplete="new-password" minLength={8} value={f.password} onChange={set("password")} />

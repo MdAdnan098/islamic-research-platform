@@ -3,22 +3,71 @@
 @tailwind utilities;
 
 @layer base {
+  /* ------------------------------------------------------------------
+     Themes — colours sampled pixel-by-pixel from the Quran.com reference.
+     Light = default, [data-theme="sepia"] = Sepia, .dark = Dark.
+     ------------------------------------------------------------------ */
   :root {
-    /* Public palette — clean cool neutrals + indigo accent (gold kept for text only) */
-    --paper: 249 250 252; --card: 255 255 255; --ink: 24 24 27; --mute: 104 116 128;
-    --rule: 230 234 240; --accent: 79 70 229; --gold: 176 141 69; --bronze: 122 93 40; --navy: 31 51 80;
-    /* Admin palette — cool neutral, separate system */
-    --ad-bg: 244 245 247; --ad-card: 255 255 255; --ad-ink: 24 29 38; --ad-mute: 98 108 122;
-    --ad-rule: 224 228 234; --ad-brand: 31 51 80; --ad-danger: 192 57 43; --ad-ok: 29 130 87; --ad-warn: 176 112 16;
-    --font-body: "Inter", system-ui, sans-serif;
-    --font-display: "Inter", system-ui, sans-serif;
+    --paper: 255 255 255;      /* page + navbar            #FFFFFF */
+    --card: 255 255 255;       /* cards                    #FFFFFF */
+    --ink: 38 38 38;           /* headings / body          #262626 */
+    --mute: 101 101 101;       /* secondary text           #656565 */
+    --rule: 234 238 241;       /* dividers / borders       #EAEEF1 */
+    --accent: 43 164 172;      /* buttons, links           #2BA4AC */
+    --on-accent: 255 255 255;
+    --tint: 244 245 247;       /* chips / pills            #F4F5F7 */
+    --soft: 244 245 247;       /* highlighted panel        #F4F5F7 */
+    --hero: 232 236 239;       /* hero band                #E8ECEF */
+    --calli: 226 231 235;      /* hero calligraphy         #E2E7EB */
+    --field: 255 255 255;      /* search / inputs          #FFFFFF */
+    --good: 55 121 75;         /* green goal icon          #37794B */
+    --gold: var(--accent); --bronze: var(--accent); --navy: var(--ink);
+    --shadow-soft: 0 2px 14px rgb(0 0 0 / .07), 0 0 0 6px rgb(0 0 0 / .012);
+
+    /* Admin palette — same system as the public site */
+    --ad-bg: 244 245 247; --ad-card: 255 255 255; --ad-ink: 38 38 38; --ad-mute: 101 101 101;
+    --ad-rule: 234 238 241; --ad-brand: 43 164 172;
+    --ad-danger: 192 57 43; --ad-ok: 55 121 75; --ad-warn: 176 112 16;
+
+    --font-body: "Figtree", system-ui, sans-serif;
+    --font-display: "Figtree", system-ui, sans-serif;
     color-scheme: light;
   }
+
+  [data-theme="sepia"] {
+    --paper: 255 247 234;      /* #FFF7EA */
+    --card: 255 247 234;
+    --ink: 0 0 0;              /* #000000 */
+    --mute: 105 101 92;        /* #69655C */
+    --rule: 242 231 213;       /* #F2E7D5 */
+    --accent: 115 96 63;       /* #73603F */
+    --tint: 238 226 204;       /* #EEE2CC */
+    --soft: 241 226 205;       /* #F1E2CD */
+    --hero: 217 198 165;       /* #D9C6A5 */
+    --calli: 204 186 152;      /* #CCBA96 */
+    --field: 255 247 234;
+    --shadow-soft: 0 2px 14px rgb(90 60 10 / .08), 0 0 0 6px rgb(90 60 10 / .015);
+    --ad-bg: 238 226 204; --ad-card: 255 247 234; --ad-ink: 0 0 0; --ad-mute: 105 101 92;
+    --ad-rule: 232 218 192; --ad-brand: 115 96 63;
+    --ad-danger: 168 50 36; --ad-ok: 55 121 75; --ad-warn: 150 96 14;
+  }
+
   .dark {
-    --paper: 17 18 22; --card: 27 28 34; --ink: 232 234 240; --mute: 142 145 152;
-    --rule: 38 39 46; --accent: 129 140 248; --gold: 196 162 103; --bronze: 208 176 116; --navy: 140 165 205;
-    --ad-bg: 17 20 26; --ad-card: 24 28 36; --ad-ink: 232 236 242; --ad-mute: 148 158 172;
-    --ad-rule: 40 46 58; --ad-brand: 96 135 196; --ad-danger: 232 106 92; --ad-ok: 80 190 140; --ad-warn: 226 168 70;
+    --paper: 32 33 37;         /* #202125 */
+    --card: 32 33 37;
+    --ink: 233 234 238;        /* #E9EAEE */
+    --mute: 183 184 188;       /* #B7B8BC */
+    --rule: 68 68 68;          /* #444444 */
+    --accent: 43 164 172;      /* #2BA4AC */
+    --tint: 22 22 22;          /* #161616 */
+    --soft: 53 58 64;          /* #353A40 */
+    --hero: 0 0 0;             /* #000000 */
+    --calli: 16 16 16;         /* ~#101010 (reference is #060606, lifted slightly so it stays visible) */
+    --field: 53 58 64;         /* #353A40 */
+    --shadow-soft: 0 2px 16px rgb(0 0 0 / .45), 0 0 0 6px rgb(0 0 0 / .12);
+    --ad-bg: 22 22 22; --ad-card: 32 33 37; --ad-ink: 233 234 238; --ad-mute: 183 184 188;
+    --ad-rule: 68 68 68; --ad-brand: 43 164 172;
+    --ad-danger: 232 106 92; --ad-ok: 80 190 140; --ad-warn: 226 168 70;
     color-scheme: dark;
   }
 
@@ -35,31 +84,36 @@
 @layer components {
   .container-page { @apply mx-auto w-full max-w-6xl px-5 sm:px-8; }
   .container-read { @apply mx-auto w-full max-w-3xl px-5 sm:px-6; }
-  .eyebrow { @apply text-sm font-medium text-bronze; }
-  .rule-gold { @apply h-px w-12 bg-gold; }
+  .eyebrow { @apply text-sm font-semibold text-accent; }
+  .rule-gold { @apply h-px w-12 bg-accent; }
 
-  /* Public buttons */
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-colors duration-200 disabled:opacity-50; }
-  .btn-primary { @apply btn bg-accent text-white hover:opacity-90; }
-  .btn-outline { @apply btn border border-rule bg-card text-ink hover:border-accent/60; }
+  /* Public buttons — Quran.com: 6px radius filled teal/brown, pill outline */
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-base font-semibold transition-colors duration-200 disabled:opacity-50; }
+  .btn-primary { @apply btn bg-accent text-on-accent hover:opacity-90; }
+  .btn-outline { @apply btn rounded-full border border-rule bg-field text-ink shadow-soft hover:border-accent/60; }
   .btn-ghost { @apply btn text-mute hover:text-ink; }
 
   /* Script-aware typography (applied automatically via <Text/>) */
   .script-arabic { font-family: "Amiri", "Noto Naskh Arabic", serif !important; line-height: 2.1 !important; }
   .script-urdu { font-family: "Noto Nastaliq Urdu", serif !important; line-height: 2.3 !important; }
   .script-deva { font-family: "Noto Sans Devanagari", sans-serif !important; line-height: 1.9 !important; }
-  .script-latin { font-family: "Inter", system-ui, sans-serif; line-height: 1.8; }
-  .script-latin.font-display { letter-spacing: -0.02em; line-height: 1.25; }
+  .script-latin { font-family: "Figtree", system-ui, sans-serif; line-height: 1.7; }
+  .script-latin.font-display { letter-spacing: -0.01em; line-height: 1.25; }
 
   .reading { font-size: 1.0625rem; }
   .reading p + p { margin-top: 1.1em; }
-  .card-lift { @apply transition duration-200 hover:border-accent/40 hover:shadow-soft; }
+  .card-lift { @apply shadow-soft transition duration-200 hover:border-accent/40; }
+
+  /* Hero band with faint Islamic calligraphy behind the text */
+  .hero-band { position: relative; isolation: isolate; overflow: hidden; background: rgb(var(--hero)); }
+  .hero-calli { position: absolute; inset: 0; z-index: -1; pointer-events: none; user-select: none; color: rgb(var(--calli)); font-family: "Aref Ruqaa", "Amiri", serif; font-weight: 700; direction: rtl; line-height: 1; white-space: nowrap; }
+  .hero-calli span { position: absolute; }
 
   /* ---------- Admin system ---------- */
   .a-input { @apply w-full rounded-md border border-ad-rule bg-ad-card px-3 py-2 text-sm text-ad-ink placeholder:text-ad-mute/70 focus:border-ad-brand focus:outline-none focus:ring-2 focus:ring-ad-brand/20 disabled:opacity-60; }
-  .a-label { @apply mb-1 block text-xs font-medium text-ad-mute; }
-  .a-btn { @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-ad-rule bg-ad-card px-3 py-1.5 text-sm font-medium text-ad-ink transition hover:bg-ad-bg disabled:opacity-50; }
-  .a-btn-primary { @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-ad-brand px-3.5 py-1.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50; }
+  .a-label { @apply mb-1 block text-xs font-semibold text-ad-mute; }
+  .a-btn { @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-ad-rule bg-ad-card px-3 py-1.5 text-sm font-semibold text-ad-ink transition hover:bg-ad-bg disabled:opacity-50; }
+  .a-btn-primary { @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-ad-brand px-3.5 py-1.5 text-sm font-semibold text-on-accent transition hover:opacity-90 disabled:opacity-50; }
   .a-btn-danger { @apply a-btn border-ad-danger/40 text-ad-danger hover:bg-ad-danger/10; }
-  .a-card { @apply rounded-lg border border-ad-rule bg-ad-card; }
+  .a-card { @apply rounded-2xl border border-ad-rule bg-ad-card shadow-soft; }
 }

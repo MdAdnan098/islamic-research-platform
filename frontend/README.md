@@ -8,7 +8,7 @@ npm install && npm run dev
 ```
 
 ## Structure
-- `src/index.css`, `tailwind.config.js` — design tokens (public ivory/charcoal/bronze + separate admin palette)
+- `src/index.css`, `tailwind.config.js` — design tokens (Light / Sepia / Dark themes, Quran.com palette; admin uses the same palette)
 - `src/i18n/` — Roman / Hindi / Urdu dictionaries (RTL auto for Urdu)
 - `src/lib/script.js` — per-text script detection (Urdu Nastaliq / Arabic Naskh / Devanagari / Latin)
 - `src/components/` — brand, ui, public, article (BlockRenderer, ReferenceCard, ScanViewer)

@@ -57,7 +57,7 @@ export default function Categories() {
       {loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : data.length === 0 ? <Empty>No categories yet.</Empty> : (
         <ul className="a-card divide-y divide-ad-rule">
           {data.map((c, i) => (
-            <li key={c.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
+            <li key={c.id} className="flex min-h-[60px] flex-wrap items-center gap-3 px-3 py-2.5">
               <div className="flex"><IconBtn icon="up" label="Move up" disabled={i === 0} onClick={() => move(i, i - 1)} /><IconBtn icon="down" label="Move down" disabled={i === data.length - 1} onClick={() => move(i, i + 1)} /></div>
               <div className="min-w-0 flex-1"><p dir="auto" className="truncate text-sm font-medium">{c.name}</p><p className="text-xs text-ad-mute">{c.type === "aqeedah" ? "Aqaid" : "Masail"} · /{c.slug}</p></div>
               <StatusBadge status={c.status} />

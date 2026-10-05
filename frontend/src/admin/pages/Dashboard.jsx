@@ -18,7 +18,7 @@ export default function Dashboard() {
   if (error && !data) return <ErrorBox error={error} onRetry={reload} />;
   const { articles, categories, references } = data;
   const count = (s) => articles.filter((a) => a.status === s).length;
-  const stats = [["Published", count("published")], ["Drafts", count("draft")], ["Archived", count("archived")], ["Categories", categories.length], ["References", references.length]];
+  const stats = [["Total articles", articles.length], ["Published", count("published")], ["Drafts", count("draft")], ["Archived", count("archived")], ["Categories", categories.length], ["References", references.length]];
   const recent = [...articles].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 6);
 
   return (
@@ -26,11 +26,11 @@ export default function Dashboard() {
       <PageHeader title="Dashboard" desc="Overview of your research library.">
         <Link to="/admin/articles/new" className="a-btn-primary">New article</Link>
       </PageHeader>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-        {stats.map(([l, v]) => <div key={l} className="a-card p-4"><p className="text-xs text-ad-mute">{l}</p><p className="mt-1 text-2xl font-semibold">{v}</p></div>)}
+      <div className="grid grid-cols-2 items-stretch gap-4 sm:grid-cols-3 xl:grid-cols-6">
+        {stats.map(([l, v]) => <div key={l} className="a-card flex h-full min-h-[96px] flex-col justify-between p-4"><p className="text-sm text-ad-mute">{l}</p><p className="mt-1 text-3xl font-bold">{v}</p></div>)}
       </div>
-      <h2 className="mb-3 mt-8 text-sm font-semibold">Recently updated</h2>
-      <div className="a-card divide-y divide-ad-rule">
+      <h2 className="mb-3 mt-8 text-lg font-bold">Recently updated</h2>
+      <div className="a-card divide-y divide-ad-rule overflow-hidden">
         {recent.length === 0 && <p className="p-6 text-center text-sm text-ad-mute">No articles yet.</p>}
         {recent.map((a) => (
           <Link key={a.id} to={`/admin/articles/${a.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-ad-bg">

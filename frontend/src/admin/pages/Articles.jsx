@@ -64,7 +64,7 @@ export default function Articles() {
       {loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : rows.length === 0 ? <Empty>No articles found.</Empty> : (
         <ul className="a-card divide-y divide-ad-rule">
           {rows.map((a) => (
-            <li key={a.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+            <li key={a.id} className="flex min-h-[68px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
               <div className="min-w-0 flex-1 basis-64">
                 <Link to={`/admin/articles/${a.id}`} dir="auto" className="block truncate text-sm font-medium hover:text-ad-brand">{a.title}</Link>
                 <p className="text-xs text-ad-mute">{catName(a.categoryId)} · {LANGS[a.language]} · {formatDate(a.updatedAt)}</p>

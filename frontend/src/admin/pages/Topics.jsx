@@ -63,7 +63,7 @@ export default function Topics() {
       {cats.loading && !cats.data ? <Spinner /> : !cats.data?.length ? <Empty>Create a category first.</Empty> : loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : data.length === 0 ? <Empty>No topics in this category.</Empty> : (
         <ul className="a-card divide-y divide-ad-rule">
           {data.map((t, i) => (
-            <li key={t.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
+            <li key={t.id} className="flex min-h-[60px] flex-wrap items-center gap-3 px-3 py-2.5">
               <div className="flex"><IconBtn icon="up" label="Move up" disabled={i === 0} onClick={() => move(i, i - 1)} /><IconBtn icon="down" label="Move down" disabled={i === data.length - 1} onClick={() => move(i, i + 1)} /></div>
               <div className="min-w-0 flex-1"><p dir="auto" className="truncate text-sm font-medium">{t.title}</p><p className="text-xs text-ad-mute">/{t.slug}</p></div>
               <StatusBadge status={t.status} />

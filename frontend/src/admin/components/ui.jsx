@@ -18,7 +18,7 @@ export function ToastProvider({ children }) {
       {children}
       <div className="fixed bottom-4 end-4 z-[200] flex w-[min(92vw,360px)] flex-col gap-2" aria-live="polite">
         {items.map((t) => (
-          <div key={t.id} className={`animate-fade rounded-md border px-3.5 py-2.5 text-sm shadow-lg ${t.type === "error" ? "border-ad-danger/40 bg-ad-card text-ad-danger" : "border-ad-rule bg-ad-card text-ad-ink"}`}>{t.message}</div>
+          <div key={t.id} className={`animate-fade rounded-lg border px-3.5 py-2.5 text-sm shadow-soft ${t.type === "error" ? "border-ad-danger/40 bg-ad-card text-ad-danger" : "border-ad-rule bg-ad-card text-ad-ink"}`}>{t.message}</div>
         ))}
       </div>
     </ToastCtx.Provider>
@@ -30,7 +30,7 @@ export function PageHeader({ title, desc, children }) {
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-bold">{title}</h1>
         {desc && <p className="mt-1 text-sm text-ad-mute">{desc}</p>}
       </div>
       <div className="flex flex-wrap items-center gap-2">{children}</div>
@@ -80,7 +80,7 @@ export function Modal({ title, onClose, children, wide }) {
   }, [onClose]);
   return createPortal(
     <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-label={title} dir="ltr" className={`animate-fade max-h-[92vh] w-full overflow-y-auto rounded-t-xl border border-ad-rule bg-ad-card font-ui text-ad-ink sm:rounded-xl ${wide ? "sm:max-w-2xl" : "sm:max-w-md"}`}>
+      <div role="dialog" aria-modal="true" aria-label={title} dir="ltr" className={`animate-fade max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-ad-rule bg-ad-card font-ui text-ad-ink shadow-soft sm:rounded-2xl ${wide ? "sm:max-w-2xl" : "sm:max-w-md"}`}>
         <div className="sticky top-0 flex items-center justify-between border-b border-ad-rule bg-ad-card px-5 py-3.5">
           <h2 className="font-semibold">{title}</h2>
           <button onClick={onClose} className="text-ad-mute hover:text-ad-ink" aria-label="Close"><Icon name="x" size={18} /></button>

@@ -19,7 +19,7 @@ export default function SectionPage({ section }) {
   return (
     <div className="container-page py-12 sm:py-16">
       <p className="eyebrow">{t.home.sections}</p>
-      <h1 className="mt-1 text-4xl font-bold tracking-tight sm:text-5xl">{title}</h1>
+      <h1 className="mt-1 text-3xl font-bold sm:text-4xl">{title}</h1>
       {!multi && data?.[0]?.description && <Text as="p" className="mt-5 max-w-2xl text-mute">{data[0].description}</Text>}
 
       <div className="mt-12 space-y-14">

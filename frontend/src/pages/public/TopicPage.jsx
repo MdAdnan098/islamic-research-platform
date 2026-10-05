@@ -55,7 +55,7 @@ export default function TopicPage({ section }) {
     <div className="pb-8">
       <div className="container-page max-w-5xl pt-10 sm:pt-14">
         <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap gap-2 text-xs text-mute">
-          <Link to={`/${section}`} className="hover:text-bronze">{sectionLabel}</Link><span aria-hidden="true">/</span>
+          <Link to={`/${section}`} className="hover:text-accent">{sectionLabel}</Link><span aria-hidden="true">/</span>
           <span>{data.category.name}</span>
         </nav>
         {cover && <div className="overflow-hidden rounded-2xl border border-rule"><img src={cover} alt="" className="aspect-[21/9] w-full object-cover" /></div>}

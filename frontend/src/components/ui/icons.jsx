@@ -28,6 +28,9 @@ const P = {
   folder: "M3 6h6l2 2h10v11H3z",
   doc: "M6 3h9l4 4v14H6zM9 12h7M9 16h7",
   tag: "M3 12V4h8l10 10-8 8z",
+  sunrise: "M4 18h16M7 18a5 5 0 0 1 10 0M12 6v3M5.6 10.6l1.6 1.6M18.4 10.6l-1.6 1.6M2 14h2m16 0h2",
+  monitor: "M3 5h18v11H3zM9 20h6M12 16v4",
+  chevUpDown: "M8 9l4-4 4 4M8 15l4 4 4-4",
 };
 
 export function Icon({ name, size = 20, className = "", ...rest }) {
