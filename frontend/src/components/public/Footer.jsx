@@ -30,20 +30,32 @@ export const SOCIALS = [
 export function Footer() {
   const { t } = useI18n();
   const links = [["/", t.nav.home], ["/aqaid", t.nav.aqaid], ["/masail", t.nav.masail]];
+  const info = [["/about", t.nav.about], ["/disclaimer", t.nav.disclaimer], ["/privacy", t.nav.privacy]];
   return (
     <footer className="mt-20 border-t border-rule bg-paper">
-      <div className="container-page grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr]">
+      <div className="container-page grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <Logo size={42} />
           <p className="mt-5 max-w-sm text-base text-mute">{t.footer.about}</p>
         </div>
-        <div>
-          <p className="text-lg font-bold">{t.footer.links}</p>
-          <ul className="mt-4 space-y-3 text-base">
-            {links.map(([to, label]) => (
-              <li key={to}><Link to={to} className="text-mute transition-colors hover:text-ink">{label}</Link></li>
-            ))}
-          </ul>
+        {/* Links + Information sit side by side (on phones too); on desktop they become separate columns */}
+        <div className="grid grid-cols-2 gap-x-6 md:contents">
+          <div>
+            <p className="text-lg font-bold">{t.footer.links}</p>
+            <ul className="mt-4 space-y-3 text-base">
+              {links.map(([to, label]) => (
+                <li key={to}><Link to={to} className="text-mute transition-colors hover:text-ink">{label}</Link></li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="text-lg font-bold">{t.footer.info}</p>
+            <ul className="mt-4 space-y-3 text-base">
+              {info.map(([to, label]) => (
+                <li key={to}><Link to={to} className="text-mute transition-colors hover:text-ink">{label}</Link></li>
+              ))}
+            </ul>
+          </div>
         </div>
         <div>
           <p className="text-lg font-bold">{t.footer.follow}</p>
