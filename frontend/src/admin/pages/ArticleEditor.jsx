@@ -30,7 +30,6 @@ export default function ArticleEditor() {
   const saved = useRef("");
 
   const cats = useAsync((s) => adminApi.categories.list({ status: "active" }, s), []);
-  const topics = useAsync((s) => (f.categoryId ? adminApi.topics.list({ categoryId: f.categoryId, status: "active" }, s) : []), [f.categoryId]);
   const loaded = useAsync(async (s) => {
     if (isNew) return null;
     const a = await adminApi.articles.get(id, s);
@@ -139,8 +138,6 @@ export default function ArticleEditor() {
                 return items.length ? <optgroup key={type} label={label}>{items.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup> : null;
               })}
             </select></Field>
-            <Field label="Topic"><select className="a-input" value={f.topicId} onChange={(e) => setF((s) => ({ ...s, topicId: e.target.value, section: e.target.value ? s.section : "" }))}><option value="">— Koi topic nahi —</option>{(topics.data || []).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select></Field>
-            <Field label="Topic section"><select className="a-input" value={f.section} onChange={set("section")}><option value="">General — Mazeed Mazameen</option><option value="dalail">Hamare Dalail — apni daleel</option><option value="radd">Dalail Ka Jaiza / Radd — doosron ki daleel ka jawab</option></select></Field>
           </div>
           <div className="a-card space-y-3 p-4">
             <h2 className="text-sm font-semibold">Cover image</h2>
