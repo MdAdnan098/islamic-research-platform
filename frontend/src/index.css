@@ -34,6 +34,7 @@
     --hero: 232 236 239;       /* hero band                #E8ECEF */
     --calli: 226 231 235;      /* hero calligraphy         #E2E7EB */
     --field: 255 255 255;      /* search / inputs          #FFFFFF */
+    --footer: 240 242 245;     /* footer band              #F0F2F5 */
     --good: 55 121 75;         /* green goal icon          #37794B */
     --gold: var(--accent); --bronze: var(--accent); --navy: var(--ink);
     --shadow-soft: 0 2px 14px rgb(0 0 0 / .07), 0 0 0 6px rgb(0 0 0 / .012);
@@ -60,6 +61,7 @@
     --hero: 217 198 165;       /* #D9C6A5 */
     --calli: 204 186 152;      /* #CCBA96 */
     --field: 255 247 234;
+    --footer: 245 232 208;     /* footer band              #F5E8D0 */
     --shadow-soft: 0 2px 14px rgb(90 60 10 / .08), 0 0 0 6px rgb(90 60 10 / .015);
     --ad-bg: 238 226 204; --ad-card: 255 247 234; --ad-ink: 0 0 0; --ad-mute: 105 101 92;
     --ad-rule: 232 218 192; --ad-brand: 115 96 63;
@@ -78,6 +80,7 @@
     --hero: 0 0 0;             /* #000000 */
     --calli: 16 16 16;         /* ~#101010 (reference is #060606, lifted slightly so it stays visible) */
     --field: 53 58 64;         /* #353A40 */
+    --footer: 22 23 26;        /* footer band              #16171A */
     --shadow-soft: 0 2px 16px rgb(0 0 0 / .45), 0 0 0 6px rgb(0 0 0 / .12);
     --ad-bg: 22 22 22; --ad-card: 32 33 37; --ad-ink: 233 234 238; --ad-mute: 183 184 188;
     --ad-rule: 68 68 68; --ad-brand: 43 164 172;

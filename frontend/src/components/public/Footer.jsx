@@ -32,7 +32,7 @@ export function Footer() {
   const links = [["/", t.nav.home], ["/aqaid", t.nav.aqaid], ["/masail", t.nav.masail]];
   const info = [["/about", t.nav.about], ["/disclaimer", t.nav.disclaimer], ["/privacy", t.nav.privacy]];
   return (
-    <footer className="mt-20 border-t border-rule bg-paper">
+    <footer className="mt-20 border-t border-rule bg-footer">
       <div className="container-page grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <Logo size={42} />
