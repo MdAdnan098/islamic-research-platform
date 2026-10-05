@@ -7,7 +7,7 @@
    (falls back to an installed copy, then to the old fonts). */
 @font-face {
   font-family: "HomeAlQalam";
-  src: url("/fonts/AlQalam.ttf") format("truetype"), local("Al Qalam Quran Majeed"), local("AlQalam"), local("Al-Qalam Quran Majeed");
+  src: url("/fonts/AmiriQuran-Regular.ttf") format("truetype"), local("Amiri Quran"), local("Al Qalam Quran Majeed"), local("AlQalam"), local("Al-Qalam Quran Majeed");
   font-display: swap;
 }
 @font-face {
