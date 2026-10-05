@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal } from "./ui.jsx";
+import { Icon } from "../../components/ui/icons.jsx";
 import { VERSION_LANGS, isConvertible, buildCopyText, parsePaste, applyPaste } from "../../lib/versions.js";
 
 /**
@@ -47,8 +48,8 @@ export function VersionsPanel({ baseLang, title, titleTr, setTitleTr, blocks, se
               <p className="text-sm text-green-700">✓ Aapne post isi zabaan mein likhi hai</p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                <button type="button" className="a-btn" onClick={() => copy(code, label)}>1. {label} version ke liye post copy karein</button>
-                <button type="button" className="a-btn-primary" onClick={() => (total ? setPaste({ lang: code, label, text: "" }) : toast("Pehle upar post likhein, phir paste karein", "error"))}>2. ChatGPT se converted {label} version yahan paste karein</button>
+                <button type="button" className="a-btn gap-2" onClick={() => copy(code, label)}><Icon name="copy" size={16} />1. Upar likhi poori post copy karein <span className="text-xs font-normal opacity-70">({label} ke liye)</span></button>
+                <button type="button" className="a-btn-primary gap-2" onClick={() => (total ? setPaste({ lang: code, label, text: "" }) : toast("Pehle upar post likhein, phir paste karein", "error"))}><Icon name="download" size={16} />2. ChatGPT ka {label} jawab yahan paste karein</button>
               </div>
             )}
           </div>

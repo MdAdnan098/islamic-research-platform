@@ -16,7 +16,10 @@ function apply(theme) {
   const root = document.documentElement;
   root.classList.toggle("dark", theme === "dark");
   if (theme === "sepia") root.setAttribute("data-theme", "sepia"); else root.removeAttribute("data-theme");
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", BAR[theme]);
+  root.style.colorScheme = theme === "dark" ? "dark" : "light";
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) { meta = document.createElement("meta"); meta.setAttribute("name", "theme-color"); document.head.appendChild(meta); }
+  meta.setAttribute("content", BAR[theme]);
 }
 
 export function ThemeProvider({ children }) {
@@ -42,6 +45,15 @@ export function ThemeProvider({ children }) {
       window.removeEventListener("pageshow", on);
     };
   }, []);
+
+  // Safety net for browsers that don't fire the "change" event reliably (some Android
+  // browsers): while in Default mode, re-check the device theme every second.
+  useEffect(() => {
+    if (mode !== "auto") return undefined;
+    setSystem(systemTheme());
+    const id = setInterval(() => { if (document.visibilityState !== "hidden") setSystem(systemTheme()); }, 1000);
+    return () => clearInterval(id);
+  }, [mode]);
 
   useEffect(() => { apply(theme); }, [theme]);
 

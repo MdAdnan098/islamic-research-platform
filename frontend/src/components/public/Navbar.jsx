@@ -28,7 +28,7 @@ export function Navbar() {
     { to: "/masail", label: t.nav.masail },
   ];
   const extra = [
-    { to: "/about", label: t.nav.about, icon: "info" },
+    { to: "/about", label: t.nav.about },
   ];
   const linkCls = ({ isActive }) =>
     `rounded-full px-4 py-2 text-base font-semibold transition-colors ${isActive ? "bg-tint text-ink" : "text-mute hover:text-ink"}`;
@@ -66,9 +66,7 @@ export function Navbar() {
               <NavLink key={l.to} {...l} className={(s) => `${itemCls(s)} md:hidden`}>{l.label}</NavLink>
             ))}
             {extra.map((l) => (
-              <NavLink key={l.to} to={l.to} className={itemCls}>
-                <Icon name={l.icon} size={20} />{l.label}
-              </NavLink>
+              <NavLink key={l.to} to={l.to} className={itemCls}>{l.label}</NavLink>
             ))}
 
             <div className="flex items-center gap-3 py-4">
