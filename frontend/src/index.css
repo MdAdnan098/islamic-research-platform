@@ -2,18 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Home page Ayat / Hadith cards + Bismillah only.
-   Optional font files: put AlQalam.ttf / Nastaleeq.ttf in frontend/public/fonts/
-   (falls back to an installed copy, then to the old fonts). */
+/* ------------------------------------------------------------------
+   Dedicated Arabic + Urdu typography (self-hosted, no generic fallbacks first)
+   - FS Arabic : Scheherazade New  (open, generous Naskh with clear tashkeel)
+   - FS Quran  : Amiri Quran       (fallback / Quranic marks)
+   - FS Urdu   : Jameel Noori Nastaleeq (classic Indo-Pak Nastaleeq, as in Urdu Quran apps)
+   size-adjust makes the glyphs optically larger without touching layout sizes.
+   ------------------------------------------------------------------ */
 @font-face {
-  font-family: "HomeAlQalam";
-  src: url("/fonts/AmiriQuran-Regular.ttf") format("truetype"), local("Amiri Quran"), local("Al Qalam Quran Majeed"), local("AlQalam"), local("Al-Qalam Quran Majeed");
-  font-display: swap;
+  font-family: "FS Arabic";
+  src: url("/fonts/ScheherazadeNew-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+  size-adjust: 112%;
 }
 @font-face {
-  font-family: "HomeNastaleeq";
-  src: url("/fonts/Nastaleeq.ttf") format("truetype"), local("Jameel Noori Nastaleeq"), local("Noto Nastaliq Urdu");
-  font-display: swap;
+  font-family: "FS Arabic";
+  src: url("/fonts/ScheherazadeNew-Bold.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+  size-adjust: 112%;
+}
+@font-face {
+  font-family: "FS Quran";
+  src: url("/fonts/AmiriQuran-Regular.ttf") format("truetype"), local("Amiri Quran");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "FS Urdu";
+  src: url("/fonts/JameelNooriNastaleeq.woff2") format("woff2"), local("Jameel Noori Nastaleeq");
+  font-weight: 400 700; font-style: normal; font-display: swap;
+  size-adjust: 128%;
 }
 
 @layer base {
@@ -111,13 +128,43 @@
   .btn-ghost { @apply btn text-mute hover:text-ink; }
 
   /* Script-aware typography (applied automatically via <Text/>) */
-  .script-arabic { font-family: "Amiri", "Noto Naskh Arabic", serif !important; line-height: 2.1 !important; }
-  .script-urdu { font-family: "Noto Nastaliq Urdu", serif !important; line-height: 2.3 !important; }
+  .script-arabic, .script-urdu {
+    letter-spacing: 0 !important;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    font-kerning: normal;
+    font-variant-ligatures: common-ligatures contextual;
+    font-feature-settings: "liga" 1, "calt" 1, "kern" 1, "mark" 1, "mkmk" 1;
+    overflow-wrap: break-word;
+  }
+  .script-arabic {
+    font-family: "FS Arabic", "FS Quran", "Amiri", "Noto Naskh Arabic", serif !important;
+    line-height: 2.25 !important;
+    word-spacing: .08em;
+    font-weight: 400;
+  }
+  .script-urdu {
+    font-family: "FS Urdu", "Noto Nastaliq Urdu", serif !important;
+    line-height: 2.3 !important;
+    word-spacing: .12em;
+    font-weight: 400;
+  }
+  /* Headings / short labels: keep Nastaliq & Naskh open but not gappy */
+  h1.script-arabic, h2.script-arabic, h3.script-arabic, h4.script-arabic { line-height: 1.8 !important; font-weight: 700; }
+  h1.script-urdu, h2.script-urdu, h3.script-urdu, h4.script-urdu { line-height: 2 !important; font-weight: 400; }
+  .script-urdu.truncate, .script-urdu.line-clamp-2, .script-urdu.line-clamp-3 { padding-block: .15em; }
+  p.script-urdu, p.script-arabic, blockquote.script-arabic, blockquote.script-urdu { text-wrap: pretty; }
   .script-deva { font-family: "Noto Sans Devanagari", sans-serif !important; line-height: 1.9 !important; }
   .script-latin { font-family: "Figtree", system-ui, sans-serif; line-height: 1.7; }
   .script-latin.font-display { letter-spacing: -0.01em; line-height: 1.25; }
-  .script-arabic.home-arabic { font-family: "HomeAlQalam", "Amiri", "Noto Naskh Arabic", serif !important; }
-  .script-urdu.home-urdu { font-family: "HomeNastaleeq", "Noto Nastaliq Urdu", serif !important; }
+  /* Sacred text (Ayat / Hadith) — a touch more air, centred blocks stay balanced */
+  .script-arabic.home-arabic, .script-arabic.sacred-arabic { line-height: 2.4 !important; word-spacing: .1em; }
+  .script-urdu.home-urdu, .script-urdu.sacred-urdu { line-height: 2.4 !important; }
+  @media (max-width: 639px) {
+    .script-arabic { line-height: 2.3 !important; }
+    .script-urdu { line-height: 2.4 !important; }
+    .script-arabic.home-arabic, .script-arabic.sacred-arabic { line-height: 2.4 !important; }
+  }
 
   .reading { font-size: 1.0625rem; }
   .reading p + p { margin-top: 1.1em; }

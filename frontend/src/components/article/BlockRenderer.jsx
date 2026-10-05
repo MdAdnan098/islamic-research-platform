@@ -16,7 +16,7 @@ function Quote({ b, text }) {
   return (
     <figure className="my-9 rounded-xl border border-rule bg-card px-6 py-7 sm:px-9">
       {sacred && <p className="eyebrow mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
-      <Text as="blockquote" force={big ? "arabic" : undefined} className={big ? "text-[1.7rem] leading-[2.2] sm:text-[2rem]" : "font-display text-xl italic leading-relaxed"}>{text}</Text>
+      <Text as="blockquote" force={big ? s : undefined} className={big ? (s === "urdu" ? "sacred-urdu text-[1.35rem] sm:text-[1.6rem]" : "sacred-arabic text-[2rem] sm:text-[2.4rem]") : "font-display text-xl italic leading-relaxed"}>{text}</Text>
       {b.source && <Text as="figcaption" className="mt-4 text-sm text-bronze">— {b.source}</Text>}
     </figure>
   );

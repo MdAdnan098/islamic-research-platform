@@ -4,6 +4,8 @@ const c = (n) => `rgb(var(--${n}) / <alpha-value>)`;
 export default {
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx}"],
+  // script-* classes are built dynamically in lib/script.js, so Tailwind cannot see them
+  safelist: ["script-arabic", "script-urdu", "script-deva", "script-latin"],
   theme: {
     extend: {
       colors: {
@@ -20,8 +22,8 @@ export default {
         sans: ["var(--font-body)"],
         display: ["var(--font-display)"],
         ui: ["Figtree", "system-ui", "sans-serif"],
-        arabic: ["Amiri", "'Noto Naskh Arabic'", "serif"],
-        urdu: ["'Noto Nastaliq Urdu'", "serif"],
+        arabic: ["'FS Arabic'", "'FS Quran'", "Amiri", "'Noto Naskh Arabic'", "serif"],
+        urdu: ["'FS Urdu'", "'Noto Nastaliq Urdu'", "serif"],
       },
       boxShadow: { soft: "var(--shadow-soft)" },
       keyframes: {
