@@ -88,10 +88,9 @@ const THEME_META = {
   light: { label: "Light", icon: "sun" },
   sepia: { label: "Sepia", icon: "sunrise" },
   dark: { label: "Dark", icon: "moon" },
-  quransign: { label: "Quran Sign", icon: "leaf" },
 };
 
-/** Theme dropdown: Default · Light · Sepia · Dark · Quran Sign (first four same options as Quran.com). */
+/** Theme dropdown: Default · Light · Sepia · Dark (same options as Quran.com). */
 export function ThemeSwitcher({ className = "", align = "end", compact = false, up = false }) {
   const { mode, theme, setMode } = useTheme();
   const [open, setOpen] = useState(false);
@@ -118,7 +117,7 @@ export function ThemeSwitcher({ className = "", align = "end", compact = false, 
         <ul
           role="listbox"
           aria-label="Theme"
-          className={`absolute z-50 w-52 animate-fade overflow-hidden rounded-lg border border-rule bg-card p-1 shadow-soft ${up ? "bottom-full mb-2" : "top-full mt-2"} ${align === "end" ? "end-0" : "start-0"}`}
+          className={`absolute z-50 w-44 animate-fade overflow-hidden rounded-lg border border-rule bg-card p-1 shadow-soft ${up ? "bottom-full mb-2" : "top-full mt-2"} ${align === "end" ? "end-0" : "start-0"}`}
         >
           {THEME_MODES.map((m) => {
             const meta = THEME_META[m];
@@ -131,7 +130,7 @@ export function ThemeSwitcher({ className = "", align = "end", compact = false, 
                   className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-start text-base transition-colors ${on ? "bg-tint font-semibold text-accent" : "text-ink hover:bg-tint"}`}
                 >
                   <Icon name={meta.icon} size={19} />
-                  <span className="flex-1 whitespace-nowrap">{meta.label}</span>
+                  <span className="flex-1">{meta.label}</span>
                   {on && <Icon name="check" size={17} />}
                 </button>
               </li>
