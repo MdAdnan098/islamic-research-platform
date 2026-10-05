@@ -68,7 +68,7 @@ export default function ArticleEditor() {
     if (!isSlug(slug)) slug = "article-" + Math.random().toString(36).slice(2, 8);
     if (slug !== f.slug) setF((s) => ({ ...s, slug }));
     const body = {
-      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), titleTr: Object.fromEntries(Object.entries(f.titleTr || {}).filter(([, v]) => v && v.trim())), slug, language: lang, blocks,
+      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), titleTr: Object.fromEntries(Object.entries(f.titleTr || {}).filter(([, v]) => v && v.trim())), slug, language: lang || "en", blocks,
       references: referenceIdsOf(blocks), section: f.section || null, excerpt: f.excerpt.trim() || null,
       seoTitle: f.seoTitle.trim() || null, seoDescription: f.seoDescription.trim() || null, coverKey: f.coverKey || null,
     };
@@ -102,8 +102,9 @@ export default function ArticleEditor() {
     if (!a) return;
     try { await adminApi.articles.action(a.id, name); toast(`Article ${name === "archive" ? "archived" : name + "ed"}`); isNew ? nav(`/admin/articles/${a.id}`, { replace: true }) : loaded.reload(); } catch (e) { toast(e.message, "error"); }
   }
-  async function archive() {
-    if (await confirm({ title: "Archive article", message: "It will be removed from the public site.", confirm: "Archive", danger: true })) transition("archive");
+  async function remove() {
+    if (!(await confirm({ title: "Article delete karein?", message: "Ye article hamesha ke liye delete ho jayega. Ye wapas nahi aa sakta.", confirm: "Delete", danger: true }))) return;
+    try { await adminApi.articles.remove(id); saved.current = null; toast("Article delete ho gaya"); nav("/admin/articles", { replace: true }); } catch (e) { toast(e.message, "error"); }
   }
 
   if (!isNew && loaded.loading && !loaded.data) return <Spinner />;
@@ -118,7 +119,7 @@ export default function ArticleEditor() {
           <button className="a-btn inline-flex items-center gap-1.5" onClick={openPreview} title="Ab tak jitna likha hai uska preview"><Icon name="eye" size={16} />Preview</button>
           <button className="a-btn" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save draft"}</button>
           {live === "published" ? <button className="a-btn" onClick={() => transition("unpublish")}>Unpublish</button> : <button className="a-btn-primary" onClick={() => transition("publish")} disabled={busy}>Publish</button>}
-          {!isNew && live !== "archived" && <button className="a-btn-danger" onClick={archive}>Archive</button>}
+          {!isNew && <button className="a-btn-danger" onClick={remove}><Icon name="trash" size={15} /> Delete</button>}
         </div>
       </div>
 
@@ -154,7 +155,7 @@ export default function ArticleEditor() {
             <span className="text-sm font-medium">Preview — abhi tak ka likha hua (save nahi hua)</span>
             <button className="rounded-lg border border-rule px-3 py-1 text-sm hover:border-accent/60" onClick={() => setPreview(null)}>✕ Band karein</button>
           </div>
-          <ArticleView article={{ ...f, language: lang, title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs} />
+          <ArticleView article={{ ...f, language: lang || "en", title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs} />
         </div>,
         document.body
       )}

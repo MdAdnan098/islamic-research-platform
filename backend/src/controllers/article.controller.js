@@ -8,6 +8,8 @@ import {
   findArticleById,
   updateArticle,
   archiveArticle,
+  deleteArticle,
+  deleteAllArticles,
   toSafeArticle,
 } from "../services/db/article.service.js";
 import { findReferencesByIds } from "../services/db/reference.service.js";
@@ -147,4 +149,20 @@ export async function unpublish(request, env, ctx, params) {
 
   const article = await updateArticle(config, params.id, { status: "draft" });
   return jsonSuccess({ article: toSafeArticle(article) }, { allowedOrigin: config.allowedOrigin });
+}
+
+/** DELETE /api/admin/articles/:id — permanent. */
+export async function remove(request, env, ctx, params) {
+  const config = loadConfig(env);
+  await requireAdmin(request, env);
+  await deleteArticle(config, params.id);
+  return jsonSuccess({ deleted: true }, { allowedOrigin: config.allowedOrigin });
+}
+
+/** DELETE /api/admin/articles — permanently removes every article. */
+export async function removeAll(request, env) {
+  const config = loadConfig(env);
+  await requireAdmin(request, env);
+  const count = await deleteAllArticles(config);
+  return jsonSuccess({ deleted: count }, { allowedOrigin: config.allowedOrigin });
 }

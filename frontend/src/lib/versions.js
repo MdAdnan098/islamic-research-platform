@@ -23,7 +23,7 @@ export function detectLang(title, blocks) {
     else if (/[\u0900-\u097F]/.test(ch)) de++;
     else if (/[A-Za-z]/.test(ch)) la++;
   }
-  if (!ar && !de && !la) return "en";
+  if (!ar && !de && !la) return null; // nothing written yet
   return ar >= de && ar >= la ? "ur" : de > la ? "hi" : "en";
 }
 

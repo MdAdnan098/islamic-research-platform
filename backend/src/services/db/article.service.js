@@ -239,6 +239,21 @@ export async function archiveArticle(config, id) {
   return findArticleById(config, id);
 }
 
+/** Permanently deletes one article. */
+export async function deleteArticle(config, id) {
+  const existing = await findArticleById(config, id);
+  if (!existing) throwNotFound();
+  const collection = await getArticlesCollection(config);
+  await collection.deleteOne({ _id: new ObjectId(id) });
+}
+
+/** Permanently deletes EVERY article. Returns how many were removed. */
+export async function deleteAllArticles(config) {
+  const collection = await getArticlesCollection(config);
+  const res = await collection.deleteMany({});
+  return res.deletedCount;
+}
+
 /**
  * Used by reference.service.js's guarded delete: counts how many
  * articles currently cite a given reference, so a reference in active

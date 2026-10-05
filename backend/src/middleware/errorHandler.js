@@ -7,9 +7,9 @@ import { jsonError } from "../utils/response.js";
  * @param {(request: Request, env: object, ctx: object) => Promise<Response>} handler
  */
 export function withErrorHandling(handler) {
-  return async (request, env, ctx) => {
+  return async (request, env, ctx, params) => {
     try {
-      return await handler(request, env, ctx);
+      return await handler(request, env, ctx, params);
     } catch (err) {
       const isConfigError = err.message?.includes("Missing required environment variable");
       const status = isConfigError ? 500 : err.status || 500;

@@ -12,6 +12,7 @@ export function VersionsPanel({ baseLang, title, titleTr, setTitleTr, blocks, se
   const total = blocks.filter(isConvertible).length;
 
   async function copy(lang, label) {
+    if (!total) return toast("Pehle upar post likhein, phir copy karein", "error");
     try {
       await navigator.clipboard.writeText(buildCopyText(lang, title, blocks));
       toast(`Copy ho gaya. Ab ChatGPT mein paste karke ${label} mein convert karwayein.`);
@@ -47,7 +48,7 @@ export function VersionsPanel({ baseLang, title, titleTr, setTitleTr, blocks, se
             ) : (
               <div className="flex flex-wrap gap-2">
                 <button type="button" className="a-btn" onClick={() => copy(code, label)}>1. {label} version ke liye post copy karein</button>
-                <button type="button" className="a-btn-primary" onClick={() => setPaste({ lang: code, label, text: "" })}>2. ChatGPT se converted {label} version yahan paste karein</button>
+                <button type="button" className="a-btn-primary" onClick={() => (total ? setPaste({ lang: code, label, text: "" }) : toast("Pehle upar post likhein, phir paste karein", "error"))}>2. ChatGPT se converted {label} version yahan paste karein</button>
               </div>
             )}
           </div>

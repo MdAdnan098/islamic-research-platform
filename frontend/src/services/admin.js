@@ -30,6 +30,8 @@ export const adminApi = {
   },
   articles: {
     ...crud("/api/admin/articles", "articles", "article"),
+    remove: (id) => request(`/api/admin/articles/${id}`, { method: "DELETE" }),
+    removeAll: () => request("/api/admin/articles", { method: "DELETE" }),
     action: (id, name) => request(`/api/admin/articles/${id}/${name}`, json("POST", {})).then((d) => d.article), // publish | unpublish | archive
   },
   references: {

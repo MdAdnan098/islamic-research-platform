@@ -27,8 +27,14 @@ export default function Articles() {
   async function act(a, name) {
     try { await adminApi.articles.action(a.id, name); toast(`Article ${name === "archive" ? "archived" : name + "ed"}`); reload(); } catch (e) { toast(e.message, "error"); }
   }
-  async function archive(a) {
-    if (await confirm({ title: "Archive article", message: `“${a.title}” will be removed from the public site.`, confirm: "Archive", danger: true })) act(a, "archive");
+  async function remove(a) {
+    if (!(await confirm({ title: "Article delete karein?", message: `“${a.title}” hamesha ke liye delete ho jayega. Ye wapas nahi aa sakta.`, confirm: "Delete", danger: true }))) return;
+    try { await adminApi.articles.remove(a.id); toast("Article delete ho gaya"); reload(); } catch (e) { toast(e.message, "error"); }
+  }
+  async function removeAll() {
+    if (!(await confirm({ title: "Saare articles delete karein?", message: "Saare drafts aur published articles hamesha ke liye delete ho jayenge. Ye wapas nahi aa sakta.", confirm: "Aage badhein", danger: true }))) return;
+    if (window.prompt("Pakka karne ke liye DELETE likhein") !== "DELETE") return toast("Delete nahi hua (DELETE sahi nahi likha)", "error");
+    try { const r = await adminApi.articles.removeAll(); toast(`${r.deleted} articles delete ho gaye`); reload(); } catch (e) { toast(e.message, "error"); }
   }
   async function duplicate(a) {
     try {
@@ -44,6 +50,7 @@ export default function Articles() {
   return (
     <>
       <PageHeader title="Articles" desc="Research articles, in every language.">
+        <button className="a-btn-danger" onClick={removeAll}><Icon name="trash" size={15} />Delete all</button>
         <Link to="/admin/articles/new" className="a-btn-primary"><Icon name="plus" size={15} />New article</Link>
       </PageHeader>
 
@@ -68,7 +75,7 @@ export default function Articles() {
                 <IconBtn icon="eye" label="Preview" onClick={() => window.open(`/admin/preview/${a.id}`, "_blank")} />
                 <IconBtn icon="copy" label="Duplicate" onClick={() => duplicate(a)} />
                 {a.status === "published" ? <button className="a-btn ms-1 !py-1" onClick={() => act(a, "unpublish")}>Unpublish</button> : a.status !== "archived" ? <button className="a-btn-primary ms-1 !py-1" onClick={() => act(a, "publish")}>Publish</button> : <button className="a-btn ms-1 !py-1" onClick={() => act(a, "publish")}>Restore & publish</button>}
-                {a.status !== "archived" && <IconBtn icon="trash" label="Archive" danger onClick={() => archive(a)} />}
+                <IconBtn icon="trash" label="Delete" danger onClick={() => remove(a)} />
               </div>
             </li>
           ))}
