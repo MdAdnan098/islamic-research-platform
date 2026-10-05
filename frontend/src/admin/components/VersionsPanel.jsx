@@ -20,7 +20,7 @@ export function VersionsPanel({ baseLang, title, titleTr, setTitleTr, blocks, se
   }
 
   function apply() {
-    const r = applyPaste(paste.lang, parsePaste(paste.text), titleTr, blocks);
+    const r = applyPaste(paste.lang, parsePaste(paste.text, blocks.length), titleTr, blocks);
     if (!r.count) return toast("Koi [number] wala hissa nahi mila. ChatGPT ka jawab waisa hi paste karein jaisa mila.", "error");
     setBlocks(r.blocks); setTitleTr(r.titleTr); setPaste(null);
     toast(`${r.count} hisse apni jagah par lag gaye`);

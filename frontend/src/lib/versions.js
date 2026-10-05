@@ -38,14 +38,26 @@ export function buildCopyText(lang, title, blocks) {
   return parts.join("\n");
 }
 
-/** "[3]\ntext..." -> { 3: "text..." } */
-export function parsePaste(text) {
-  const re = /^[ \t]*\[(\d+)\][ \t]*$/gm;
+/**
+ * "[3] text..." or "[3]\ntext..." -> { 3: "text..." }
+ * ChatGPT often puts the text on the same line as the marker, or drops line
+ * breaks, so markers are found anywhere in the text. To avoid false hits (e.g.
+ * "[1]" used as a footnote inside a paragraph) a marker only counts when its
+ * number is higher than the previous one and not above `max`.
+ */
+export function parsePaste(text, max = Infinity) {
   const marks = [];
-  let m;
-  while ((m = re.exec(text))) marks.push({ n: Number(m[1]), start: m.index, end: m.index + m[0].length });
+  let last = -1, m;
+  const re = /[\[【]\s*(\d+)\s*[\]】]/g;
+  while ((m = re.exec(text))) {
+    const n = Number(m[1]);
+    if (n > last && n <= max) { marks.push({ n, start: m.index, end: m.index + m[0].length }); last = n; }
+  }
   const out = {};
-  marks.forEach((k, i) => { out[k.n] = text.slice(k.end, i + 1 < marks.length ? marks[i + 1].start : text.length).trim(); });
+  marks.forEach((k, i) => {
+    const body = text.slice(k.end, i + 1 < marks.length ? marks[i + 1].start : text.length);
+    out[k.n] = body.replace(/^[ \t]*[:：.\-–]?[ \t]*/, "").trim();
+  });
   return out;
 }
 
