@@ -19,10 +19,10 @@
           var s = localStorage.getItem("fs_theme");
           // Saved choice wins; "auto" (Default) follows the device; first visit = light.
           if (s === "auto") s = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-          else if (["light", "sepia", "dark"].indexOf(s) < 0) s = "light";
+          else if (["light", "sepia", "dark", "quransign"].indexOf(s) < 0) s = "light";
           var d = document.documentElement;
-          d.classList.toggle("dark", s === "dark");
-          if (s === "sepia") d.setAttribute("data-theme", "sepia"); else d.removeAttribute("data-theme");
+          d.classList.toggle("dark", s === "dark" || s === "quransign");
+          if (s === "sepia" || s === "quransign") d.setAttribute("data-theme", s); else d.removeAttribute("data-theme");
         } catch (e) {}
       })();
     </script>

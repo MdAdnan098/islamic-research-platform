@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 /** Theme modes: "auto" follows the device; the rest are fixed. Same set as Quran.com. */
-export const THEME_MODES = ["auto", "light", "sepia", "dark"];
+export const THEME_MODES = ["auto", "light", "sepia", "dark", "quransign"];
 const STORAGE_KEY = "fs_theme";
-const BAR = { light: "#ffffff", sepia: "#fff7ea", dark: "#202125" };
+const BAR = { light: "#ffffff", sepia: "#fff7ea", dark: "#202125", quransign: "#0c3a2d" };
 const ThemeContext = createContext(null);
 
 const systemTheme = () => (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -14,9 +14,11 @@ const readMode = () => {
 
 function apply(theme) {
   const root = document.documentElement;
-  root.classList.toggle("dark", theme === "dark");
-  if (theme === "sepia") root.setAttribute("data-theme", "sepia"); else root.removeAttribute("data-theme");
-  root.style.colorScheme = theme === "dark" ? "dark" : "light";
+  // Quran Sign is a dark-green theme: it also carries the .dark class (logo swap, dark form controls)
+  const isDark = theme === "dark" || theme === "quransign";
+  root.classList.toggle("dark", isDark);
+  if (theme === "sepia" || theme === "quransign") root.setAttribute("data-theme", theme); else root.removeAttribute("data-theme");
+  root.style.colorScheme = isDark ? "dark" : "light";
   let meta = document.querySelector('meta[name="theme-color"]');
   if (!meta) { meta = document.createElement("meta"); meta.setAttribute("name", "theme-color"); document.head.appendChild(meta); }
   meta.setAttribute("content", BAR[theme]);

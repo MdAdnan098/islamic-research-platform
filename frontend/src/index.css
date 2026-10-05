@@ -105,6 +105,31 @@
     color-scheme: dark;
   }
 
+  /* Quran Sign — deep green surfaces + golden text (palette from the "Quran Sign" app reference).
+     Applies to the public site AND the admin dashboard (both read these tokens). */
+  [data-theme="quransign"] {
+    --paper: 12 58 45;         /* page + navbar            #0C3A2D */
+    --card: 16 70 55;          /* cards                    #104637 */
+    --ink: 232 193 91;         /* headings / body (gold)   #E8C15B */
+    --mute: 190 165 106;       /* secondary text           #BEA56A */
+    --rule: 40 100 82;         /* dividers / borders       #286452 */
+    --accent: 212 175 55;      /* buttons, links (gold)    #D4AF37 */
+    --on-accent: 12 58 45;     /* text on gold buttons     #0C3A2D */
+    --tint: 9 46 36;           /* chips / pills            #092E24 */
+    --soft: 20 82 65;          /* highlighted panel        #145241 */
+    --hero: 8 44 34;           /* hero band                #082C22 */
+    --calli: 15 66 52;         /* hero calligraphy         #0F4234 */
+    --field: 9 46 36;          /* search / inputs          #092E24 */
+    --footer: 7 38 29;         /* footer band              #07261D */
+    --good: 120 200 150;
+    --shadow-soft: 0 2px 16px rgb(0 0 0 / .35), 0 0 0 6px rgb(0 0 0 / .1);
+
+    --ad-bg: 9 46 36; --ad-card: 16 70 55; --ad-ink: 232 193 91; --ad-mute: 190 165 106;
+    --ad-rule: 40 100 82; --ad-brand: 212 175 55;
+    --ad-danger: 240 128 112; --ad-ok: 120 200 150; --ad-warn: 226 168 70;
+    color-scheme: dark;
+  }
+
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body { @apply bg-paper font-sans text-ink antialiased; }
   ::selection { background: rgb(var(--accent) / .25); }
