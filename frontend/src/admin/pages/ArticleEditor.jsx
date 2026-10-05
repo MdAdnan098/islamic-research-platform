@@ -132,11 +132,16 @@ export default function ArticleEditor() {
         <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <div className="a-card space-y-3 p-4">
             <h2 className="text-sm font-semibold">Settings</h2>
-            <Field label="Category *"><select className="a-input" value={f.categoryId} onChange={(e) => setF((s) => ({ ...s, categoryId: e.target.value, topicId: "", section: "" }))}>
+            <Field label="Category *"><select className="a-input" value={f.categoryId} onChange={(e) => setF((s) => ({ ...s, categoryId: e.target.value, topicId: "" }))}>
               {[["aqeedah", "Aqaid"], ["masail", "Masail"]].map(([type, label]) => {
                 const items = (cats.data || []).filter((c) => c.type === type);
                 return items.length ? <optgroup key={type} label={label}>{items.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup> : null;
               })}
+            </select></Field>
+            <Field label="Sub category"><select className="a-input" value={f.section || ""} onChange={set("section")}>
+              <option value="">General</option>
+              <option value="dalail">Hamare Dalail</option>
+              <option value="radd">Dalail Ka Radd</option>
             </select></Field>
           </div>
           <div className="a-card space-y-3 p-4">

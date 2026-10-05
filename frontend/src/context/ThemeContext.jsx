@@ -8,7 +8,8 @@ const ThemeContext = createContext(null);
 
 const systemTheme = () => (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 const readMode = () => {
-  try { const s = localStorage.getItem(STORAGE_KEY); return THEME_MODES.includes(s) ? s : "auto"; } catch { return "auto"; }
+  // First visit (nothing saved yet) opens in Light; "auto" only when the reader picks Default.
+  try { const s = localStorage.getItem(STORAGE_KEY); return THEME_MODES.includes(s) ? s : "light"; } catch { return "light"; }
 };
 
 function apply(theme) {
@@ -23,18 +24,30 @@ export function ThemeProvider({ children }) {
   const [system, setSystem] = useState(systemTheme);
   const theme = mode === "auto" ? system : mode;
 
+  // Follow the phone/computer theme live (Default mode), incl. older browsers and
+  // when the device theme was changed while this tab was in the background.
   useEffect(() => {
     const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
     if (!mq) return undefined;
-    const on = () => setSystem(mq.matches ? "dark" : "light");
-    mq.addEventListener?.("change", on);
-    return () => mq.removeEventListener?.("change", on);
+    const on = () => setSystem(systemTheme());
+    if (mq.addEventListener) mq.addEventListener("change", on); else mq.addListener?.(on);
+    const onShow = () => { if (document.visibilityState !== "hidden") on(); };
+    document.addEventListener("visibilitychange", onShow);
+    window.addEventListener("focus", on);
+    window.addEventListener("pageshow", on);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", on); else mq.removeListener?.(on);
+      document.removeEventListener("visibilitychange", onShow);
+      window.removeEventListener("focus", on);
+      window.removeEventListener("pageshow", on);
+    };
   }, []);
 
   useEffect(() => { apply(theme); }, [theme]);
 
   const setMode = useCallback((m) => {
     if (!THEME_MODES.includes(m)) return;
+    if (m === "auto") setSystem(systemTheme()); // pick up the device theme right now
     setModeState(m);
     try { localStorage.setItem(STORAGE_KEY, m); } catch { /* ignore */ }
   }, []);

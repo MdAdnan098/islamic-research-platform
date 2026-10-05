@@ -15,7 +15,7 @@ function useDismiss(open, setOpen, box) {
   }, [open, setOpen, box]);
 }
 
-const BOX_BTN = "inline-flex h-9 items-center gap-1.5 rounded border border-ink/80 bg-field px-2 text-sm font-medium text-ink transition-colors hover:border-accent sm:px-2.5";
+const ICON_BTN = "grid h-10 w-10 place-items-center rounded-full text-ink transition-colors hover:bg-tint";
 
 export function LanguageSwitch({ className = "" }) {
   const { lang, setLang, t } = useI18n();
@@ -52,11 +52,9 @@ export function LanguageDropdown({ className = "", align = "end" }) {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`${t.nav.language}: ${CONTENT_LANGS[lang].label}`}
-        className={BOX_BTN}
+        className={ICON_BTN}
       >
-        <Icon name="globe" size={18} />
-        <span>LN</span>
-        <Icon name="chevUpDown" size={14} />
+        <Icon name="globe" size={22} />
       </button>
       {open && (
         <ul
@@ -111,11 +109,9 @@ export function ThemeSwitcher({ className = "", align = "end", compact = false, 
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`Theme: ${shown.label}`}
-        className={BOX_BTN}
+        className={ICON_BTN}
       >
-        <Icon name={shown.icon} size={18} />
-        <span className={compact ? "hidden sm:inline" : ""}>{shown.label}</span>
-        <Icon name="chevUpDown" size={14} className={compact ? "hidden sm:block" : ""} />
+        <Icon name={shown.icon} size={22} />
       </button>
       {open && (
         <ul

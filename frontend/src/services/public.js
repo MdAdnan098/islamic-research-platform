@@ -49,3 +49,14 @@ export async function loadSection(type, { language, signal } = {}) {
     })
   );
 }
+
+/** All published articles of one section type (aqeedah | masail), newest first, plus its categories. */
+export async function loadSectionArticles(type, signal) {
+  const cats = (await publicApi.categories(signal)).filter((c) => c.type === type);
+  const lists = await Promise.all(cats.map((c) => publicApi.articles({ categoryId: c.id, limit: 100 }, signal)));
+  const articles = lists.flat().sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
+  return { cats, articles };
+}
+
+/** Sub category of an article: "dalail" | "radd" | null (= General). */
+export const isGeneral = (a) => a.section !== "dalail" && a.section !== "radd";

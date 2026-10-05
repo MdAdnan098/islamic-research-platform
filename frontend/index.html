@@ -16,7 +16,9 @@
       (function () {
         try {
           var s = localStorage.getItem("fs_theme");
-          if (["light", "sepia", "dark"].indexOf(s) < 0) s = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          // Saved choice wins; "auto" (Default) follows the device; first visit = light.
+          if (s === "auto") s = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          else if (["light", "sepia", "dark"].indexOf(s) < 0) s = "light";
           var d = document.documentElement;
           d.classList.toggle("dark", s === "dark");
           if (s === "sepia") d.setAttribute("data-theme", "sepia"); else d.removeAttribute("data-theme");

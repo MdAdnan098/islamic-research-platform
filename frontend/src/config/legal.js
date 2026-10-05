@@ -18,7 +18,7 @@ export const LEGAL = {
     title: "Privacy",
     sections: [
       { h: "Account ki zaroorat nahi", p: "Mazameen padhne ke liye aapko koi account banane ya login karne ki zaroorat nahi. Hum aap se naam, email ya phone number nahi mangte." },
-      { h: "Aapke browser mein kya mehfooz hota hai", p: "Aapki pasand (theme aur zubaan) aur aapke bookmarks sirf aapke apne device ke browser mein mehfooz hote hain. Ye hamare server par nahi bheje jaate. Browser ka data saaf karne par ye mit jaayenge." },
+      { h: "Aapke browser mein kya mehfooz hota hai", p: "Aapki pasand (theme aur zubaan) sirf aapke apne device ke browser mein mehfooz hoti hai. Ye hamare server par nahi bheji jaati. Browser ka data saaf karne par ye mit jaayegi." },
       { h: "Technical logs", p: "Website hosting service (Cloudflare) par chalti hai, jo apni khidmat chalane ke liye aam technical logs (jaise IP address, browser ki qisam) rakh sakti hai." },
       { h: "Bairooni links", p: "YouTube, Instagram, WhatsApp jaise links par jaane ke baad aap un platforms ki apni privacy policy ke tahat hote hain." },
       { h: "Tabdeeli", p: "Ye policy zaroorat ke mutabiq badli ja sakti hai; naya matn isi safhe par dikhaya jayega." },

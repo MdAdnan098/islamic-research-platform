@@ -28,7 +28,6 @@ export function Navbar() {
     { to: "/masail", label: t.nav.masail },
   ];
   const extra = [
-    { to: "/bookmarks", label: t.nav.bookmarks, icon: "bookmark" },
     { to: "/about", label: t.nav.about, icon: "info" },
   ];
   const linkCls = ({ isActive }) =>
@@ -45,7 +44,7 @@ export function Navbar() {
           {links.map((l) => <NavLink key={l.to} {...l} className={linkCls}>{l.label}</NavLink>)}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <div className="-me-1.5 flex shrink-0 items-center gap-1.5">
           <ThemeSwitcher compact />
           <LanguageDropdown />
           <button
@@ -53,7 +52,7 @@ export function Navbar() {
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
             aria-label={open ? t.nav.close : t.nav.menu}
-            className="grid h-9 w-9 place-items-center rounded-full text-ink hover:bg-tint sm:h-10 sm:w-10"
+            className="grid h-10 w-10 place-items-center rounded-full text-ink transition-colors hover:bg-tint"
           >
             <Icon name={open ? "x" : "menu"} size={22} />
           </button>
