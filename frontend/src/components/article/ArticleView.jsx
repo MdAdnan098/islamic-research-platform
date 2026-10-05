@@ -7,6 +7,8 @@ import { useMeta } from "../../lib/useMeta.js";
 import { Text } from "../ui/Text.jsx";
 import { BlockRenderer } from "./BlockRenderer.jsx";
 import { pickVersion } from "../../lib/versions.js";
+import { useBookmarks } from "../../lib/bookmarks.js";
+import { Icon } from "../ui/icons.jsx";
 
 const LANG = { en: "Roman", hi: "हिन्दी", ur: "اردو", ar: "العربية" };
 
@@ -22,6 +24,23 @@ function ReadingProgress() {
     return () => window.removeEventListener("scroll", on);
   }, []);
   return <div className="fixed inset-x-0 top-0 z-50 h-0.5 bg-transparent" aria-hidden="true"><div className="h-full bg-accent transition-[width] duration-100" style={{ width: `${p}%` }} /></div>;
+}
+
+function BookmarkButton({ article }) {
+  const { t } = useI18n();
+  const { has, toggle } = useBookmarks();
+  const on = has(article.slug);
+  return (
+    <button
+      type="button"
+      onClick={() => toggle(article)}
+      aria-pressed={on}
+      className={`ms-auto inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-colors ${on ? "border-accent bg-tint text-accent" : "border-rule text-mute hover:text-ink"}`}
+    >
+      <Icon name="bookmark" size={16} fill={on ? "currentColor" : "none"} />
+      {on ? t.bookmarks.saved : t.bookmarks.save}
+    </button>
+  );
 }
 
 /** Shared by the public article page and the admin preview. */
@@ -52,6 +71,7 @@ export function ArticleView({ article, references, crumbs = [], banner }) {
           <span>{formatDate(article.publishedAt || article.createdAt)}</span>
           <span>{readMinutes(article.blocks)} {t.article.minRead}</span>
           <span className="rounded-full border border-rule px-2 py-0.5">{LANG[article.language] || article.language}</span>
+          {!banner && article.slug && <BookmarkButton article={article} />}
         </div>
       </header>
       {cover && <div className="container-page max-w-4xl"><img src={cover} alt="" className="w-full rounded-xl border border-rule" /></div>}

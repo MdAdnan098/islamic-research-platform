@@ -6,6 +6,9 @@ import SectionPage from "../pages/public/SectionPage.jsx";
 import TopicPage from "../pages/public/TopicPage.jsx";
 import ArticlePage from "../pages/public/ArticlePage.jsx";
 import NotFound from "../pages/public/NotFound.jsx";
+import Bookmarks from "../pages/public/Bookmarks.jsx";
+import About from "../pages/public/About.jsx";
+import LegalPage from "../pages/public/LegalPage.jsx";
 
 // Admin is a separate bundle — public visitors never download it.
 const AdminApp = lazy(() => import("../admin/AdminApp.jsx"));
@@ -20,6 +23,10 @@ export function AppRouter() {
         <Route path="masail" element={<SectionPage section="masail" />} />
         <Route path="masail/:topicSlug" element={<TopicPage section="masail" />} />
         <Route path="article/:slug" element={<ArticlePage />} />
+        <Route path="bookmarks" element={<Bookmarks />} />
+        <Route path="about" element={<About />} />
+        <Route path="disclaimer" element={<LegalPage kind="disclaimer" />} />
+        <Route path="privacy" element={<LegalPage kind="privacy" />} />
         <Route path="home" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFound />} />
       </Route>

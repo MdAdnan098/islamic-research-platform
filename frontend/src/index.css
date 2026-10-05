@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Home page Ayat / Hadith cards + Bismillah only.
+   Optional font files: put AlQalam.ttf / Nastaleeq.ttf in frontend/public/fonts/
+   (falls back to an installed copy, then to the old fonts). */
+@font-face {
+  font-family: "HomeAlQalam";
+  src: url("/fonts/AlQalam.ttf") format("truetype"), local("Al Qalam Quran Majeed"), local("AlQalam"), local("Al-Qalam Quran Majeed");
+  font-display: swap;
+}
+@font-face {
+  font-family: "HomeNastaleeq";
+  src: url("/fonts/Nastaleeq.ttf") format("truetype"), local("Jameel Noori Nastaleeq"), local("Noto Nastaliq Urdu");
+  font-display: swap;
+}
+
 @layer base {
   /* ------------------------------------------------------------------
      Themes — colours sampled pixel-by-pixel from the Quran.com reference.
@@ -99,6 +113,8 @@
   .script-deva { font-family: "Noto Sans Devanagari", sans-serif !important; line-height: 1.9 !important; }
   .script-latin { font-family: "Figtree", system-ui, sans-serif; line-height: 1.7; }
   .script-latin.font-display { letter-spacing: -0.01em; line-height: 1.25; }
+  .script-arabic.home-arabic { font-family: "HomeAlQalam", "Amiri", "Noto Naskh Arabic", serif !important; }
+  .script-urdu.home-urdu { font-family: "HomeNastaleeq", "Noto Nastaliq Urdu", serif !important; }
 
   .reading { font-size: 1.0625rem; }
   .reading p + p { margin-top: 1.1em; }

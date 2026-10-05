@@ -1,5 +1,10 @@
 export default {
-  nav: { home: "Home", aqaid: "Aqaid", masail: "Masail", menu: "Menu", close: "Band karein", language: "Content ki zubaan", theme: "Theme" },
+  nav: { home: "Home", aqaid: "Aqaid", masail: "Masail", menu: "Menu", close: "Band karein", language: "Content ki zubaan", theme: "Theme",
+    bookmarks: "Bookmarks", about: "Hamare Baare Mein", disclaimer: "Disclaimer", privacy: "Privacy", follow: "Connect with us" },
+  bookmarks: {
+    hint: "Aapke pasandeeda mazameen — ye aapke is device ke browser mein mehfooz hain.",
+    empty: "Abhi koi mazmoon bookmark nahi kiya gaya.", save: "Bookmark", saved: "Bookmarked", remove: "Hata dein", savedOn: "Mehfooz kiya:",
+  },
   hero: {
     title: "Quran Aur Sunnat, Fahm-e-Salaf Ke Saath",
     desc: "Quran, Sunnat aur Mustanad Hawalon ki Bunyaad par Islami Aqaid, Masail aur Tahqiqi Mazameen",

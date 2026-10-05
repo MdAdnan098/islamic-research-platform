@@ -24,9 +24,9 @@ function QuoteCard({ label, item }) {
   return (
     <figure className="flex h-full flex-col items-center rounded-2xl bg-soft px-6 py-9 text-center sm:px-8 sm:py-10">
       <figcaption className="rounded-full bg-card px-4 py-1 text-sm font-semibold text-accent">{label}</figcaption>
-      <Text as="blockquote" force="arabic" className="mt-6 text-[1.6rem] leading-[2.2] sm:text-[1.9rem]">{item.text}</Text>
-      <Text as="p" className="mt-4 max-w-3xl text-lg text-ink">{item.translation}</Text>
-      <Text as="p" className="mt-auto rounded-full bg-card px-4 py-1.5 text-base font-medium text-accent [margin-top:1.5rem]">{item.source}</Text>
+      <Text as="blockquote" force="arabic" className="home-arabic mt-6 text-[1.6rem] leading-[2.2] sm:text-[1.9rem]">{item.text}</Text>
+      <Text as="p" className="home-urdu mt-4 max-w-3xl text-lg text-ink">{item.translation}</Text>
+      <Text as="p" className="home-urdu mt-auto rounded-full bg-card px-4 py-1.5 text-base font-medium text-accent [margin-top:1.5rem]">{item.source}</Text>
     </figure>
   );
 }
@@ -68,7 +68,7 @@ export default function Home() {
 
       <section className="border-b border-rule">
        <div className="container-page py-14 sm:py-20">
-        <Text as="p" force="arabic" className="mb-8 text-center text-3xl text-ink sm:text-4xl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
+        <Text as="p" force="arabic" className="home-arabic mb-8 text-center text-3xl text-ink sm:text-4xl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
         <div className="mx-auto grid max-w-5xl items-stretch gap-5 lg:grid-cols-2">
           <QuoteCard label={t.home.ayat} item={FEATURED.ayat} />
           <QuoteCard label={t.home.hadith} item={FEATURED.hadith} />
