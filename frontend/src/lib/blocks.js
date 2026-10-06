@@ -17,8 +17,8 @@ export const BLOCK_META = {
   quote: { label: "Quote", icon: "❝" },
   reference: { label: "Reference", icon: "§" },
   image: { label: "Image", icon: "▣" },
-  scan: { label: "Scan pages", icon: "▤" },
-  pdf: { label: "PDF", icon: "⎘" },
+  scan: { label: "Book Scan", icon: "▤" },
+  pdf: { label: "PDF Document", icon: "⎘" },
   divider: { label: "Divider", icon: "—" },
 };
 export const BLOCK_TYPES = Object.keys(BLOCK_META);

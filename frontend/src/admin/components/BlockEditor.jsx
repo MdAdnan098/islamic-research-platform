@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BLOCK_META, BLOCK_TYPES, newBlock } from "../../lib/blocks.js";
+import { BLOCK_META, newBlock } from "../../lib/blocks.js";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { Icon } from "../../components/ui/icons.jsx";
@@ -105,6 +105,13 @@ function Fields({ block, set }) {
   }
 }
 
+/** How the add-block menu is grouped (internal block types are unchanged). */
+const MENU_GROUPS = [
+  { title: "Text", types: ["heading", "text", "quote", "divider"] },
+  { title: "Reference", types: ["reference"] },
+  { title: "Media", types: ["image", "scan", "pdf"] },
+];
+
 function AddMenu({ onAdd, label = "Add block" }) {
   const [open, setOpen] = useState(false);
   return (
@@ -113,11 +120,18 @@ function AddMenu({ onAdd, label = "Add block" }) {
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute start-0 z-20 mt-1 grid w-60 grid-cols-2 gap-1 rounded-lg border border-ad-rule bg-ad-card p-1.5 shadow-lg">
-            {BLOCK_TYPES.map((t) => (
-              <button key={t} type="button" className="flex items-center gap-2 rounded-md px-2.5 py-2 text-start text-sm hover:bg-ad-bg" onClick={() => { onAdd(t); setOpen(false); }}>
-                <span className="w-4 text-center text-ad-mute">{BLOCK_META[t].icon}</span>{BLOCK_META[t].label}
-              </button>
+          <div className="absolute start-0 z-20 mt-1 w-64 max-w-[calc(100vw-2rem)] space-y-2 rounded-lg border border-ad-rule bg-ad-card p-1.5 shadow-lg">
+            {MENU_GROUPS.map((g) => (
+              <div key={g.title}>
+                <p className="px-2.5 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-ad-mute">{g.title}</p>
+                <div className="grid grid-cols-2 gap-1">
+                  {g.types.map((t) => (
+                    <button key={t} type="button" className="flex items-center gap-2 rounded-md px-2.5 py-2 text-start text-sm hover:bg-ad-bg" onClick={() => { onAdd(t); setOpen(false); }}>
+                      <span className="w-4 shrink-0 text-center text-ad-mute">{BLOCK_META[t].icon}</span>{BLOCK_META[t].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </>
