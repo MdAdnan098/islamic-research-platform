@@ -1,4 +1,4 @@
-# Fahm-e-Salaf — Frontend
+# AthariTV — Frontend
 
 React 18 + Vite + Tailwind + react-router. Zero extra runtime deps.
 
