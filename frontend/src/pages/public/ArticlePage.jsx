@@ -22,7 +22,7 @@ export default function ArticlePage() {
       category && { label: category.type === "aqeedah" ? t.nav.aqaid : t.nav.masail, to: base },
       topic && base && { label: topic.title, to: `${base}/${topic.slug}` },
     ].filter(Boolean);
-    return { article, references, crumbs };
+    return { article, references, crumbs, sectionBase: base ? base.slice(1) : null };
   }, [slug]);
 
   if (loading && !data) {

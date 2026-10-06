@@ -1,11 +1,11 @@
 import { Navigate, useParams } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
-import { PATH_TYPE, isGeneral, loadSection, loadSectionArticles } from "../../services/public.js";
+import { PATH_TYPE, loadSection, loadSectionArticles } from "../../services/public.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { useMeta } from "../../lib/useMeta.js";
 import { Text } from "../../components/ui/Text.jsx";
 import { CardSkeletons, ErrorState } from "../../components/ui/feedback.jsx";
-import { ArticleCard, SectionCard, TopicCard } from "../../components/public/Cards.jsx";
+import { ArticleCard, TopicCard } from "../../components/public/Cards.jsx";
 
 /** /aqaid and /masail — Category → Topics. */
 export default function SectionPage({ section }) {
@@ -16,7 +16,8 @@ export default function SectionPage({ section }) {
   const { data, error, loading, reload } = useAsync((signal) => loadSection(type, { signal }), [type]);
   const multi = (data?.length || 0) > 1;
   const arts = useAsync((signal) => loadSectionArticles(type, signal), [type]);
-  const general = (arts.data?.articles || []).filter(isGeneral);
+  // every published post of this section (general, dalail and radd alike) — the dalail/radd cards live inside the post itself
+  const posts = arts.data?.articles || [];
   const catById = Object.fromEntries((arts.data?.cats || []).map((c) => [c.id, c]));
   const hasTopics = !!data?.some((c) => c.topics.length);
 
@@ -26,20 +27,15 @@ export default function SectionPage({ section }) {
       <h1 className="mt-1 text-3xl font-bold sm:text-4xl">{title}</h1>
       {!multi && data?.[0]?.description && <Text as="p" className="mt-5 max-w-2xl text-mute">{data[0].description}</Text>}
 
-      <div className="mt-10 grid items-stretch gap-5 md:grid-cols-2">
-        <SectionCard to={`/${section}/dalail`} title={t.topic.dalail} desc={t.topic.dalailDesc} />
-        <SectionCard to={`/${section}/radd`} title={t.topic.radd} desc={t.topic.raddDesc} />
-      </div>
-
       {arts.loading && !arts.data ? (
         <div className="mt-14"><CardSkeletons count={2} /></div>
       ) : arts.error && !arts.data ? (
         <div className="mt-14"><ErrorState error={arts.error} onRetry={arts.reload} /></div>
-      ) : general.length > 0 && (
-        <section className="mt-14">
+      ) : posts.length > 0 && (
+        <section className="mt-10">
           <h2 className="mb-6 border-b border-rule pb-3 font-display text-2xl font-bold sm:text-3xl">{t.topic.posts}</h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {general.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} />)}
+            {posts.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} />)}
           </div>
         </section>
       )}
