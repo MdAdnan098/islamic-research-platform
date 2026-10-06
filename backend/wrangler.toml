@@ -8,11 +8,18 @@ main = "src/index.js"
 # Keep this set to today's date when you touch this file.
 compatibility_date = "2026-09-27"
 
+# Keep variables that were added in the Cloudflare dashboard (e.g.
+# IMAGEKIT_URL_ENDPOINT) instead of deleting them on every deploy.
+keep_vars = true
+
 # Non-secret configuration. Real secrets (MONGODB_URI, etc.) must be set with
 # `wrangler secret put <NAME>` and must never be committed here.
 [vars]
 ENVIRONMENT = "production"
 ALLOWED_ORIGIN = "https://islamic-research-platform.pages.dev"
+# Media storage: ImageKit (temporary). Without this the Worker falls back to R2
+# and uploads fail with "R2 bucket binding (MEDIA_BUCKET) is not configured".
+MEDIA_PROVIDER = "imagekit"
 
 # R2 bucket binding for scanned pages / images / PDFs.
 # Create the bucket first with: wrangler r2 bucket create islamic-research-media
