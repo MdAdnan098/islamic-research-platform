@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { adminApi } from "../../services/admin.js";
 import { AdminShell } from "../AdminLayout.jsx";
+import { HomeLink } from "../components/HomeLink.jsx";
 import { LogoMark } from "../../components/brand/Logo.jsx";
 
 const MODES = {
@@ -39,7 +40,7 @@ export default function AdminAccess({ mode }) {
   }
 
   return (
-    <AdminShell><div className="grid min-h-screen place-items-center p-4">
+    <AdminShell><HomeLink /><div className="grid min-h-screen place-items-center p-4">
       <form onSubmit={submit} className="a-card w-full max-w-sm space-y-4 p-7">
         <div className="flex flex-col items-center gap-2 pb-2"><LogoMark size={46} /><h1 className="text-xl font-bold">{m.title}</h1><p className="text-center text-xs text-ad-mute">{m.sub}</p></div>
         <Field id="un" label="Username" type="text" autoComplete="username" autoCapitalize="none" value={f.username} onChange={set("username")} />
