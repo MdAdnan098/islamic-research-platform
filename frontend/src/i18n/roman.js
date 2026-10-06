@@ -9,7 +9,7 @@ export default {
   home: {
     ayat: "Ayat-e-Quraani", hadith: "Hadees-e-Nabawi", sections: "Research Sections",
     aqaidDesc: "Islami aqaid ki bunyaadi tahqeeq, Quran o Sunnat ke dalail ke saath.",
-    aqeedahCard: "Aqeedah", masailCard: "Masail", explore: "Explore",
+    aqeedahCard: "Aqaid", masailCard: "Masail", explore: "Explore",
     masailDesc: "Pesh aane wale masail ka mustanad, hawale-daar jaiza.",
     latest: "Latest Posts", noPosts: "Is zubaan mein abhi koi post maujood nahi.",
   },
