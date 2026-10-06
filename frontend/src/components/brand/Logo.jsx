@@ -11,13 +11,22 @@ export function LogoMark({ size = 44, className = "" }) {
   );
 }
 
+/** Wordmark: "Athari" is the main text, "TV" stays smaller and subtle. */
+export function BrandName({ className = "" }) {
+  return (
+    <span className={className}>
+      Athari<span className="ms-px text-[0.62em] font-semibold tracking-wide opacity-70">TV</span>
+    </span>
+  );
+}
+
 export function Logo({ size = 40, showText = true, className = "" }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <LogoMark size={size} />
       {showText && (
         <span className="leading-tight">
-          <span className="block text-[17px] font-bold tracking-tight">{BRAND.name}</span>
+          <span className="block text-[17px] font-bold tracking-tight"><BrandName /></span>
           <span className="block whitespace-nowrap text-[8.5px] font-medium tracking-wide text-bronze sm:text-[10px]">{BRAND.tagline}</span>
         </span>
       )}

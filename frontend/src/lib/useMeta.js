@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { BRAND } from "../config/env.js";
 
-const DEFAULT_TITLE = `${BRAND.name} — ${BRAND.arabic}`;
+const DEFAULT_TITLE = BRAND.name;
 
 function setMeta(attr, key, content) {
   let el = document.head.querySelector(`meta[${attr}="${key}"]`);

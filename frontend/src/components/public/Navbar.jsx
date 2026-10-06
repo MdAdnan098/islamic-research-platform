@@ -38,7 +38,7 @@ export function Navbar() {
   return (
     <header ref={header} className="sticky top-0 z-40 border-b border-rule bg-paper">
       <div className="container-page flex h-16 items-center justify-between gap-2">
-        <Link to="/" aria-label="Fahm-e-Salaf" className="min-w-0"><Logo size={38} /></Link>
+        <Link to="/" aria-label="AthariTV" className="min-w-0"><Logo size={38} /></Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
           {links.map((l) => <NavLink key={l.to} {...l} className={linkCls}>{l.label}</NavLink>)}

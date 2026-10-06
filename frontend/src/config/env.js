@@ -9,4 +9,4 @@ export const SOCIAL = {
   instagram: import.meta.env.VITE_INSTAGRAM_URL || "https://www.instagram.com/athari_tv?stkn=bnpsd3dubmpveTA=",
   whatsapp: import.meta.env.VITE_WHATSAPP_URL || "https://whatsapp.com/channel/0029VbBjiQFAzNbr5kz9zq3b",
 };
-export const BRAND = { name: "Fahm-e-Salaf", arabic: "فہمِ سلف", tagline: "Quran • Sunnah • Ahle Hadees" };
+export const BRAND = { name: "AthariTV", tagline: "Quran • Sunnah • Ahle Hadees" };

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { Icon } from "../components/ui/icons.jsx";
-import { LogoMark } from "../components/brand/Logo.jsx";
+import { BrandName, LogoMark } from "../components/brand/Logo.jsx";
 import { ThemeSwitcher } from "../components/public/Controls.jsx";
 
 const NAV = [
@@ -26,7 +26,7 @@ export function AdminLayout() {
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 px-4 py-5 text-ad-ink">
-        <LogoMark size={30} /><div className="leading-tight"><p className="text-sm font-semibold">Fahm-e-Salaf</p><p className="text-[11px] text-ad-mute">Admin</p></div>
+        <LogoMark size={30} /><div className="leading-tight"><p className="text-sm font-semibold"><BrandName /></p><p className="text-[11px] text-ad-mute">Admin</p></div>
       </div>
       <nav className="flex-1 space-y-1 px-3" onClick={() => setOpen(false)}>
         {NAV.map(([to, label, icon, end]) => <NavLink key={to} to={to} end={end} className={link}><Icon name={icon} size={17} />{label}</NavLink>)}
@@ -45,7 +45,7 @@ export function AdminLayout() {
     <div className="lg:grid lg:grid-cols-[232px_1fr]">
       <aside className="sticky top-0 hidden h-screen border-e border-ad-rule bg-ad-card lg:block">{sidebar}</aside>
       <div className="flex items-center justify-between border-b border-ad-rule bg-ad-card px-4 py-3 lg:hidden">
-        <span className="text-sm font-semibold">Fahm-e-Salaf · Admin</span>
+        <span className="text-sm font-semibold"><BrandName /> · Admin</span>
         <div className="flex items-center gap-2"><ThemeSwitcher compact /><button onClick={() => setOpen(true)} aria-label="Menu" className="a-btn !px-2"><Icon name="menu" size={18} /></button></div>
       </div>
       {open && (
