@@ -7,3 +7,10 @@ MONGODB_DB_NAME=islamic_research
 
 # Reserved for future admin authentication (not implemented yet).
 ADMIN_JWT_SECRET=replace-with-a-long-random-value
+
+# Media storage provider: "r2" (default, permanent) or "imagekit" (temporary testing).
+MEDIA_PROVIDER=imagekit
+IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/<your-imagekit-id>
+IMAGEKIT_PRIVATE_KEY=replace-with-your-imagekit-private-key
+# Optional (defaults to /fahm-e-salaf):
+# IMAGEKIT_FOLDER=/fahm-e-salaf

@@ -23,5 +23,12 @@ export function loadConfig(env) {
     adminJwtSecret: env.ADMIN_JWT_SECRET || null,
     adminRegisterKey: env.ADMIN_REGISTER_KEY || null,
     mediaBucket: env.MEDIA_BUCKET || null,
+    // Media storage provider: "r2" (default, permanent) or "imagekit" (temporary testing).
+    mediaProvider: (env.MEDIA_PROVIDER || "r2").trim().toLowerCase(),
+    imagekit: {
+      privateKey: env.IMAGEKIT_PRIVATE_KEY || null, // secret — backend only, never sent to the frontend
+      urlEndpoint: env.IMAGEKIT_URL_ENDPOINT || null,
+      folder: env.IMAGEKIT_FOLDER || "/fahm-e-salaf",
+    },
   };
 }

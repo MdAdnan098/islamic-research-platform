@@ -1,10 +1,11 @@
 import { loadConfig } from "../config/env.js";
 import { jsonSuccess } from "../utils/response.js";
 import { requireAdmin } from "../middleware/adminAuth.js";
-import { putObject, getObject } from "../services/storage/r2.service.js";
+import { getStorage } from "../services/storage/index.js";
 
 /**
- * Media (scans / images / PDFs) in R2. Keys are server-generated
+ * Media (scans / images / PDFs) in the configured provider (R2, or ImageKit for
+ * temporary testing — see services/storage). Keys are server-generated
  * `<uuid>.<ext>` single path segments, so they are unguessable and the
  * router's one-segment :key param can address them.
  */
@@ -44,7 +45,7 @@ export async function upload(request, env) {
   if (file.size > MAX_BYTES) throw fail("File is too large (max 20 MB).", 413, "FILE_TOO_LARGE");
 
   const key = `${crypto.randomUUID()}.${ext}`;
-  await putObject(config.mediaBucket, key, await file.arrayBuffer(), { contentType: file.type });
+  await getStorage(config).put(key, await file.arrayBuffer(), { contentType: file.type });
 
   return jsonSuccess({ key, contentType: file.type, size: file.size }, { status: 201, allowedOrigin: config.allowedOrigin });
 }
@@ -54,16 +55,7 @@ export async function serve(request, env, ctx, params) {
   const config = loadConfig(env);
   if (!KEY_RE.test(params.key)) throw fail("Not found.", 404, "NOT_FOUND");
 
-  const object = await getObject(config.mediaBucket, params.key);
-  if (!object) throw fail("Not found.", 404, "NOT_FOUND");
-
-  return new Response(object.body, {
-    headers: {
-      "Content-Type": object.httpMetadata?.contentType || "application/octet-stream",
-      "Cache-Control": "public, max-age=31536000, immutable",
-      "Access-Control-Allow-Origin": config.allowedOrigin || "*",
-      "Cross-Origin-Resource-Policy": "cross-origin",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+  const response = await getStorage(config).serve(params.key);
+  if (!response) throw fail("Not found.", 404, "NOT_FOUND");
+  return response;
 }
