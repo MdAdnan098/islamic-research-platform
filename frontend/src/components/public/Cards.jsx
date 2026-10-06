@@ -17,16 +17,24 @@ export function ArticleCard({ article, category }) {
   const { t, contentLang } = useI18n();
   const sectionLabel = category ? (category.type === "aqeedah" ? t.nav.aqaid : t.nav.masail) : null;
   const text = snippet(article, contentLang);
+  const cover = mediaUrl(article.coverKey);
+  const title = pickVersion(article.title, article.titleTr, article.language, contentLang);
   return (
-    <Link to={`/article/${article.slug}`} className="card-lift group flex h-full min-h-[15rem] flex-col rounded-2xl border border-rule bg-card p-6">
-      <div className="flex items-center justify-between gap-3 text-xs text-mute">
-        <span className="eyebrow !text-sm">{sectionLabel || "\u00A0"}</span>
+    <Link to={`/article/${article.slug}`} className="card-lift group flex h-full flex-col rounded-2xl border border-rule bg-card p-3">
+      {/* Cover image on top of the card; corners rounded to sit inside the card's own radius */}
+      <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-tint">
+        {cover && (
+          <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+        )}
       </div>
-      <Text as="h3" className="mt-3 line-clamp-2 min-h-[2.6em] font-display text-lg font-bold leading-snug sm:text-xl">{pickVersion(article.title, article.titleTr, article.language, contentLang)}</Text>
-      {text && <Text as="p" className="mt-3 line-clamp-3 text-base text-mute">{text}</Text>}
-      <div className="mt-auto flex items-center justify-between pt-5 text-xs text-mute">
-        <span>{formatDate(article.publishedAt || article.createdAt)} · {readMinutes(article.blocks)} {t.article.minRead}</span>
-        <Icon name="arrow" size={16} className="text-accent transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
+      <div className="flex flex-1 flex-col px-3 pb-3 pt-4">
+        {sectionLabel && <span className="eyebrow !text-sm">{sectionLabel}</span>}
+        <Text as="h3" className="mt-2 line-clamp-2 min-h-[2.6em] font-display text-lg font-bold leading-snug sm:text-xl">{title}</Text>
+        {text && <Text as="p" className="mt-2 line-clamp-2 text-base text-mute">{text}</Text>}
+        <div className="mt-auto flex items-center justify-between pt-4 text-xs text-mute">
+          <span>{formatDate(article.publishedAt || article.createdAt)} · {readMinutes(article.blocks)} {t.article.minRead}</span>
+          <Icon name="arrow" size={16} className="text-accent transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
+        </div>
       </div>
     </Link>
   );
