@@ -11,6 +11,7 @@ export default {
     aqaidDesc: "Islami aqaid ki bunyaadi tahqeeq, Quran o Sunnat ke dalail ke saath.",
     aqeedahCard: "Aqaid", masailCard: "Masail", explore: "Explore",
     masailDesc: "Pesh aane wale masail ka mustanad, hawale-daar jaiza.",
+    viewAll: "View all posts", 
     latest: "Latest Posts", noPosts: "Is zubaan mein abhi koi post maujood nahi.",
   },
   topic: {

@@ -34,7 +34,7 @@ export async function home(request, env) {
 
   const [categories, recentArticles] = await Promise.all([
     listCategories(config, { status: "active" }),
-    listArticles(config, { status: "published", limit: 6 }),
+    listArticles(config, { status: "published", limit: 5 }),
   ]);
 
   return jsonSuccess(

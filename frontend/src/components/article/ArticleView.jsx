@@ -5,7 +5,6 @@ import { formatDate } from "../../lib/format.js";
 import { mediaUrl } from "../../lib/media.js";
 import { useMeta } from "../../lib/useMeta.js";
 import { Text } from "../ui/Text.jsx";
-import { SectionCard } from "../public/Cards.jsx";
 import { BlockRenderer } from "./BlockRenderer.jsx";
 import { pickVersion } from "../../lib/versions.js";
 
@@ -53,13 +52,6 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
       </header>
       {cover && <div className="container-page max-w-4xl"><img src={cover} alt="" className="w-full rounded-xl border border-rule" /></div>}
       <div className="container-read pb-6 pt-4"><BlockRenderer blocks={article.blocks} references={references} baseLang={article.language} /></div>
-      {/* Only posts the admin filed under "Hamare Dalail" / "Dalail Ka Radd" get these two cards; "General" posts get none. */}
-      {sectionBase && (article.section === "dalail" || article.section === "radd") && (
-        <div className="container-read grid items-stretch gap-5 pb-14 pt-4 md:grid-cols-2">
-          <SectionCard to={`/${sectionBase}/dalail`} title={t.topic.dalail} desc={t.topic.dalailDesc} />
-          <SectionCard to={`/${sectionBase}/radd`} title={t.topic.radd} desc={t.topic.raddDesc} />
-        </div>
-      )}
     </article>
   );
 }

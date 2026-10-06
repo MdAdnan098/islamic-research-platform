@@ -58,5 +58,14 @@ export async function loadSectionArticles(type, signal) {
   return { cats, articles };
 }
 
-/** Sub category of an article: "dalail" | "radd" | null (= General). */
-export const isGeneral = (a) => a.section !== "dalail" && a.section !== "radd";
+/** Every published article across all categories (newest first), plus the categories. */
+export async function loadAllArticles(signal) {
+  const cats = await publicApi.categories(signal);
+  const articles = [];
+  for (let page = 1; page <= 10; page++) {
+    const batch = await publicApi.articles({ limit: 100, page }, signal);
+    articles.push(...batch);
+    if (batch.length < 100) break;
+  }
+  return { cats, articles };
+}

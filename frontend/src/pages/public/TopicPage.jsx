@@ -8,22 +8,7 @@ import { Text } from "../../components/ui/Text.jsx";
 import { CardSkeletons, EmptyState, ErrorState, NotFoundState } from "../../components/ui/feedback.jsx";
 import { ArticleCard } from "../../components/public/Cards.jsx";
 
-function Group({ title, items, category, empty }) {
-  const { t } = useI18n();
-  return (
-    <section className="mt-14">
-      <div className="mb-6 flex items-end justify-between gap-4 border-b border-rule pb-3">
-        <h2 className="font-display text-2xl font-bold sm:text-3xl">{title}</h2>
-        <span className="text-sm text-mute">{items.length}</span>
-      </div>
-      {items.length === 0 ? <EmptyState>{empty || t.topic.noItems}</EmptyState> : (
-        <div className="grid gap-5 sm:grid-cols-2">{items.map((a) => <ArticleCard key={a.id} article={a} category={category}  />)}</div>
-      )}
-    </section>
-  );
-}
-
-/** /aqaid/:topicSlug, /masail/:topicSlug — Intro → Dalail → Radd. */
+/** /aqaid/:topicSlug, /masail/:topicSlug — Intro → posts. */
 export default function TopicPage({ section }) {
   const { topicSlug } = useParams();
   const { t } = useI18n();
@@ -47,7 +32,6 @@ export default function TopicPage({ section }) {
   if (!topic) return <NotFoundState />;
 
   const list = arts.data || [];
-  const by = (s) => list.filter((a) => (s ? a.section === s : !["dalail", "radd"].includes(a.section)));
   const cover = mediaUrl(topic.coverKey);
   const sectionLabel = section === "aqaid" ? t.nav.aqaid : t.nav.masail;
 
@@ -72,11 +56,9 @@ export default function TopicPage({ section }) {
 
 
         {arts.loading && !arts.data ? <div className="mt-8"><CardSkeletons count={2} /></div> : arts.error ? <div className="mt-8"><ErrorState error={arts.error} onRetry={arts.reload} /></div> : (
-          <>
-            <Group title={t.topic.dalail} items={by("dalail")} category={data.category} />
-            <Group title={t.topic.radd} items={by("radd")} category={data.category} />
-            {by(null).length > 0 && <Group title={t.topic.more} items={by(null)} category={data.category} />}
-          </>
+          list.length === 0 ? <div className="mt-10"><EmptyState>{t.topic.noItems}</EmptyState></div> : (
+            <div className="mt-10 grid gap-5 sm:grid-cols-2">{list.map((a) => <ArticleCard key={a.id} article={a} category={data.category} />)}</div>
+          )
         )}
       </div>
     </div>

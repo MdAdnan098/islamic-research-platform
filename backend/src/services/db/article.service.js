@@ -113,7 +113,6 @@ export async function createArticle(config, input) {
     status,
     authorId: new ObjectId(data.authorId),
     references: (data.references || []).map((id) => new ObjectId(id)),
-    section: data.section || null,
     excerpt: data.excerpt || null,
     seoTitle: data.seoTitle || null,
     seoDescription: data.seoDescription || null,
@@ -200,7 +199,7 @@ export async function updateArticle(config, id, updates) {
   const collection = await getArticlesCollection(config);
   const $set = { updatedAt: new Date() };
 
-  for (const key of ["title", "titleTr", "slug", "blocks", "language", "status", "section", "excerpt", "seoTitle", "seoDescription", "coverKey"]) {
+  for (const key of ["title", "titleTr", "slug", "blocks", "language", "status", "excerpt", "seoTitle", "seoDescription", "coverKey"]) {
     if (data[key] !== undefined) {
       $set[key] = typeof data[key] === "string" ? data[key].trim() : data[key];
     }
@@ -279,7 +278,6 @@ export function toSafeArticle(article) {
     status: article.status,
     authorId: String(article.authorId),
     references: (article.references || []).map((r) => String(r)),
-    section: article.section || null,
     excerpt: article.excerpt || null,
     seoTitle: article.seoTitle || null,
     seoDescription: article.seoDescription || null,

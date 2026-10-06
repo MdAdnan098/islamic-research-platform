@@ -13,7 +13,7 @@ import { VersionsPanel } from "../components/VersionsPanel.jsx";
 import { detectLang } from "../../lib/versions.js";
 import { ErrorBox, Field, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 
-const BLANK = { titleTr: {}, title: "", slug: "", language: "ur", categoryId: "", topicId: "", section: "", excerpt: "", seoTitle: "", seoDescription: "", coverKey: "", status: "draft" };
+const BLANK = { titleTr: {}, title: "", slug: "", language: "ur", categoryId: "", topicId: "", excerpt: "", seoTitle: "", seoDescription: "", coverKey: "", status: "draft" };
 const pick = (a) => ({ ...BLANK, ...Object.fromEntries(Object.keys(BLANK).map((k) => [k, a[k] ?? ""])), titleTr: a.titleTr || {} });
 
 export default function ArticleEditor() {
@@ -68,7 +68,7 @@ export default function ArticleEditor() {
     if (slug !== f.slug) setF((s) => ({ ...s, slug }));
     const body = {
       categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), titleTr: Object.fromEntries(Object.entries(f.titleTr || {}).filter(([, v]) => v && v.trim())), slug, language: lang || "en", blocks,
-      references: referenceIdsOf(blocks), section: f.section || null, excerpt: f.excerpt.trim() || null,
+      references: referenceIdsOf(blocks), excerpt: f.excerpt.trim() || null,
       seoTitle: f.seoTitle.trim() || null, seoDescription: f.seoDescription.trim() || null, coverKey: f.coverKey || null,
     };
     setBusy(true);
@@ -82,7 +82,7 @@ export default function ArticleEditor() {
         a = await adminApi.articles.create({ ...body, slug: `${slug}-${Math.random().toString(36).slice(2, 6)}` });
       }
       saved.current = JSON.stringify([pick(a), withIds(a.blocks)]);
-      toast("Saved");
+      toast(live === "published" ? "Changes save ho gaye — post live update ho gayi" : "Saved");
       if (isNew) nav(`/admin/articles/${a.id}`, { replace: true });
       else { setF(pick(a)); loaded.reload(); }
       return a;
@@ -116,7 +116,9 @@ export default function ArticleEditor() {
         <div className="flex items-center gap-3"><Link to="/admin/articles" className="text-sm text-ad-mute hover:text-ad-ink">← Articles</Link>{!isNew && <StatusBadge status={live} />}{dirty && <span className="text-xs text-ad-warn">Unsaved changes</span>}</div>
         <div className="flex flex-wrap gap-2">
           <button className="a-btn inline-flex items-center gap-1.5" onClick={openPreview} title="Ab tak jitna likha hai uska preview"><Icon name="eye" size={16} />Preview</button>
-          <button className="a-btn" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save draft"}</button>
+          {live === "published"
+            ? <button className="a-btn-primary" onClick={() => save()} disabled={busy || !dirty} title="Edit kiye hue changes live post par save karein">{busy ? "Saving…" : "Save changes"}</button>
+            : <button className="a-btn" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save draft"}</button>}
           {live === "published" ? <button className="a-btn" onClick={() => transition("unpublish")}>Unpublish</button> : <button className="a-btn-primary" onClick={() => transition("publish")} disabled={busy}>Publish</button>}
           {!isNew && <button className="a-btn-danger" onClick={remove}><Icon name="trash" size={15} /> Delete</button>}
         </div>
@@ -137,11 +139,6 @@ export default function ArticleEditor() {
                 const items = (cats.data || []).filter((c) => c.type === type);
                 return items.length ? <optgroup key={type} label={label}>{items.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup> : null;
               })}
-            </select></Field>
-            <Field label="Sub category"><select className="a-input" value={f.section || ""} onChange={set("section")}>
-              <option value="">General</option>
-              <option value="dalail">Hamare Dalail</option>
-              <option value="radd">Dalail Ka Radd</option>
             </select></Field>
           </div>
           <div className="a-card space-y-3 p-4">

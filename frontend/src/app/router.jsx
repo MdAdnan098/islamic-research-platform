@@ -6,7 +6,7 @@ import SectionPage from "../pages/public/SectionPage.jsx";
 import TopicPage from "../pages/public/TopicPage.jsx";
 import ArticlePage from "../pages/public/ArticlePage.jsx";
 import NotFound from "../pages/public/NotFound.jsx";
-import SubSectionPage from "../pages/public/SubSectionPage.jsx";
+import LatestPage from "../pages/public/LatestPage.jsx";
 import About from "../pages/public/About.jsx";
 import LegalPage from "../pages/public/LegalPage.jsx";
 
@@ -19,13 +19,10 @@ export function AppRouter() {
       <Route element={<PublicLayout />}>
         <Route index element={<Home />} />
         <Route path="aqaid" element={<SectionPage section="aqaid" />} />
-        <Route path="aqaid/dalail" element={<SubSectionPage section="aqaid" kind="dalail" />} />
-        <Route path="aqaid/radd" element={<SubSectionPage section="aqaid" kind="radd" />} />
         <Route path="aqaid/:topicSlug" element={<TopicPage section="aqaid" />} />
         <Route path="masail" element={<SectionPage section="masail" />} />
-        <Route path="masail/dalail" element={<SubSectionPage section="masail" kind="dalail" />} />
-        <Route path="masail/radd" element={<SubSectionPage section="masail" kind="radd" />} />
         <Route path="masail/:topicSlug" element={<TopicPage section="masail" />} />
+        <Route path="latest" element={<LatestPage />} />
         <Route path="article/:slug" element={<ArticlePage />} />
         <Route path="about" element={<About />} />
         <Route path="disclaimer" element={<LegalPage kind="disclaimer" />} />

@@ -43,4 +43,3 @@ export const cloneBlocks = (blocks = []) => blocks.map((b) => ({ ...structuredCl
 /** The article's `references` array is derived from its reference blocks. */
 export const referenceIdsOf = (blocks = []) => [...new Set(blocks.filter((b) => b.type === "reference" && b.referenceId).map((b) => b.referenceId))];
 
-export const SECTIONS = ["dalail", "radd"];

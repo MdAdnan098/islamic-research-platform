@@ -5,8 +5,9 @@ import { pickVersion } from "../../lib/versions.js";
 import { Text } from "../ui/Text.jsx";
 import { Icon } from "../ui/icons.jsx";
 
-export function ArticleCard({ article, category }) {
-  const { contentLang } = useI18n();
+export function ArticleCard({ article, category, showCategory = false }) {
+  const { t, contentLang } = useI18n();
+  const label = showCategory && category ? (category.type === "aqeedah" ? t.nav.aqaid : t.nav.masail) : null;
   const cover = mediaUrl(article.coverKey);
   const title = pickVersion(article.title, article.titleTr, article.language, contentLang);
   return (
@@ -18,7 +19,10 @@ export function ArticleCard({ article, category }) {
         )}
       </div>
       <div className="flex flex-1 items-start px-3 pb-3 pt-4">
-        <Text as="h3" className="line-clamp-2 font-display text-lg font-bold leading-snug sm:text-xl">{title}</Text>
+        <div className="min-w-0">
+          <Text as="h3" className="line-clamp-2 font-display text-lg font-bold leading-snug sm:text-xl">{title}</Text>
+          {label && <span className="mt-2 inline-block text-xs text-mute">{label}</span>}
+        </div>
       </div>
     </Link>
   );
@@ -40,18 +44,6 @@ export function TopicCard({ topic, to }) {
         <Text as="p" className="mt-2 line-clamp-2 min-h-[3.4em] text-base text-mute">{topic.intro || "\u00A0"}</Text>
         <Icon name="arrow" size={16} className="mt-auto pt-4 text-accent transition-transform group-hover:translate-x-1 rtl:rotate-180" />
       </div>
-    </Link>
-  );
-}
-
-export function SectionCard({ to, title, desc }) {
-  return (
-    <Link to={to} className="card-lift group flex h-full flex-col rounded-2xl border border-rule bg-card p-7 sm:p-8">
-      <h3 className="text-2xl font-bold sm:text-3xl">{title}</h3>
-      <p className="mt-3 max-w-sm text-base text-mute">{desc}</p>
-      <span className="mt-6 inline-flex items-center gap-2 text-base font-semibold text-accent">
-        {title} <Icon name="arrow" size={16} className="transition-transform group-hover:translate-x-1 rtl:rotate-180" />
-      </span>
     </Link>
   );
 }

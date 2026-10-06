@@ -40,7 +40,7 @@ export default function Articles() {
     try {
       const copy = await adminApi.articles.create({
         categoryId: a.categoryId, topicId: a.topicId, title: `${a.title} (copy)`, slug: `${a.slug}-copy-${Math.random().toString(36).slice(2, 6)}`,
-        language: a.language, blocks: cloneBlocks(a.blocks), references: a.references, section: a.section, excerpt: a.excerpt,
+        language: a.language, blocks: cloneBlocks(a.blocks), references: a.references, excerpt: a.excerpt,
         seoTitle: a.seoTitle, seoDescription: a.seoDescription, coverKey: a.coverKey,
       });
       toast("Duplicated as draft"); nav(`/admin/articles/${copy.id}`);

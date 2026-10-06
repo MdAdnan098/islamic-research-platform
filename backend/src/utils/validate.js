@@ -16,7 +16,6 @@ import {
   ARTICLE_STATUSES,
   LANGUAGES,
   BLOCK_TYPES,
-  ARTICLE_SECTIONS,
 } from "./contentEnums.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -223,9 +222,6 @@ export function validateArticleInput(data, { partial = false } = {}) {
     }
   }
 
-  if (data.section !== undefined && data.section !== null && !ARTICLE_SECTIONS.includes(data.section)) {
-    errors.push(err(`section must be one of: ${ARTICLE_SECTIONS.join(", ")}.`));
-  }
   for (const [k, max] of [["excerpt", 1000], ["seoTitle", 200], ["seoDescription", 400], ["coverKey", 500]]) {
     if (data[k] !== undefined && data[k] !== null && (typeof data[k] !== "string" || data[k].length > max)) {
       errors.push(err(`${k} must be a string up to ${max} characters.`));

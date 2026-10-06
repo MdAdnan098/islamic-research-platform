@@ -38,7 +38,7 @@ export default function Home() {
     async (signal) => {
       const [categories, articles] = await Promise.all([
         publicApi.categories(signal),
-        publicApi.articles({ limit: 6 }, signal),
+        publicApi.articles({ limit: 5 }, signal),
       ]);
       return { categories, articles };
     },
@@ -84,13 +84,18 @@ export default function Home() {
       </section>
 
       <section className="container-page py-16 sm:py-20">
-        <SectionHeading title={t.home.latest} />
+        <div className="flex items-end justify-between gap-4">
+          <SectionHeading title={t.home.latest} />
+          <Link to="/latest" className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-accent/30 px-4 py-1.5 text-sm font-medium text-accent transition hover:bg-accent hover:text-white">
+            {t.home.viewAll} <Icon name="arrow" size={15} className="rtl:rotate-180" />
+          </Link>
+        </div>
         <div className="mt-8">
           {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : data.articles.length === 0 ? (
             <EmptyState>{t.home.noPosts}</EmptyState>
           ) : (
             <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {data.articles.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} />)}
+              {data.articles.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} showCategory />)}
             </div>
           )}
         </div>

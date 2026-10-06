@@ -24,6 +24,3 @@ export const LANGUAGES = ["ur", "en", "hi", "ar"];
  * per-type field schemas yet (see article.service.js / validate.js).
  */
 export const BLOCK_TYPES = ["heading", "text", "quote", "reference", "image", "scan", "pdf", "divider"];
-
-/** Which part of a topic page an article belongs to (null = general). */
-export const ARTICLE_SECTIONS = ["dalail", "radd"];
