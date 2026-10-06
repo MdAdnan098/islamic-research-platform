@@ -7,7 +7,7 @@ import { useMeta } from "../../lib/useMeta.js";
 import { Text } from "../../components/ui/Text.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
 import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../../components/ui/feedback.jsx";
-import { ArticleCard, SectionCard } from "../../components/public/Cards.jsx";
+import { ArticleCard, CategoryCard } from "../../components/public/Cards.jsx";
 
 /** Faint calligraphy behind the hero — Quranic phrases, set in a calligraphic face, very low contrast. */
 function HeroCalligraphy() {
@@ -48,7 +48,6 @@ export default function Home() {
   const [heroA, heroB] = t.hero.title.split(", ");
   const cats = data?.categories || [];
   const catById = Object.fromEntries(cats.map((c) => [c.id, c]));
-  const descOf = (type, fallback) => cats.find((c) => c.type === type)?.description || fallback;
 
   return (
     <>
@@ -79,8 +78,8 @@ export default function Home() {
       <section className="container-page pb-4 pt-14 sm:pt-20">
         <SectionHeading eyebrow={t.home.sections} title={`${t.nav.aqaid} & ${t.nav.masail}`} />
         <div className="mt-8 grid items-stretch gap-5 md:grid-cols-2">
-          <SectionCard to="/aqaid" title={t.nav.aqaid} desc={descOf("aqeedah", t.home.aqaidDesc)} />
-          <SectionCard to="/masail" title={t.nav.masail} desc={descOf("masail", t.home.masailDesc)} />
+          <CategoryCard to="/aqaid" title={t.home.aqeedahCard} cta={t.home.explore} />
+          <CategoryCard to="/masail" title={t.home.masailCard} cta={t.home.explore} />
         </div>
       </section>
 

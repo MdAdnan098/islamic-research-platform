@@ -63,3 +63,17 @@ export function SectionCard({ to, title, desc }) {
     </Link>
   );
 }
+
+/** Home page category card (Aqeedah / Masail): big centred name + quiet "Explore →". */
+export function CategoryCard({ to, title, cta }) {
+  return (
+    <Link to={to} className="card-lift group flex min-h-[13rem] flex-col rounded-2xl border border-rule bg-card px-6 py-8 text-center sm:min-h-[15rem] sm:py-10">
+      <div className="flex flex-1 items-center justify-center">
+        <Text as="h3" className="text-[2.6rem] font-bold leading-tight sm:text-5xl">{title}</Text>
+      </div>
+      <span className="mt-6 inline-flex items-center justify-center gap-2 text-sm font-medium text-accent">
+        {cta} <Icon name="arrow" size={15} className="transition-transform group-hover:translate-x-1 rtl:rotate-180" />
+      </span>
+    </Link>
+  );
+}
