@@ -209,6 +209,10 @@
     --accent: 233 199 112;      /* light gold, readable on green */
     --card: 22 100 70;          /* label / source pills */
   }
+  [data-theme="islamic"] .home-quote { color: rgb(var(--ink)); }
+  [data-theme="islamic"] .home-quote .home-arabic { color: #F0D58A; }                 /* Quran / Hadith Arabic: soft gold on green */
+  [data-theme="islamic"] .home-quote .quote-pill { background-color: #fff; color: #1a1a1a; }
+  [data-theme="islamic"] .home-quote .quote-pill-gold { background-color: #fff; color: #9A6F0B; }
   [data-theme="islamic"] .cat-card { background-color: rgb(var(--soft)); }
 
   /* Hero band with faint Islamic calligraphy behind the text */
