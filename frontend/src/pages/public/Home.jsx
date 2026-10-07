@@ -8,6 +8,8 @@ import { Text } from "../../components/ui/Text.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
 import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../../components/ui/feedback.jsx";
 import { ArticleCard, CategoryCard } from "../../components/public/Cards.jsx";
+import { LiveSessionsSection } from "../../components/public/LiveSessions.jsx";
+import { CoursesSection } from "../../components/public/CourseCards.jsx";
 
 /** Faint calligraphy behind the hero — Quranic phrases, set in a calligraphic face, very low contrast. */
 function HeroCalligraphy() {
@@ -100,6 +102,9 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      <LiveSessionsSection />
+      <CoursesSection />
     </>
   );
 }

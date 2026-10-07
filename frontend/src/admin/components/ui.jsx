@@ -109,9 +109,14 @@ export function Field({ label, hint, children, className = "" }) {
 const TONES = {
   published: "bg-ad-ok/12 text-ad-ok", active: "bg-ad-ok/12 text-ad-ok",
   draft: "bg-ad-warn/12 text-ad-warn", archived: "bg-ad-mute/15 text-ad-mute",
+  // live sessions / courses / payments / enrollments
+  live: "bg-ad-danger/12 text-ad-danger", scheduled: "bg-ad-warn/12 text-ad-warn", ended: "bg-ad-mute/15 text-ad-mute",
+  enrollment_open: "bg-ad-ok/12 text-ad-ok", coming_soon: "bg-ad-warn/12 text-ad-warn", enrollment_closed: "bg-ad-mute/15 text-ad-mute", completed: "bg-ad-mute/15 text-ad-mute",
+  paid: "bg-ad-ok/12 text-ad-ok", confirmed: "bg-ad-ok/12 text-ad-ok", pending: "bg-ad-warn/12 text-ad-warn", created: "bg-ad-mute/15 text-ad-mute",
+  failed: "bg-ad-danger/12 text-ad-danger", cancelled: "bg-ad-danger/12 text-ad-danger", refunded: "bg-ad-mute/15 text-ad-mute",
 };
 export function StatusBadge({ status }) {
-  return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${TONES[status] || TONES.archived}`}>{status}</span>;
+  return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${TONES[status] || TONES.archived}`}>{String(status).replace(/_/g, " ")}</span>;
 }
 
 export function Spinner() {

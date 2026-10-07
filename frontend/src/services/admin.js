@@ -39,6 +39,24 @@ export const adminApi = {
     remove: (id) => request(`/api/admin/references/${id}`, { method: "DELETE" }),
   },
 
+  liveSessions: {
+    ...crud("/api/admin/live-sessions", "sessions", "session"),
+    listWithMeta: (params, signal) => request(`/api/admin/live-sessions${qs(params)}`, { signal }), // { sessions, youtubeSync }
+    remove: (id) => request(`/api/admin/live-sessions/${id}`, { method: "DELETE" }),
+    sync: () => request("/api/admin/live-sessions/sync", json("POST", {})).then((d) => d.sync),
+  },
+  courses: {
+    ...crud("/api/admin/courses", "courses", "course"),
+    remove: (id) => request(`/api/admin/courses/${id}`, { method: "DELETE" }),
+  },
+  enrollments: {
+    list: (params, signal) => request(`/api/admin/enrollments${qs(params)}`, { signal }).then((d) => d.enrollments),
+    update: (id, body) => request(`/api/admin/enrollments/${id}`, json("PATCH", body)).then((d) => d.enrollment),
+  },
+  payments: {
+    list: (params, signal) => request(`/api/admin/payments${qs(params)}`, { signal }).then((d) => d.payments),
+  },
+
   upload(file) {
     const form = new FormData();
     form.append("file", file);

@@ -14,3 +14,17 @@ IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/<your-imagekit-id>
 IMAGEKIT_PRIVATE_KEY=replace-with-your-imagekit-private-key
 # Optional (defaults to /fahm-e-salaf):
 # IMAGEKIT_FOLDER=/fahm-e-salaf
+
+# --- Live sessions: YouTube Data API sync (optional) -------------------------
+# Leave unset to manage live sessions manually from the admin panel.
+# In production set these with `wrangler secret put`, never in source control.
+# YOUTUBE_API_KEY=replace-with-your-youtube-data-api-key
+# YOUTUBE_CHANNEL_ID=replace-with-your-channel-id
+# New broadcasts found on the channel stay unpublished unless this is "true":
+# YOUTUBE_AUTO_PUBLISH=false
+
+# --- Course payments: Razorpay (optional until you have an account) ----------
+# Payment endpoints answer 503 "not available" while these are unset.
+# RAZORPAY_KEY_ID=replace-with-your-razorpay-key-id
+# RAZORPAY_KEY_SECRET=replace-with-your-razorpay-key-secret
+# RAZORPAY_WEBHOOK_SECRET=replace-with-the-secret-you-set-on-the-webhook

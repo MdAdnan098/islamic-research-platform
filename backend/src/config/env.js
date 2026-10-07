@@ -30,5 +30,18 @@ export function loadConfig(env) {
       urlEndpoint: env.IMAGEKIT_URL_ENDPOINT || null,
       folder: env.IMAGEKIT_FOLDER || "/fahm-e-salaf",
     },
+    // YouTube Data API (live-session sync). All optional — without a key the
+    // sync is simply disabled and sessions are managed manually in the admin.
+    youtube: {
+      apiKey: env.YOUTUBE_API_KEY || null, // secret — backend only
+      channelId: env.YOUTUBE_CHANNEL_ID || null,
+      autoPublish: String(env.YOUTUBE_AUTO_PUBLISH || "").toLowerCase() === "true",
+    },
+    // Razorpay. All optional — payment endpoints answer 503 until configured.
+    razorpay: {
+      keyId: env.RAZORPAY_KEY_ID || null, // publishable id, returned to the checkout widget
+      keySecret: env.RAZORPAY_KEY_SECRET || null, // secret — never leaves the Worker
+      webhookSecret: env.RAZORPAY_WEBHOOK_SECRET || null, // secret — webhook signature check
+    },
   };
 }

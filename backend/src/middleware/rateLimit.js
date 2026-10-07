@@ -46,3 +46,41 @@ export function enforceLoginRateLimit(request, email) {
     throw err;
   }
 }
+
+/**
+ * Generic best-effort limiter for the public payment / enrollment
+ * endpoints. Same per-isolate limitation as above (see the note at the
+ * top of this file) — add a Cloudflare Rate Limiting rule for these
+ * paths for real protection.
+ */
+const genericBuckets = new Map(); // key -> { count, windowStart }
+
+/**
+ * @param {Request} request
+ * @param {string} bucket - label for the endpoint (e.g. "payment-order")
+ * @param {{ max?: number, windowMs?: number }} [opts]
+ */
+export function enforceRateLimit(request, bucket, { max = 10, windowMs = 15 * 60 * 1000 } = {}) {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const key = `${bucket}:${ip}`;
+  const now = Date.now();
+
+  // Keep memory bounded on a long-lived isolate.
+  if (genericBuckets.size > 5000) {
+    for (const [k, v] of genericBuckets) if (now - v.windowStart > windowMs) genericBuckets.delete(k);
+  }
+
+  const entry = genericBuckets.get(key);
+  if (!entry || now - entry.windowStart > windowMs) {
+    genericBuckets.set(key, { count: 1, windowStart: now });
+    return;
+  }
+
+  entry.count += 1;
+  if (entry.count > max) {
+    const err = new Error("Too many requests. Please try again later.");
+    err.status = 429;
+    err.code = "RATE_LIMITED";
+    throw err;
+  }
+}

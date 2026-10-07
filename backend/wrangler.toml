@@ -23,3 +23,8 @@ MEDIA_PROVIDER = "imagekit"
 
 # R2 bucket binding for scanned pages / images / PDFs.
 # Create the bucket first with: wrangler r2 bucket create islamic-research-media
+
+# YouTube live-session sync (optional). Uncomment AFTER YOUTUBE_API_KEY and
+# YOUTUBE_CHANNEL_ID are set as secrets; until then the job is a no-op anyway.
+# [triggers]
+# crons = ["*/10 * * * *"]

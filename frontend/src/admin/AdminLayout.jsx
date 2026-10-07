@@ -11,6 +11,10 @@ const NAV = [
   ["/admin/categories", "Categories", "folder"],
   ["/admin/topics", "Topics", "tag"],
   ["/admin/references", "References", "book"],
+  ["/admin/live-sessions", "Live Sessions", "monitor"],
+  ["/admin/courses", "Courses", "cap"],
+  ["/admin/enrollments", "Enrollments", "check"],
+  ["/admin/payments", "Payments", "file"],
 ];
 
 export function AdminShell({ children }) {

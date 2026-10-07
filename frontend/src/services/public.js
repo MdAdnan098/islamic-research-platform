@@ -20,6 +20,16 @@ export const publicApi = {
     cached(`topics:${categoryId}`, 60_000, () => request(`/api/public/topics${qs({ categoryId })}`, { signal }).then((d) => d.topics)),
   articles: (params, signal) => request(`/api/public/articles${qs(params)}`, { signal }).then((d) => d.articles),
   article: (slug, signal) => request(`/api/public/articles/${encodeURIComponent(slug)}`, { signal }),
+
+  liveSessions: (params, signal) => request(`/api/public/live-sessions${qs(params)}`, { signal }).then((d) => d.sessions),
+  courses: (signal) => request("/api/public/courses", { signal }).then((d) => d.courses),
+  course: (slug, signal) => request(`/api/public/courses/${encodeURIComponent(slug)}`, { signal }).then((d) => d.course),
+
+  // Payment + enrollment. Prices/amounts are decided by the server; nothing here is trusted by it.
+  createOrder: (courseId) => request(`/api/public/courses/${courseId}/payment/order`, { method: "POST", body: {} }),
+  verifyPayment: (body) => request("/api/public/payments/verify", { method: "POST", body }),
+  paymentStatus: (body) => request("/api/public/payments/status", { method: "POST", body }),
+  enroll: (courseId, body) => request(`/api/public/courses/${courseId}/enroll`, { method: "POST", body }),
 };
 
 /** Ids of topics (in a category) that have published articles in `language`. */

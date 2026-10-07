@@ -24,6 +24,10 @@ import { ensureCategoryIndexes } from "../src/services/db/category.service.js";
 import { ensureTopicIndexes } from "../src/services/db/topic.service.js";
 import { ensureArticleIndexes } from "../src/services/db/article.service.js";
 import { ensureReferenceIndexes } from "../src/services/db/reference.service.js";
+import { ensureLiveSessionIndexes } from "../src/services/db/liveSession.service.js";
+import { ensureCourseIndexes } from "../src/services/db/course.service.js";
+import { ensurePaymentIndexes } from "../src/services/db/payment.service.js";
+import { ensureEnrollmentIndexes } from "../src/services/db/enrollment.service.js";
 
 function loadDevVars() {
   const path = new URL("../.dev.vars", import.meta.url);
@@ -63,6 +67,10 @@ async function main() {
     ["topics", ensureTopicIndexes],
     ["articles", ensureArticleIndexes],
     ["references", ensureReferenceIndexes],
+    ["live_sessions", ensureLiveSessionIndexes],
+    ["courses", ensureCourseIndexes],
+    ["payments", ensurePaymentIndexes],
+    ["enrollments", ensureEnrollmentIndexes],
   ];
 
   for (const [name, ensureFn] of steps) {

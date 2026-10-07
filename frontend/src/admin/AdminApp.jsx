@@ -11,6 +11,10 @@ import Categories from "./pages/Categories.jsx";
 import Topics from "./pages/Topics.jsx";
 import References from "./pages/References.jsx";
 import Preview from "./pages/Preview.jsx";
+import LiveSessions from "./pages/LiveSessions.jsx";
+import Courses from "./pages/Courses.jsx";
+import Enrollments from "./pages/Enrollments.jsx";
+import Payments from "./pages/Payments.jsx";
 
 function Protected() {
   const { status } = useAuth();
@@ -37,6 +41,10 @@ export default function AdminApp() {
               <Route path="categories" element={<Categories />} />
               <Route path="topics" element={<Topics />} />
               <Route path="references" element={<References />} />
+              <Route path="live-sessions" element={<LiveSessions />} />
+              <Route path="courses" element={<Courses />} />
+              <Route path="enrollments" element={<Enrollments />} />
+              <Route path="payments" element={<Payments />} />
             </Route>
             <Route path="preview/:id" element={<Preview />} />
           </Route>

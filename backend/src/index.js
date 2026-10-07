@@ -11,6 +11,13 @@ import { routes as adminArticleRoutes } from "./routes/admin.articles.routes.js"
 import { routes as adminReferenceRoutes } from "./routes/admin.references.routes.js";
 import { routes as mediaRoutes } from "./routes/media.routes.js";
 import { routes as publicContentRoutes } from "./routes/public.content.routes.js";
+import { routes as publicLiveRoutes } from "./routes/public.live.routes.js";
+import { routes as adminLiveRoutes } from "./routes/admin.live.routes.js";
+import { routes as publicCourseRoutes } from "./routes/public.courses.routes.js";
+import { routes as adminCourseRoutes } from "./routes/admin.courses.routes.js";
+import { routes as publicPaymentRoutes } from "./routes/public.payments.routes.js";
+import { routes as adminEnrollmentRoutes } from "./routes/admin.enrollments.routes.js";
+import { runScheduledSync } from "./services/youtube/youtube.service.js";
 
 /**
  * Route table: [method, pattern, handler]. Patterns support ":param"
@@ -35,6 +42,12 @@ const routeDefs = [
   ...adminReferenceRoutes,
   ...publicContentRoutes,
   ...mediaRoutes,
+  ...publicLiveRoutes,
+  ...adminLiveRoutes,
+  ...publicCourseRoutes,
+  ...adminCourseRoutes,
+  ...publicPaymentRoutes,
+  ...adminEnrollmentRoutes,
 ];
 
 const router = buildRouter(routeDefs);
@@ -56,5 +69,14 @@ export default {
     }
 
     return withErrorHandling(match.handler)(request, env, ctx, match.params);
+  },
+
+  /**
+   * Cron Trigger entry point (YouTube live-session sync). Only runs if a
+   * cron is configured in wrangler.toml / the dashboard, and does nothing
+   * unless YOUTUBE_API_KEY is set.
+   */
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runScheduledSync(env));
   },
 };
