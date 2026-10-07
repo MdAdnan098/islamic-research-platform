@@ -211,7 +211,7 @@
   }
   [data-theme="islamic"] .home-quote { color: rgb(var(--ink)); }
   [data-theme="islamic"] .home-quote .home-arabic { color: #F0D58A; }                 /* Quran / Hadith Arabic: soft gold on green */
-  [data-theme="islamic"] .home-quote .quote-pill { background-color: #fff; color: #1a1a1a; }
+  [data-theme="islamic"] .home-quote .quote-pill { background: transparent; padding: 0; color: #E8C873; letter-spacing: .02em; }   /* label: no box, just gold text */
   [data-theme="islamic"] .home-quote .quote-pill-gold { background-color: #fff; color: #9A6F0B; }
   [data-theme="islamic"] .cat-card { background-color: rgb(var(--soft)); }
 
