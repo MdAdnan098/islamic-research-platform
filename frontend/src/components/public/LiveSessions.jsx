@@ -7,15 +7,24 @@ import { formatDateTime } from "../../lib/format.js";
 import { Icon } from "../ui/icons.jsx";
 import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../ui/feedback.jsx";
 
-/** Splits a duration into countdown units. */
+/** Splits a duration in milliseconds into countdown units accurately. */
 function parts(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
-  return { d: Math.floor(total / 86400), h: Math.floor((total % 86400) / 3600), m: Math.floor((total % 3600) / 60), s: total % 60 };
+  const d = Math.floor(total / 86400);
+  const h = Math.floor((total % 86400) / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return { d, h, m, s };
 }
 
 function Countdown({ target, now, compact = false }) {
-  const { d, h, m, s } = parts(new Date(target).getTime() - now);
+  const targetMs = typeof target === "number" ? target : new Date(target).getTime();
+  const nowMs = typeof now === "number" ? now : new Date(now).getTime();
+  const diff = targetMs - nowMs;
+
+  const { d, h, m, s } = parts(diff);
   const cells = [["Days", d], ["Hrs", h], ["Min", m], ["Sec", s]];
+
   return (
     <div className={`${compact ? "mt-3" : "mt-3"} grid grid-cols-4 gap-2 text-center`} role="timer" aria-label={`Starts in ${d} days ${h} hours ${m} minutes`}>
       {cells.map(([label, value]) => (
@@ -36,9 +45,10 @@ function viewState(session, now) {
   if (session.status === "live") return "live";
   if (session.status === "ended") return "ended";
   const start = session.scheduledStartTime ? new Date(session.scheduledStartTime).getTime() : null;
+  const nowMs = typeof now === "number" ? now : new Date(now).getTime();
   if (!start) return "ended"; // no schedule: an already-streamed video, shown as a recording
-  if (start > now) return "upcoming";
-  if (now - start <= AUTO_LIVE_WINDOW_MS) return "live";
+  if (start > nowMs) return "upcoming";
+  if (nowMs - start <= AUTO_LIVE_WINDOW_MS) return "live";
   return "ended";
 }
 
