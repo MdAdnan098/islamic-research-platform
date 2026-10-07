@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+# Article / scan images are served through the API media route - keep them crawlable.
+Allow: /api/public/media/
+
+Sitemap: https://atharitv-website.pages.dev/sitemap.xml
