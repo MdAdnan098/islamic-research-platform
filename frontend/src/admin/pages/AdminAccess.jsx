@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { adminApi } from "../../services/admin.js";
 import { AdminShell } from "../AdminLayout.jsx";
 import { HomeLink } from "../components/HomeLink.jsx";
+import { useToast } from "../components/ui.jsx";
 import { LogoMark } from "../../components/brand/Logo.jsx";
 
 const MODES = {
@@ -19,23 +20,23 @@ export default function AdminAccess({ mode }) {
   const m = MODES[mode];
   const nav = useNavigate();
   const [f, setF] = useState({ username: "", secretKey: "", password: "", confirm: "" });
-  const [err, setErr] = useState("");
+  const toast = useToast();
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
   async function submit(e) {
-    e.preventDefault(); setErr("");
-    if (f.password.length < 8) return setErr("Password must be at least 8 characters.");
-    if (f.password !== f.confirm) return setErr("Passwords do not match.");
+    e.preventDefault();
+    if (f.password.length < 8) return toast("Password must be at least 8 characters.", "error");
+    if (f.password !== f.confirm) return toast("Passwords do not match.", "error");
     setBusy(true);
     try {
       const username = f.username.trim();
       if (mode === "register") await adminApi.register(username, f.password, f.secretKey);
       else await adminApi.resetPassword(username, f.secretKey, f.password);
-      setDone(true);
+      setDone(true); toast(m.ok);
       setTimeout(() => nav("/admin/login", { replace: true }), 1500);
-    } catch (ex) { setErr(ex.message); }
+    } catch (ex) { toast(ex.message, "error"); }
     finally { setBusy(false); }
   }
 
@@ -47,8 +48,6 @@ export default function AdminAccess({ mode }) {
         <Field id="sk" label="Admin secret key" type="password" autoComplete="off" value={f.secretKey} onChange={set("secretKey")} />
         <Field id="pw" label={mode === "reset" ? "New password" : "Password"} type="password" autoComplete="new-password" minLength={8} value={f.password} onChange={set("password")} />
         <Field id="cf" label="Confirm password" type="password" autoComplete="new-password" value={f.confirm} onChange={set("confirm")} />
-        {err && <p role="alert" className="rounded-md bg-ad-danger/10 px-3 py-2 text-sm text-ad-danger">{err}</p>}
-        {done && <p role="status" className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-700">{m.ok}</p>}
         <button className="a-btn-primary w-full !py-2.5" disabled={busy || done}>{busy ? m.busy : m.btn}</button>
         <p className="text-center text-sm"><Link to="/admin/login" className="text-ad-brand hover:underline">Back to sign in</Link></p>
       </form>

@@ -6,20 +6,78 @@ import { Icon } from "../../components/ui/icons.jsx";
 const ToastCtx = createContext(() => {});
 export const useToast = () => useContext(ToastCtx);
 
+/* Popup colours are fixed on purpose (white card, black text, red for errors) - they do not follow the theme. */
+const TOAST_CSS = `
+@keyframes ad-toast-in { from { transform: translateY(calc(-100% - 60px)); } to { transform: translateY(0); } }
+@keyframes ad-toast-out { from { transform: translateY(0); } to { transform: translateY(calc(-100% - 60px)); } }
+@keyframes ad-draw { to { stroke-dashoffset: 0; } }
+@keyframes ad-fill { to { fill-opacity: 1; } }
+.ad-toast { animation: ad-toast-in .38s cubic-bezier(.22,1,.36,1) both; }
+.ad-toast[data-leaving="true"] { animation: ad-toast-out .26s ease-in both; }
+.ad-ring { stroke-dasharray: 152; stroke-dashoffset: 152; fill-opacity: 0; animation: ad-draw .5s ease-out .15s forwards, ad-fill .2s ease-out .6s forwards; }
+.ad-tick { stroke-dasharray: 36; stroke-dashoffset: 36; animation: ad-draw .35s ease-out .6s forwards; }
+.ad-x1 { stroke-dasharray: 20; stroke-dashoffset: 20; animation: ad-draw .2s ease-out .6s forwards; }
+.ad-x2 { stroke-dasharray: 20; stroke-dashoffset: 20; animation: ad-draw .2s ease-out .78s forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .ad-toast, .ad-toast[data-leaving="true"] { animation-duration: .01s; }
+  .ad-ring, .ad-tick, .ad-x1, .ad-x2 { animation-duration: .01s; animation-delay: 0s; }
+}`;
+
+/* The ring is drawn clockwise from the top-right point and stops there; then the tick (or cross) draws in. */
+function ToastIcon({ error }) {
+  const c = error ? "#dc2626" : "#16a34a";
+  return (
+    <svg width="28" height="28" viewBox="0 0 52 52" fill="none" aria-hidden="true" className="shrink-0">
+      <path className="ad-ring" d="M42.97 9.03 A24 24 0 1 1 9.03 42.97 A24 24 0 1 1 42.97 9.03 Z" stroke={c} strokeWidth="3" fill={c} />
+      {error ? (
+        <>
+          <path className="ad-x1" d="M18 18 L34 34" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
+          <path className="ad-x2" d="M34 18 L18 34" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
+        </>
+      ) : (
+        <path className="ad-tick" d="M15 27 L23 35 L38 18" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+    </svg>
+  );
+}
+
 export function ToastProvider({ children }) {
   const [items, setItems] = useState([]);
+  const remove = useCallback((id) => setItems((l) => l.filter((x) => x.id !== id)), []);
+  const dismiss = useCallback((id) => {
+    setItems((l) => l.map((x) => (x.id === id ? { ...x, leaving: true } : x)));
+    setTimeout(() => remove(id), 280);
+  }, [remove]);
   const push = useCallback((message, type = "ok") => {
     const id = Math.random();
     setItems((l) => [...l, { id, message, type }]);
-    setTimeout(() => setItems((l) => l.filter((x) => x.id !== id)), 4000);
-  }, []);
+    setTimeout(() => dismiss(id), 4000);
+  }, [dismiss]);
   return (
     <ToastCtx.Provider value={push}>
       {children}
-      <div className="fixed bottom-4 end-4 z-[200] flex w-[min(92vw,360px)] flex-col gap-2" aria-live="polite">
-        {items.map((t) => (
-          <div key={t.id} className={`animate-fade rounded-lg border px-3.5 py-2.5 text-sm shadow-soft ${t.type === "error" ? "border-ad-danger/40 bg-ad-card text-ad-danger" : "border-ad-rule bg-ad-card text-ad-ink"}`}>{t.message}</div>
-        ))}
+      <style>{TOAST_CSS}</style>
+      <div
+        className="pointer-events-none fixed inset-x-0 top-0 z-[200] flex flex-col items-center gap-2 px-3"
+        style={{ paddingTop: "calc(36px + env(safe-area-inset-top, 0px))" }}
+        aria-live="polite"
+      >
+        {items.map((t) => {
+          const error = t.type === "error";
+          return (
+            <div
+              key={t.id}
+              role={error ? "alert" : "status"}
+              data-leaving={t.leaving ? "true" : "false"}
+              onClick={() => dismiss(t.id)}
+              className="ad-toast pointer-events-auto flex w-fit max-w-[min(92vw,440px)] cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium"
+              style={{ background: "#ffffff", color: error ? "#dc2626" : "#111111", border: "1px solid rgba(0,0,0,.08)", boxShadow: "0 8px 28px rgba(0,0,0,.18)" }}
+            >
+              <ToastIcon error={error} />
+              <span>{t.message}</span>
+            </div>
+          );
+        })}
       </div>
     </ToastCtx.Provider>
   );
