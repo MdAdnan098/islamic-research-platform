@@ -29,11 +29,13 @@ export function CourseCard({ course }) {
         ) : (
           <div className="grid h-full w-full place-items-center text-accent/50"><Icon name="cap" size={44} /></div>
         )}
-        <CourseStatusBadge status={course.status} className="absolute start-2 top-2 shadow-soft" />
       </div>
 
       <div className="flex flex-1 flex-col px-2 pb-2 pt-4">
-        <h3 dir="auto" className="line-clamp-2 font-display text-lg font-bold leading-snug sm:text-xl">{course.title}</h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 dir="auto" className="line-clamp-2 min-w-0 flex-1 font-display text-lg font-bold leading-snug sm:text-xl">{course.title}</h3>
+          <CourseStatusBadge status={course.status} className="mt-0.5 shrink-0 whitespace-nowrap" />
+        </div>
         {course.teacher && <p dir="auto" className="mt-1 text-sm text-mute">{course.teacher}</p>}
         {course.shortDescription && <p dir="auto" className="mt-3 line-clamp-3 text-sm text-mute">{course.shortDescription}</p>}
 
@@ -45,6 +47,32 @@ export function CourseCard({ course }) {
         <span className={`${course.status === "enrollment_open" ? "btn-primary" : "btn-outline"} mt-auto w-full justify-center [margin-top:1.25rem]`}>
           {s.cta}<Icon name="arrow" size={15} className="rtl:rotate-180" />
         </span>
+      </div>
+    </Link>
+  );
+}
+
+/** Compact home-page card: same footprint as the "Latest posts" card (16:9 image + title row, status to the right of the title). */
+export function CourseCompactCard({ course }) {
+  const thumb = mediaUrl(course.thumbnailKey);
+  const meta = [course.teacher, formatPrice(course.price, course.currency)].filter(Boolean).join(" · ");
+  return (
+    <Link to={`/courses/${course.slug}`} className="card-lift group flex h-full flex-col rounded-2xl border border-rule bg-card p-3">
+      <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-tint">
+        {thumb ? (
+          <img src={thumb} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]" />
+        ) : (
+          <div className="grid h-full w-full place-items-center text-accent/50"><Icon name="cap" size={44} /></div>
+        )}
+      </div>
+      <div className="flex min-h-[6.4rem] flex-1 items-start px-3 pb-3 pt-4 sm:min-h-[6.7rem]">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 dir="auto" className="line-clamp-2 min-w-0 flex-1 font-display text-lg font-bold leading-snug sm:text-xl">{course.title}</h3>
+            <CourseStatusBadge status={course.status} className="mt-0.5 shrink-0 whitespace-nowrap" />
+          </div>
+          {meta && <span dir="auto" className="mt-2 block truncate text-xs text-mute">{meta}</span>}
+        </div>
       </div>
     </Link>
   );
@@ -74,7 +102,15 @@ export function CoursesSection() {
         )}
       </div>
       <div className="mt-8">
-        {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : visible.length === 0 ? <EmptyState>No courses are available yet. Please check back soon.</EmptyState> : <CourseGrid courses={visible} />}
+        {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : visible.length === 0 ? <EmptyState>No courses are available yet. Please check back soon.</EmptyState> : (
+          <div className="grid items-stretch gap-5 md:grid-cols-3">
+            {visible.map((c, i) => (
+              <div key={c.id} className={i === 0 ? "" : "hidden md:block"}>
+                <CourseCompactCard course={c} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

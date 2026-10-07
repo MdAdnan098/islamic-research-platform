@@ -58,9 +58,58 @@ const BADGE = {
   ended: { label: "Recording", cls: "bg-tint text-mute" },
 };
 
+/** LIVE NOW / Upcoming / Starting soon / Recording pill, shown to the right of the title. */
+function StateBadge({ state }) {
+  const badge = BADGE[state];
+  return (
+    <span className={`mt-0.5 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ${badge.cls}`}>
+      {state === "live" && <span className="live-dot h-2 w-2 rounded-full bg-white" aria-hidden="true" />}
+      {badge.label}
+    </span>
+  );
+}
+
+/**
+ * Compact home-page card: same footprint as the "Latest posts" card (16:9 image +
+ * title row). The whole card opens the YouTube video; the full card with countdown
+ * and button is still used on /live.
+ */
+export function LiveSessionCompactCard({ session, now }) {
+  const state = viewState(session, now);
+  const when = state === "ended" ? session.actualStartTime || session.scheduledStartTime : session.scheduledStartTime || session.actualStartTime;
+  const linked = isYouTubeUrl(session.youtubeUrl);
+  const Wrapper = linked ? "a" : "div";
+  const linkProps = linked ? { href: session.youtubeUrl, target: "_blank", rel: "noopener noreferrer" } : {};
+  return (
+    <Wrapper {...linkProps} className="card-lift group flex h-full flex-col rounded-2xl border border-rule bg-card p-3">
+      <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-tint">
+        {session.thumbnailUrl && (
+          <img
+            src={session.thumbnailUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            onError={(e) => { e.currentTarget.style.display = "none"; }}
+            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"
+          />
+        )}
+      </div>
+      <div className="flex min-h-[6.4rem] flex-1 items-start px-3 pb-3 pt-4 sm:min-h-[6.7rem]">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 dir="auto" className="line-clamp-2 min-w-0 flex-1 font-display text-lg font-bold leading-snug sm:text-xl">{session.title}</h3>
+            <StateBadge state={state} />
+          </div>
+          {when && <span className="mt-2 block truncate text-xs text-mute">{formatDateTime(when)}</span>}
+        </div>
+      </div>
+    </Wrapper>
+  );
+}
+
 export function LiveSessionCard({ session, now }) {
   const state = viewState(session, now);
-  const badge = BADGE[state];
   const when = state === "ended" ? session.actualStartTime || session.scheduledStartTime : session.scheduledStartTime || session.actualStartTime;
   const cta = state === "live" ? "Watch Live" : state === "ended" ? "Watch Recording" : "Open on YouTube";
 
@@ -91,11 +140,10 @@ export function LiveSessionCard({ session, now }) {
       </div>
 
       <div className="flex flex-1 flex-col px-2 pb-2 pt-4">
-        <span className={`inline-flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-xs font-bold ${badge.cls}`}>
-          {state === "live" && <span className="live-dot h-2 w-2 rounded-full bg-white" aria-hidden="true" />}
-          {badge.label}
-        </span>
-        <h3 dir="auto" className="mt-3 line-clamp-2 font-display text-lg font-bold leading-snug sm:text-xl">{session.title}</h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 dir="auto" className="line-clamp-2 min-w-0 flex-1 font-display text-lg font-bold leading-snug sm:text-xl">{session.title}</h3>
+          <StateBadge state={state} />
+        </div>
         {when && <p className="mt-2 text-sm text-mute">{formatDateTime(when)}</p>}
         {state === "upcoming" && <Countdown target={session.scheduledStartTime} now={now} />}
         <a
@@ -131,12 +179,34 @@ export function LiveEmpty() {
   );
 }
 
+/**
+ * Which sessions the home page shows, in left-to-right order (oldest first):
+ * up to two most recent recordings, then the live / upcoming one on the right.
+ * With no upcoming session it is simply the three latest. `mobile` marks the single
+ * card phones get: the live/upcoming one, else the latest recording.
+ */
+function pickHomeSessions(sessions, now) {
+  const withState = sessions.map((s) => ({ s, state: viewState(s, now) }));
+  const active = withState.filter((x) => x.state !== "ended"); // backend order: live, then soonest upcoming
+  const ended = withState.filter((x) => x.state === "ended"); // backend order: most recent first
+  const picks = [];
+  if (active[0]) picks.push(active[0]);
+  for (const e of ended) if (picks.length < 3) picks.push(e);
+  for (const a of active.slice(1)) if (picks.length < 3) picks.push(a);
+
+  const endedPicks = picks.filter((x) => x.state === "ended").reverse(); // oldest -> newest
+  const activePicks = picks.filter((x) => x.state !== "ended");
+  const ordered = [...endedPicks, ...activePicks];
+  const mobileItem = activePicks[0] || ordered[ordered.length - 1];
+  return ordered.map((x) => ({ ...x, mobile: x === mobileItem }));
+}
+
 /** Home page section — loads independently so a failure here never blanks the rest of the page. */
 export function LiveSessionsSection() {
-  const { data, error, loading, reload } = useAsync((signal) => publicApi.liveSessions({ limit: 6 }, signal), []);
-  const visible = (data || []).slice(0, 3);
-  const needsTick = visible.some((s) => s.status === "scheduled");
+  const { data, error, loading, reload } = useAsync((signal) => publicApi.liveSessions({ limit: 12 }, signal), []);
+  const needsTick = (data || []).some((s) => s.status === "scheduled");
   const now = useNow(needsTick);
+  const picks = pickHomeSessions(data || [], now);
 
   return (
     <section className="container-page py-14 sm:py-20" aria-labelledby="live-heading">
@@ -147,7 +217,15 @@ export function LiveSessionsSection() {
         </Link>
       </div>
       <div className="mt-8">
-        {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : visible.length === 0 ? <LiveEmpty /> : <LiveSessionGrid sessions={visible} now={now} />}
+        {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : picks.length === 0 ? <LiveEmpty /> : (
+          <div className="grid items-stretch gap-5 md:grid-cols-3">
+            {picks.map(({ s, mobile }) => (
+              <div key={s.id} className={mobile ? "" : "hidden md:block"}>
+                <LiveSessionCompactCard session={s} now={now} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
