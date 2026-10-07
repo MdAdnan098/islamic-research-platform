@@ -201,6 +201,16 @@
   .reading p + p { margin-top: 1.1em; }
   .card-lift { @apply shadow-elev transition duration-300 ease-out hover:-translate-y-1 hover:border-accent/40 hover:shadow-soft motion-reduce:transition-none motion-reduce:hover:translate-y-0; }
 
+  /* Islamic theme only: home Ayat / Hadith cards turn dark green (children re-themed via variables),
+     and the two section cards take the light green these panels had before. */
+  [data-theme="islamic"] .home-quote {
+    --soft: 12 83 56; --rule: 12 83 56;
+    --ink: 244 248 245; --mute: 214 228 219;
+    --accent: 233 199 112;      /* light gold, readable on green */
+    --card: 22 100 70;          /* label / source pills */
+  }
+  [data-theme="islamic"] .cat-card { background-color: rgb(var(--soft)); }
+
   /* Hero band with faint Islamic calligraphy behind the text */
   .hero-band { position: relative; isolation: isolate; overflow: hidden; background: rgb(var(--hero)); }
   .hero-calli { position: absolute; inset: 0; z-index: -1; pointer-events: none; user-select: none; color: rgb(var(--calli)); font-family: "Aref Ruqaa", "Amiri", serif; font-weight: 700; direction: rtl; line-height: 1; white-space: nowrap; }
