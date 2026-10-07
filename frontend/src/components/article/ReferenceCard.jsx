@@ -13,7 +13,7 @@ export function ReferenceCard({ reference: r }) {
   const meta = [[t.article.author, r.author], [t.article.volume, r.volume], [t.article.page, r.page]].filter(([, v]) => v);
 
   return (
-    <aside className="my-9 overflow-hidden rounded-xl border border-rule border-s-4 border-s-accent bg-card shadow-soft">
+    <aside className="my-9 overflow-hidden rounded-xl border border-rule bg-card shadow-elev">
       <div className="p-5 sm:p-7">
         <p className="eyebrow flex items-center gap-2"><Icon name="book" size={14} />{t.article.reference}</p>
         <Text as="h4" className="mt-2 font-display text-xl font-semibold leading-snug sm:text-2xl">{r.book}</Text>

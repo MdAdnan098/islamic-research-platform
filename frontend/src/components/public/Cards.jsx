@@ -48,20 +48,30 @@ export function TopicCard({ topic, to }) {
   );
 }
 
-/** Home page category card (Aqaid / Masail): decorative centred name + quiet "Explore →". */
+/** Home page category card (Aqaid / Masail): plain card + shadow, with a fixed-gold Islamic ornament (colours do not follow the theme). */
+const GOLD = "194 162 103";
+function Star({ size, filled = false, className = "", style }) {
+  const p = filled ? { fill: `rgb(${GOLD})` } : { fill: "none", stroke: `rgb(${GOLD})`, strokeWidth: 1.2 };
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} className={className} style={style} aria-hidden="true" {...p}>
+      <rect x="18" y="18" width="64" height="64" />
+      <rect x="18" y="18" width="64" height="64" transform="rotate(45 50 50)" />
+    </svg>
+  );
+}
+
 export function CategoryCard({ to, title, cta }) {
   return (
-    <Link to={to} className="card-lift group relative flex min-h-[13rem] flex-col overflow-hidden rounded-2xl border border-rule bg-gradient-to-b from-accent/10 via-card to-card px-6 py-8 text-center sm:min-h-[15rem] sm:py-10">
-      {/* soft decorative ring in the corner */}
-      <span aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full border-[14px] border-accent/10" />
-      <span aria-hidden="true" className="pointer-events-none absolute -bottom-12 -left-12 h-32 w-32 rounded-full border-[12px] border-accent/10" />
-      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-accent/70" />
+    <Link to={to} className="card-lift group relative flex min-h-[13rem] flex-col overflow-hidden rounded-2xl border border-rule bg-card px-6 py-8 text-center sm:min-h-[15rem] sm:py-10">
+      {/* fine inner frame + faint eight-point star (rub el hizb) behind the title */}
+      <span aria-hidden="true" className="pointer-events-none absolute inset-2.5 rounded-xl border" style={{ borderColor: `rgb(${GOLD} / .38)` }} />
+      <Star size={170} className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ opacity: 0.11 }} />
       <div className="relative flex flex-1 flex-col items-center justify-center">
         <Text as="h3" className="text-[2.6rem] font-bold leading-tight text-accent sm:text-5xl">{title}</Text>
-        <span aria-hidden="true" className="mt-4 flex items-center gap-2 text-accent/70">
-          <span className="h-px w-10 bg-accent/40" />
-          <span className="h-2 w-2 rotate-45 bg-accent/70" />
-          <span className="h-px w-10 bg-accent/40" />
+        <span aria-hidden="true" className="mt-4 flex items-center gap-2.5">
+          <span className="h-px w-10" style={{ background: `rgb(${GOLD} / .7)` }} />
+          <Star size={14} filled />
+          <span className="h-px w-10" style={{ background: `rgb(${GOLD} / .7)` }} />
         </span>
       </div>
       <span className="relative mt-6 inline-flex items-center justify-center gap-2 self-center rounded-full border border-accent/30 px-5 py-1.5 text-sm font-medium text-accent transition group-hover:bg-accent group-hover:text-white">

@@ -9,7 +9,7 @@ export function CardSkeletons({ count = 3 }) {
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="space-y-3 rounded-2xl border border-rule bg-card p-5 shadow-soft">
+        <div key={i} className="space-y-3 rounded-2xl border border-rule bg-card p-5 shadow-elev">
           <Skeleton className="h-3 w-20" /><Skeleton className="h-5 w-4/5" /><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-2/3" />
         </div>
       ))}
@@ -24,7 +24,7 @@ export function EmptyState({ children }) {
 export function ErrorState({ error, onRetry }) {
   const { t } = useI18n();
   return (
-    <div className="rounded-2xl border border-rule bg-card px-6 py-10 shadow-soft text-center" role="alert">
+    <div className="rounded-2xl border border-rule bg-card px-6 py-10 shadow-elev text-center" role="alert">
       <p className="font-medium">{t.common.error}</p>
       {error?.message && <p className="mt-1 text-sm text-mute">{error.message}</p>}
       {onRetry && <button onClick={onRetry} className="btn-outline mt-5">{t.common.retry}</button>}

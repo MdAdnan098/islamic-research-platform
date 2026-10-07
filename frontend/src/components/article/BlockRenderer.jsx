@@ -17,7 +17,7 @@ function Quote({ b, text }) {
   const slant = s === "latin" ? "italic" : "not-italic";
   const mark = "pointer-events-none absolute select-none font-display text-[5.5rem] font-bold leading-none text-accent/25 sm:text-[7rem]";
   return (
-    <figure className="relative my-9 overflow-hidden rounded-2xl border border-rule bg-card px-7 pb-12 pt-14 shadow-[0_14px_34px_-10px_rgb(0_0_0/0.28),0_3px_10px_rgb(0_0_0/0.08)] sm:px-12 sm:pb-14 sm:pt-16">
+    <figure className="relative my-9 overflow-hidden rounded-2xl border border-rule bg-card px-7 pb-12 pt-14 shadow-elev sm:px-12 sm:pb-14 sm:pt-16">
       <span aria-hidden="true" className={`${mark} left-4 top-1 sm:left-6`}>&ldquo;</span>
       <span aria-hidden="true" className={`${mark} bottom-[-2.4rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
       {sacred && <p className="eyebrow relative mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
@@ -34,7 +34,7 @@ function Figure({ pages, caption, startOpen }) {
     <figure className="my-9">
       <div className={single ? "" : "grid grid-cols-2 gap-3 sm:grid-cols-3"}>
         {pages.map((p, i) => (
-          <button key={i} onClick={() => setOpen(i)} className={`block w-full overflow-hidden rounded-lg border border-rule bg-card text-start transition hover:border-accent/60 ${single ? "lg:flex lg:justify-center lg:bg-tint lg:p-3" : ""}`} aria-label={p.caption || "Open"}>
+          <button key={i} onClick={() => setOpen(i)} className={`block w-full overflow-hidden rounded-lg border border-rule bg-card text-start shadow-elev transition hover:border-accent/60 ${single ? "lg:flex lg:justify-center lg:bg-tint lg:p-3" : ""}`} aria-label={p.caption || "Open"}>
             <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className={`w-full bg-rule/30 ${single ? "lg:max-h-[26rem] lg:w-auto lg:max-w-full lg:rounded-md lg:object-contain" : "aspect-[3/4] object-cover object-top"}`} />
           </button>
         ))}
@@ -51,7 +51,7 @@ function Pdf({ b }) {
   const url = mediaUrl(b.key);
   if (!url) return null;
   return (
-    <div className="my-9 rounded-xl border border-rule bg-card p-5">
+    <div className="my-9 rounded-xl border border-rule bg-card p-5 shadow-elev">
       <div className="flex flex-wrap items-center gap-4">
         <span className="grid h-11 w-11 place-items-center rounded-lg bg-rule/50 text-bronze"><Icon name="file" size={22} /></span>
         <div className="min-w-0 flex-1">

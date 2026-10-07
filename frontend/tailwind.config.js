@@ -25,7 +25,7 @@ export default {
         arabic: ["'FS Arabic'", "'FS Quran'", "Amiri", "'Noto Naskh Arabic'", "serif"],
         urdu: ["'FS Urdu'", "'Noto Nastaliq Urdu'", "serif"],
       },
-      boxShadow: { soft: "var(--shadow-soft)" },
+      boxShadow: { soft: "var(--shadow-soft)", elev: "0 14px 34px -10px rgb(0 0 0 / 0.28), 0 3px 10px rgb(0 0 0 / 0.08)" },
       keyframes: {
         "fade-up": { from: { opacity: 0, transform: "translateY(8px)" }, to: { opacity: 1, transform: "none" } },
         fade: { from: { opacity: 0 }, to: { opacity: 1 } },
