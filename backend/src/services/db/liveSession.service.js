@@ -111,9 +111,12 @@ export async function listLiveSessions(config, filters = {}) {
 export const AUTO_LIVE_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 export function effectiveStatus(s, now = Date.now()) {
-  if (s.status !== "scheduled" || !s.scheduledStartTime || s.actualEndTime) return s.status;
+  if (s.status !== "scheduled" || s.actualEndTime) return s.status;
+  // No scheduled time at all: it's an already-streamed video, show it as a recording.
+  if (!s.scheduledStartTime) return "ended";
   const start = new Date(s.scheduledStartTime).getTime();
-  return Number.isFinite(start) && start <= now && now - start <= AUTO_LIVE_WINDOW_MS ? "live" : s.status;
+  if (!Number.isFinite(start) || start > now) return s.status; // still upcoming
+  return now - start <= AUTO_LIVE_WINDOW_MS ? "live" : "ended";
 }
 
 /**

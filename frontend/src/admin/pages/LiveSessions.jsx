@@ -22,7 +22,7 @@ function SessionForm({ initial, onDone, onCancel }) {
     title: initial?.title || "",
     description: initial?.description || "",
     scheduledStartTime: toLocalInput(initial?.scheduledStartTime),
-    status: initial?.status || "scheduled",
+    status: !initial || initial.status === "scheduled" ? "auto" : initial.status,
     isPublished: initial?.isPublished ?? false,
     syncEnabled: initial?.syncEnabled ?? true,
   });
@@ -36,7 +36,8 @@ function SessionForm({ initial, onDone, onCancel }) {
       title: f.title.trim(),
       description: f.description,
       scheduledStartTime: fromLocalInput(f.scheduledStartTime),
-      status: f.status,
+      // "auto": future time -> upcoming (countdown); past time -> goes live/ends by itself; no time -> recording.
+      status: f.status === "auto" ? (f.scheduledStartTime ? "scheduled" : "ended") : f.status,
       isPublished: f.isPublished,
       syncEnabled: f.syncEnabled,
     };
@@ -61,9 +62,9 @@ function SessionForm({ initial, onDone, onCancel }) {
       <Field label="Description"><textarea className="a-input min-h-20" dir="auto" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></Field>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Scheduled start"><input type="datetime-local" className="a-input" value={f.scheduledStartTime} onChange={(e) => setF({ ...f, scheduledStartTime: e.target.value })} /></Field>
-        <Field label="Status">
+        <Field label="Status" hint="Auto: future time = upcoming with countdown, goes live at start time. No time = recording.">
           <select className="a-input" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}>
-            <option value="scheduled">Scheduled (upcoming)</option><option value="live">Live now</option><option value="ended">Ended (recording)</option>
+            <option value="auto">Auto (recommended)</option><option value="live">Force: Live now</option><option value="ended">Force: Ended (recording)</option>
           </select>
         </Field>
       </div>

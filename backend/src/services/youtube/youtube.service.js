@@ -87,7 +87,8 @@ export async function syncLiveSessions(config, { discover = false } = {}) {
         await applySyncedFields(config, session._id, {
           title: v.title || session.title,
           thumbnailUrl: v.thumbnailUrl,
-          scheduledStartTime: v.scheduledStartTime,
+          // Never wipe a time the admin entered when YouTube has none.
+          scheduledStartTime: v.scheduledStartTime || session.scheduledStartTime || null,
           actualStartTime: v.actualStartTime,
           actualEndTime: v.actualEndTime,
           status: v.status,

@@ -36,9 +36,10 @@ function viewState(session, now) {
   if (session.status === "live") return "live";
   if (session.status === "ended") return "ended";
   const start = session.scheduledStartTime ? new Date(session.scheduledStartTime).getTime() : null;
-  if (start && start > now) return "upcoming";
-  if (start && now - start <= AUTO_LIVE_WINDOW_MS) return "live";
-  return "starting";
+  if (!start) return "ended"; // no schedule: an already-streamed video, shown as a recording
+  if (start > now) return "upcoming";
+  if (now - start <= AUTO_LIVE_WINDOW_MS) return "live";
+  return "ended";
 }
 
 /** Only real YouTube links are made card-clickable. */
