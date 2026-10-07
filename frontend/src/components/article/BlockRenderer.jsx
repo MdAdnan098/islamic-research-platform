@@ -13,11 +13,16 @@ function Quote({ b, text }) {
   const sacred = b.kind === "ayat" || b.kind === "hadith";
   const s = scriptOf(b.text);
   const big = sacred && (s === "arabic" || s === "urdu");
+  // Slight slant only where italics look right (Latin / Roman text); Arabic & Urdu scripts stay upright.
+  const slant = s === "latin" ? "italic" : "not-italic";
+  const mark = "pointer-events-none absolute select-none font-display text-[5.5rem] font-bold leading-none text-accent/25 sm:text-[7rem]";
   return (
-    <figure className="my-9 rounded-xl border border-rule bg-card px-6 py-7 sm:px-9">
-      {sacred && <p className="eyebrow mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
-      <Text as="blockquote" force={big ? s : undefined} className={big ? (s === "urdu" ? "sacred-urdu text-[1.35rem] sm:text-[1.6rem]" : "sacred-arabic text-[2rem] sm:text-[2.4rem]") : "font-display text-xl italic leading-relaxed"}>{text}</Text>
-      {b.source && <Text as="figcaption" className="mt-4 text-sm text-bronze">— {b.source}</Text>}
+    <figure className="relative my-9 overflow-hidden rounded-2xl border border-rule bg-card px-7 pb-12 pt-14 shadow-[0_14px_34px_-10px_rgb(0_0_0/0.28),0_3px_10px_rgb(0_0_0/0.08)] sm:px-12 sm:pb-14 sm:pt-16">
+      <span aria-hidden="true" className={`${mark} left-4 top-1 sm:left-6`}>&ldquo;</span>
+      <span aria-hidden="true" className={`${mark} bottom-[-2.4rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
+      {sacred && <p className="eyebrow relative mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
+      <Text as="blockquote" force={big ? s : undefined} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.35rem] sm:text-[1.6rem]" : "sacred-arabic text-[2rem] sm:text-[2.4rem]") : `font-display text-xl leading-relaxed ${slant}`}`}>{text}</Text>
+      {b.source && <Text as="figcaption" className="relative mt-4 text-sm text-bronze">— {b.source}</Text>}
     </figure>
   );
 }
