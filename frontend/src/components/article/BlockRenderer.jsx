@@ -32,7 +32,7 @@ function Figure({ pages, caption, startOpen }) {
   const single = pages.length === 1;
   return (
     <figure className="my-9">
-      <div className={single ? "" : "grid grid-cols-2 items-start gap-3 sm:grid-cols-3"}>
+      <div className={single ? "" : "flex flex-col gap-4"}>
         {pages.map((p, i) => (
           <button key={i} onClick={() => setOpen(i)} className={`card-lift block w-full overflow-hidden rounded-lg border border-rule bg-card text-start`} aria-label={p.caption || "Open"}>
             <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-auto w-full bg-rule/30" />
