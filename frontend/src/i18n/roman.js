@@ -1,6 +1,6 @@
 export default {
   nav: { home: "Home", aqaid: "Aqaid", masail: "Masail", menu: "Menu", close: "Band karein", language: "Content ki zubaan", theme: "Theme",
-    about: "Hamare Baare Mein", disclaimer: "Disclaimer", privacy: "Privacy", follow: "Connect with us" },
+    about: "Hamare Baare Mein", disclaimer: "Disclaimer", privacy: "Privacy", follow: "Hum se rabta karein" },
   hero: {
     title: "Quran Aur Sunnat, Fahm-e-Salaf Ke Saath",
     desc: "Quran, Sunnat aur Mustanad Hawalon ki Bunyaad par Islami Aqaid, Masail aur Tahqiqi Mazameen",
@@ -29,5 +29,5 @@ export default {
   },
   viewer: { zoomIn: "Bada karein", zoomOut: "Chhota karein", reset: "Reset", prev: "Pichla", next: "Agla", close: "Band karein", pageOf: "Page {n} / {total}" },
   common: { loading: "Load ho raha hai…", error: "Kuch ghalat ho gaya.", retry: "Dobara koshish karein", empty: "Kuch nahi mila.", home: "Home par jayein", notFound: "Safha nahi mila" },
-  footer: { about: "Quran, Sunnat aur salaf ke fahm par mabni tahqiqi library.", links: "Links", info: "Information", follow: "Connect with us", rights: "All Rights Reserved" },
+  footer: { about: "Quran, Sunnat aur salaf ke fahm par mabni tahqiqi library.", links: "Links", info: "Information", follow: "Hum se rabta karein", rights: "All Rights Reserved" },
 };

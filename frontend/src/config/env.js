@@ -9,4 +9,9 @@ export const SOCIAL = {
   instagram: import.meta.env.VITE_INSTAGRAM_URL || "https://www.instagram.com/athari_tv?stkn=bnpsd3dubmpveTA=",
   whatsapp: import.meta.env.VITE_WHATSAPP_URL || "https://whatsapp.com/channel/0029VbBjiQFAzNbr5kz9zq3b",
 };
+// Admin contact shown in the footer. PLACEHOLDER values - change here (or set VITE_CONTACT_PHONE / VITE_CONTACT_EMAIL).
+export const CONTACT = {
+  phone: import.meta.env.VITE_CONTACT_PHONE || "+91 98765 43210",
+  email: import.meta.env.VITE_CONTACT_EMAIL || "contact@atharitv.com",
+};
 export const BRAND = { name: "AthariTV", tagline: "Quran • Sunnah • Ahle Hadees" };
