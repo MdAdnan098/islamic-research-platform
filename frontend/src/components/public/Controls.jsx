@@ -26,7 +26,7 @@ export function LanguageSwitch({ className = "" }) {
           key={key}
           onClick={() => setLang(key)}
           aria-pressed={lang === key}
-          className={`rounded-full px-3 py-1 leading-normal transition-colors ${lang === key ? "bg-accent text-on-accent" : "text-mute hover:text-ink"}`}
+          className={`rounded-full px-3 py-1 leading-normal transition-colors ${lang === key ? "bg-btn text-on-accent" : "text-mute hover:text-ink"}`}
         >
           {d.label}
         </button>
@@ -88,9 +88,10 @@ const THEME_META = {
   light: { label: "Light", icon: "sun" },
   sepia: { label: "Sepia", icon: "sunrise" },
   dark: { label: "Dark", icon: "moon" },
+  islamic: { label: "Islamic", icon: "book" },
 };
 
-/** Theme dropdown: Default · Light · Sepia · Dark (same options as Quran.com). */
+/** Theme dropdown: Default · Light · Sepia · Dark · Islamic. */
 export function ThemeSwitcher({ className = "", align = "end", compact = false, up = false }) {
   const { mode, theme, setMode } = useTheme();
   const [open, setOpen] = useState(false);

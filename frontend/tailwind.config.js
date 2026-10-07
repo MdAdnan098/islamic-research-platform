@@ -11,7 +11,7 @@ export default {
       colors: {
         // Public "research library" palette
         paper: c("paper"), card: c("card"), ink: c("ink"), mute: c("mute"),
-        rule: c("rule"), accent: c("accent"), gold: c("gold"), bronze: c("bronze"), navy: c("navy"),
+        rule: c("rule"), accent: c("accent"), btn: c("btn"), gold: c("gold"), bronze: c("bronze"), navy: c("navy"),
         "on-accent": c("on-accent"), tint: c("tint"), soft: c("soft"), hero: c("hero"), field: c("field"), footer: c("footer"), good: c("good"),
         // Admin palette (separate visual system)
         "ad-bg": c("ad-bg"), "ad-card": c("ad-card"), "ad-ink": c("ad-ink"),

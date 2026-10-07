@@ -54,6 +54,7 @@
     --footer: 240 242 245;     /* footer band              #F0F2F5 */
     --good: 55 121 75;         /* green goal icon          #37794B */
     --gold: var(--accent); --bronze: var(--accent); --navy: var(--ink);
+    --btn: var(--accent);      /* solid button fill (same as accent in Light / Sepia / Dark) */
     --shadow-soft: 0 2px 14px rgb(0 0 0 / .07), 0 0 0 6px rgb(0 0 0 / .012);
 
     /* Admin palette — same system as the public site */
@@ -83,6 +84,29 @@
     --ad-bg: 238 226 204; --ad-card: 255 247 234; --ad-ink: 0 0 0; --ad-mute: 105 101 92;
     --ad-rule: 232 218 192; --ad-brand: 115 96 63;
     --ad-danger: 168 50 36; --ad-ok: 55 121 75; --ad-warn: 150 96 14;
+  }
+
+  /* Islamic theme: white screen, dark-green buttons, calligraphy-gold text, light-green panels */
+  [data-theme="islamic"] {
+    --paper: 255 255 255;      /* page stays white */
+    --card: 255 255 255;
+    --ink: 38 38 38;
+    --mute: 101 101 101;
+    --rule: 223 234 227;       /* soft green-grey borders  #DFEAE3 */
+    --accent: 172 124 16;      /* gold text / links        #AC7C10 */
+    --gold: 172 124 16; --bronze: 172 124 16;
+    --btn: 12 83 56;           /* dark green buttons       #0C5338 */
+    --on-accent: 255 255 255;
+    --tint: 236 244 239;       /* chips / pills            #ECF4EF */
+    --soft: 232 242 236;       /* Ayat / Hadith panels     #E8F2EC */
+    --hero: 226 239 231;       /* hero band                #E2EFE7 */
+    --calli: 208 228 216;      /* hero calligraphy         #D0E4D8 */
+    --field: 255 255 255;
+    --footer: 226 239 231;     /* footer band              #E2EFE7 */
+    --shadow-soft: 0 2px 14px rgb(12 83 56 / .09), 0 0 0 6px rgb(12 83 56 / .015);
+    --ad-bg: 240 246 242; --ad-card: 255 255 255; --ad-ink: 38 38 38; --ad-mute: 101 101 101;
+    --ad-rule: 223 234 227; --ad-brand: 12 83 56;
+    --ad-danger: 192 57 43; --ad-ok: 55 121 75; --ad-warn: 176 112 16;
   }
 
   .dark {
@@ -125,7 +149,7 @@
 
   /* Public buttons — Quran.com: 6px radius filled teal/brown, pill outline */
   .btn { @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-base font-semibold transition-colors duration-200 disabled:opacity-50; }
-  .btn-primary { @apply btn bg-accent text-on-accent hover:opacity-90; }
+  .btn-primary { @apply btn bg-btn text-on-accent hover:opacity-90; }
   .btn-outline { @apply btn rounded-full border border-rule bg-field text-ink shadow-soft hover:border-accent/60; }
   .btn-ghost { @apply btn text-mute hover:text-ink; }
 
