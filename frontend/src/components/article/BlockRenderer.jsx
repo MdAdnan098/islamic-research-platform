@@ -15,14 +15,14 @@ function Quote({ b, text }) {
   const big = sacred && (s === "arabic" || s === "urdu");
   // Slight slant only where italics look right (Latin / Roman text); Arabic & Urdu scripts stay upright.
   const slant = s === "latin" ? "italic" : "not-italic";
-  const mark = "pointer-events-none absolute select-none font-display text-[5.5rem] font-bold leading-none text-accent/25 sm:text-[7rem]";
+  const mark = "pointer-events-none absolute select-none font-display text-[4.2rem] font-bold leading-none text-accent/25 sm:text-[6rem]";
   return (
-    <figure className="relative my-9 overflow-hidden rounded-2xl border border-rule bg-card px-7 pb-12 pt-14 shadow-elev sm:px-12 sm:pb-14 sm:pt-16">
+    <figure className="relative my-9 overflow-hidden rounded-2xl border border-rule bg-card px-6 pb-10 pt-11 shadow-elev sm:px-12 sm:pb-14 sm:pt-16">
       <span aria-hidden="true" className={`${mark} left-4 top-1 sm:left-6`}>&ldquo;</span>
-      <span aria-hidden="true" className={`${mark} bottom-[-2.4rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
+      <span aria-hidden="true" className={`${mark} bottom-[-1.9rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
       {sacred && <p className="eyebrow relative mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
-      <Text as="blockquote" force={big ? s : undefined} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.35rem] sm:text-[1.6rem]" : "sacred-arabic text-[2rem] sm:text-[2.4rem]") : `font-display text-xl leading-relaxed ${slant}`}`}>{text}</Text>
-      {b.source && <Text as="figcaption" className="relative mt-4 text-sm text-bronze">— {b.source}</Text>}
+      <Text as="blockquote" force={big ? s : undefined} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.1rem] sm:text-[1.4rem]" : "sacred-arabic text-[1.55rem] sm:text-[2rem]") : `font-display text-[0.85rem] leading-[1.8] sm:text-base lg:text-lg ${slant}`}`}>{text}</Text>
+      {b.source && <Text as="figcaption" className="relative mt-3 text-xs text-bronze sm:text-sm">— {b.source}</Text>}
     </figure>
   );
 }
@@ -51,16 +51,18 @@ function Pdf({ b }) {
   const url = mediaUrl(b.key);
   if (!url) return null;
   return (
-    <div className="my-9 rounded-xl border border-rule bg-card p-5 shadow-elev">
-      <div className="flex flex-wrap items-center gap-4">
-        <span className="grid h-11 w-11 place-items-center rounded-lg bg-rule/50 text-bronze"><Icon name="file" size={22} /></span>
-        <div className="min-w-0 flex-1">
-          <p className="eyebrow">{t.article.pdf}</p>
-          <Text as="p" className="mt-0.5 truncate font-medium">{b.title || "PDF"}</Text>
+    <div className="my-9 rounded-2xl border border-rule bg-card p-4 shadow-elev sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-rule/50 text-bronze"><Icon name="file" size={22} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="eyebrow">{t.article.pdf}</p>
+            <Text as="p" className="mt-0.5 line-clamp-2 break-words text-[0.95rem] font-medium leading-snug sm:text-base">{b.title || "PDF"}</Text>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setPreview((p) => !p)} className="btn-outline !px-4 !py-2">{t.article.preview}</button>
-          <a href={url} target="_blank" rel="noopener noreferrer" className="btn-primary !px-4 !py-2"><Icon name="external" size={15} />{t.article.openPdf}</a>
+        <div className="grid grid-cols-2 gap-2.5 sm:flex sm:shrink-0">
+          <button onClick={() => setPreview((p) => !p)} className="btn-outline whitespace-nowrap !px-3 !py-2 text-sm sm:!px-4">{t.article.preview}</button>
+          <a href={url} target="_blank" rel="noopener noreferrer" className="btn-primary whitespace-nowrap !px-3 !py-2 text-sm sm:!px-4"><Icon name="external" size={15} />{t.article.openPdf}</a>
         </div>
       </div>
       {preview && <iframe src={url} title={b.title || "PDF"} className="mt-4 h-[70vh] w-full rounded-lg border border-rule" />}

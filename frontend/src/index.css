@@ -168,8 +168,11 @@
     .script-arabic.home-arabic, .script-arabic.sacred-arabic { line-height: 2.4 !important; }
   }
 
-  .reading { font-size: 1.0625rem; }
-  @media (min-width: 640px) { .reading { font-size: 1.125rem; } }
+  /* Phones: smaller, cleaner body text (Arabic / Urdu runs stay a little larger so they remain readable) */
+  .reading { font-size: .9rem; }
+  .reading .script-latin { line-height: 1.85; }
+  .reading .script-urdu, .reading .script-arabic { font-size: 1.2em; }
+  @media (min-width: 640px) { .reading { font-size: 1.125rem; } .reading .script-latin { line-height: 1.7; } .reading .script-urdu, .reading .script-arabic { font-size: 1em; } }
   @media (min-width: 1024px) { .reading { font-size: 1.25rem; } }
   .reading p + p { margin-top: 1.1em; }
   .card-lift { @apply shadow-elev transition duration-200 hover:border-accent/40; }
