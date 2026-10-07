@@ -70,13 +70,13 @@ export function CourseCompactCard({ course }) {
           <div className="grid h-full w-full place-items-center text-accent/50"><Icon name="cap" size={44} /></div>
         )}
       </div>
-      <div className="flex min-h-[6.4rem] flex-1 items-start px-3 pb-3 pt-4 sm:min-h-[6.7rem]">
+      <div className="flex flex-1 items-start px-3 pb-3 pt-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 dir="auto" className="line-clamp-2 min-w-0 flex-1 font-display text-lg font-bold leading-snug sm:text-xl">{course.title}</h3>
             <CourseStatusBadge status={course.status} className="mt-0.5 shrink-0 whitespace-nowrap" />
           </div>
-          {meta && <span dir="auto" className="mt-2 block truncate text-xs text-mute">{meta}</span>}
+          {meta && <span dir="auto" className="mt-2 block text-xs text-mute">{meta}</span>}
         </div>
       </div>
       <div className="flex justify-center px-3 pb-3">

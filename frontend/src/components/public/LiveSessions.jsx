@@ -13,15 +13,15 @@ function parts(ms) {
   return { d: Math.floor(total / 86400), h: Math.floor((total % 86400) / 3600), m: Math.floor((total % 3600) / 60), s: total % 60 };
 }
 
-function Countdown({ target, now }) {
+function Countdown({ target, now, compact = false }) {
   const { d, h, m, s } = parts(new Date(target).getTime() - now);
   const cells = [["Days", d], ["Hrs", h], ["Min", m], ["Sec", s]];
   return (
-    <div className="mt-3 grid grid-cols-4 gap-2 text-center" role="timer" aria-label={`Starts in ${d} days ${h} hours ${m} minutes`}>
+    <div className={`${compact ? "mt-3" : "mt-3"} grid grid-cols-4 gap-2 text-center`} role="timer" aria-label={`Starts in ${d} days ${h} hours ${m} minutes`}>
       {cells.map(([label, value]) => (
-        <div key={label} className="rounded-lg bg-tint px-1 py-2">
-          <div className="text-lg font-bold tabular-nums leading-none sm:text-xl">{String(value).padStart(2, "0")}</div>
-          <div className="mt-1 text-[11px] uppercase tracking-wide text-mute">{label}</div>
+        <div key={label} className={`rounded-lg bg-tint px-1 ${compact ? "py-1.5" : "py-2"}`}>
+          <div className={`font-bold tabular-nums leading-none ${compact ? "text-base sm:text-lg" : "text-lg sm:text-xl"}`}>{String(value).padStart(2, "0")}</div>
+          <div className={`mt-1 uppercase tracking-wide text-mute ${compact ? "text-[10px]" : "text-[11px]"}`}>{label}</div>
         </div>
       ))}
     </div>
@@ -55,7 +55,7 @@ const BADGE = {
   live: { label: "LIVE NOW", cls: "live-badge bg-red-600 text-white" },
   upcoming: { label: "Upcoming Live", cls: "bg-tint text-accent" },
   starting: { label: "Starting soon", cls: "bg-tint text-accent" },
-  ended: { label: "Recording", cls: "bg-tint text-mute" },
+  ended: { label: "Live Ended", cls: "bg-tint text-mute" },
 };
 
 /** LIVE NOW / Upcoming / Starting soon / Recording pill, shown to the right of the title. */
@@ -95,18 +95,19 @@ export function LiveSessionCompactCard({ session, now }) {
           />
         )}
       </div>
-      <div className="flex min-h-[6.4rem] flex-1 items-start px-3 pb-3 pt-4 sm:min-h-[6.7rem]">
+      <div className="flex flex-1 items-start px-3 pb-3 pt-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 dir="auto" className="line-clamp-2 min-w-0 flex-1 font-display text-lg font-bold leading-snug sm:text-xl">{session.title}</h3>
             <StateBadge state={state} />
           </div>
-          {when && <span className="mt-2 block truncate text-xs text-mute">{formatDateTime(when)}</span>}
+          {when && <span className="mt-2 block text-xs text-mute">{formatDateTime(when)}</span>}
+          {state === "upcoming" && <Countdown compact target={session.scheduledStartTime} now={now} />}
         </div>
       </div>
       <div className="flex justify-center px-3 pb-3">
         <span className="btn-youtube min-w-[10.5rem] !gap-2 !px-6 !py-2 !text-sm">
-          <Icon name="youtube-logo" size={20} />{state === "live" ? "Watch Now" : state === "ended" ? "Watch Recording" : "Watch on YouTube"}
+          <Icon name="youtube-logo" size={20} />{state === "live" ? "Watch Now" : "Watch on YouTube"}
         </span>
       </div>
     </Wrapper>
