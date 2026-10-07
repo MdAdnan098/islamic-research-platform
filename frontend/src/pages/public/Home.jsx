@@ -79,7 +79,7 @@ export default function Home() {
 
       <section className="container-page pb-4 pt-14 sm:pt-20">
         <SectionHeading eyebrow={t.home.sections} title={`${t.nav.aqaid} & ${t.nav.masail}`} />
-        <div className="mt-8 grid grid-cols-[1.2fr_1fr] items-stretch gap-3 sm:gap-5 md:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-2">
           <CategoryCard to="/aqaid" title="Aqeedah & Manhaj" subtitle="عقیدہ و منہج" />
           <CategoryCard to="/masail" title="Fiqhi Masail" subtitle="فقہی مسائل" />
         </div>

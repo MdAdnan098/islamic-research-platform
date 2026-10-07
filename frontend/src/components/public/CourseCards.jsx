@@ -7,7 +7,7 @@ import { Icon } from "../ui/icons.jsx";
 import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../ui/feedback.jsx";
 
 export const COURSE_STATUS = {
-  enrollment_open: { label: "Enrollment Open", cls: "bg-btn text-on-accent", cta: "Enroll Now" },
+  enrollment_open: { label: "Enrollment Open", cls: "open-badge bg-green-600 text-white", cta: "Enroll Now" },
   coming_soon: { label: "Coming Soon", cls: "bg-card text-accent border border-accent/30", cta: "View Details" },
   enrollment_closed: { label: "Enrollment Closed", cls: "bg-card text-mute border border-rule", cta: "View Details" },
   completed: { label: "Completed", cls: "bg-card text-mute border border-rule", cta: "View Details" },
@@ -15,7 +15,12 @@ export const COURSE_STATUS = {
 
 export function CourseStatusBadge({ status, className = "" }) {
   const s = COURSE_STATUS[status] || COURSE_STATUS.coming_soon;
-  return <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${s.cls} ${className}`}>{s.label}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${s.cls} ${className}`}>
+      {status === "enrollment_open" && <span className="live-dot h-2 w-2 rounded-full bg-white" aria-hidden="true" />}
+      {s.label}
+    </span>
+  );
 }
 
 export function CourseCard({ course }) {
@@ -73,6 +78,13 @@ export function CourseCompactCard({ course }) {
           </div>
           {meta && <span dir="auto" className="mt-2 block truncate text-xs text-mute">{meta}</span>}
         </div>
+      </div>
+      <div className="flex justify-center px-3 pb-3">
+        {course.status === "enrollment_open" ? (
+          <span className="btn-primary min-w-[10.5rem] !gap-2 !px-6 !py-2 !text-sm">Enroll Now<Icon name="arrow" size={15} className="rtl:rotate-180" /></span>
+        ) : (
+          <span className="btn-outline min-w-[10.5rem] !gap-2 !px-6 !py-2 !text-sm">View Details<Icon name="arrow" size={15} className="rtl:rotate-180" /></span>
+        )}
       </div>
     </Link>
   );

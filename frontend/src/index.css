@@ -234,5 +234,7 @@
 @keyframes live-ring { 0% { box-shadow: 0 0 0 0 rgb(220 38 38 / .4); } 70%, 100% { box-shadow: 0 0 0 7px rgb(220 38 38 / 0); } }
 @keyframes live-dot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.7); opacity: .55; } }
 .live-badge { animation: live-ring 2.2s ease-out infinite; }
+@keyframes open-ring { 0% { box-shadow: 0 0 0 0 rgb(22 163 74 / .4); } 70%, 100% { box-shadow: 0 0 0 7px rgb(22 163 74 / 0); } }
+.open-badge { animation: open-ring 2.2s ease-out infinite; }
 .live-dot { animation: live-dot 1.6s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .live-badge, .live-dot { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .live-badge, .open-badge, .live-dot { animation: none; } }

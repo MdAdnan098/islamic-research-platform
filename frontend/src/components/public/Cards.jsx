@@ -51,7 +51,7 @@ export function TopicCard({ topic, to }) {
 /** Home page category card (Aqeedah & Manhaj / Fiqhi Masail): English title, small Urdu line beneath. */
 export function CategoryCard({ to, title, subtitle }) {
   return (
-    <Link to={to} className="cat-card card-lift group flex min-h-[6.5rem] flex-col items-center justify-center rounded-2xl border border-rule bg-card px-3 py-4 text-center sm:min-h-[8rem] sm:px-6 sm:py-6">
+    <Link to={to} className="cat-card card-lift group flex min-h-[7.5rem] flex-col items-center justify-center rounded-2xl border border-rule bg-card px-6 py-6 text-center sm:min-h-[9.5rem] sm:px-8 sm:py-8">
       <h3 className="font-display text-[1.1rem] font-bold leading-tight text-accent sm:text-[1.75rem]">{title}</h3>
       <span aria-hidden="true" className="mt-2 h-0.5 w-8 rounded-full bg-accent/40 transition-all duration-300 group-hover:w-14 sm:mt-3 sm:w-10" />
       {subtitle && <Text as="p" force="urdu" className="mt-2 text-sm text-mute sm:mt-3 sm:text-base">{subtitle}</Text>}

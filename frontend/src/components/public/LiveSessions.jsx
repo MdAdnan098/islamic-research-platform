@@ -104,6 +104,11 @@ export function LiveSessionCompactCard({ session, now }) {
           {when && <span className="mt-2 block truncate text-xs text-mute">{formatDateTime(when)}</span>}
         </div>
       </div>
+      <div className="flex justify-center px-3 pb-3">
+        <span className="btn-youtube min-w-[10.5rem] !gap-2 !px-6 !py-2 !text-sm">
+          <Icon name="youtube-logo" size={20} />{state === "live" ? "Watch Now" : state === "ended" ? "Watch Recording" : "Watch on YouTube"}
+        </span>
+      </div>
     </Wrapper>
   );
 }
