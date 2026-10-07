@@ -32,10 +32,10 @@ function Figure({ pages, caption, startOpen }) {
   const single = pages.length === 1;
   return (
     <figure className="my-9">
-      <div className={single ? "" : "grid grid-cols-2 gap-3 sm:grid-cols-3"}>
+      <div className={single ? "" : "grid grid-cols-2 items-start gap-3 sm:grid-cols-3"}>
         {pages.map((p, i) => (
-          <button key={i} onClick={() => setOpen(i)} className={`block w-full overflow-hidden rounded-lg border border-rule bg-card text-start shadow-elev transition hover:border-accent/60 ${single ? "lg:flex lg:justify-center lg:bg-tint lg:p-3" : ""}`} aria-label={p.caption || "Open"}>
-            <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className={`w-full bg-rule/30 ${single ? "lg:max-h-[26rem] lg:w-auto lg:max-w-full lg:rounded-md lg:object-contain" : "aspect-[3/4] object-cover object-top"}`} />
+          <button key={i} onClick={() => setOpen(i)} className={`block w-full overflow-hidden rounded-lg border border-rule bg-card text-start shadow-elev transition hover:border-accent/60`} aria-label={p.caption || "Open"}>
+            <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-auto w-full bg-rule/30" />
           </button>
         ))}
       </div>
@@ -57,7 +57,7 @@ function Pdf({ b }) {
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-rule/50 text-bronze"><Icon name="file" size={22} /></span>
           <div className="min-w-0 flex-1">
             <p className="eyebrow">{t.article.pdf}</p>
-            <Text as="p" className="mt-0.5 line-clamp-2 break-words text-[0.95rem] font-medium leading-snug sm:text-base">{b.title || "PDF"}</Text>
+            <Text as="p" className="mt-0.5 break-words text-[0.95rem] font-medium leading-snug sm:text-base">{b.title || "PDF"}</Text>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2.5 sm:flex sm:shrink-0">

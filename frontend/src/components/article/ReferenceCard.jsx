@@ -27,8 +27,8 @@ export function ReferenceCard({ reference: r }) {
           isPdfKey(r.mediaKey) ? (
             <a href={scan} target="_blank" rel="noopener noreferrer" className="btn-outline mt-5"><Icon name="file" size={16} />{t.article.openPdf}</a>
           ) : (
-            <button onClick={() => setOpen(true)} className="group mt-5 block w-full overflow-hidden rounded-lg border border-rule text-start transition hover:border-accent/60 sm:w-72" aria-label={t.article.openScan}>
-              <img src={scan} alt={t.article.scan} loading="lazy" decoding="async" className="max-h-48 w-full bg-rule/30 object-cover object-top" />
+            <button onClick={() => setOpen(true)} className="group mt-5 block w-full overflow-hidden rounded-lg border border-rule text-start transition hover:border-accent/60" aria-label={t.article.openScan}>
+              <img src={scan} alt={t.article.scan} loading="lazy" decoding="async" className="block h-auto w-full bg-rule/30" />
               <span className="flex items-center justify-between bg-paper px-3 py-2 text-xs font-medium text-bronze">
                 {t.article.openScan}<Icon name="zoomIn" size={15} />
               </span>
