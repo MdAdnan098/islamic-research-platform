@@ -28,19 +28,34 @@ function Countdown({ target, now }) {
   );
 }
 
-/** Derives what the card should show. The backend status is authoritative; a "scheduled" session whose start time has passed is shown as "Starting soon" until it flips to live. */
+/** Mirrors the backend: a "scheduled" session goes LIVE by itself once its start time passes (for 12h; keep in sync with AUTO_LIVE_WINDOW_MS in liveSession.service.js). */
+const AUTO_LIVE_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+/** Derives what the card should show. Manual "live"/"ended" always win; only a "scheduled" session is promoted automatically. */
 function viewState(session, now) {
   if (session.status === "live") return "live";
   if (session.status === "ended") return "ended";
   const start = session.scheduledStartTime ? new Date(session.scheduledStartTime).getTime() : null;
-  return start && start > now ? "upcoming" : "starting";
+  if (start && start > now) return "upcoming";
+  if (start && now - start <= AUTO_LIVE_WINDOW_MS) return "live";
+  return "starting";
+}
+
+/** Only real YouTube links are made card-clickable. */
+function isYouTubeUrl(url) {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && /^(www\.|m\.)?(youtube\.com|youtu\.be)$/.test(u.hostname);
+  } catch {
+    return false;
+  }
 }
 
 const BADGE = {
-  live: { label: "LIVE NOW", cls: "bg-red-600 text-white" },
-  upcoming: { label: "Upcoming Live", cls: "bg-card text-accent" },
-  starting: { label: "Starting soon", cls: "bg-card text-accent" },
-  ended: { label: "Recording", cls: "bg-card text-mute" },
+  live: { label: "LIVE NOW", cls: "live-badge bg-red-600 text-white" },
+  upcoming: { label: "Upcoming Live", cls: "bg-tint text-accent" },
+  starting: { label: "Starting soon", cls: "bg-tint text-accent" },
+  ended: { label: "Recording", cls: "bg-tint text-mute" },
 };
 
 export function LiveSessionCard({ session, now }) {
@@ -49,8 +64,18 @@ export function LiveSessionCard({ session, now }) {
   const when = state === "ended" ? session.actualStartTime || session.scheduledStartTime : session.scheduledStartTime || session.actualStartTime;
   const cta = state === "live" ? "Watch Live" : state === "ended" ? "Watch Recording" : "Open on YouTube";
 
+  // A LIVE session with a valid YouTube link opens on tap anywhere on the card; real links/buttons inside keep their own behaviour.
+  const clickable = state === "live" && isYouTubeUrl(session.youtubeUrl);
+  const openCard = (e) => {
+    if (e.target.closest("a, button, input, select, textarea, label, [data-no-card-click]")) return;
+    window.open(session.youtubeUrl, "_blank", "noopener,noreferrer");
+  };
+
   return (
-    <article className="flex h-full flex-col rounded-2xl border border-rule bg-card p-3 shadow-elev">
+    <article
+      onClick={clickable ? openCard : undefined}
+      className={`flex h-full flex-col rounded-2xl border border-rule bg-card p-3 shadow-elev ${clickable ? "card-lift cursor-pointer" : ""}`}
+    >
       <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-tint">
         {session.thumbnailUrl && (
           <img
@@ -63,23 +88,23 @@ export function LiveSessionCard({ session, now }) {
             className="h-full w-full object-cover"
           />
         )}
-        <span className={`absolute start-2 top-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold shadow-soft ${badge.cls}`}>
-          {state === "live" && <span className="h-2 w-2 animate-pulse rounded-full bg-white motion-reduce:animate-none" aria-hidden="true" />}
-          {badge.label}
-        </span>
       </div>
 
       <div className="flex flex-1 flex-col px-2 pb-2 pt-4">
-        <h3 dir="auto" className="line-clamp-2 font-display text-lg font-bold leading-snug sm:text-xl">{session.title}</h3>
+        <span className={`inline-flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-xs font-bold ${badge.cls}`}>
+          {state === "live" && <span className="live-dot h-2 w-2 rounded-full bg-white" aria-hidden="true" />}
+          {badge.label}
+        </span>
+        <h3 dir="auto" className="mt-3 line-clamp-2 font-display text-lg font-bold leading-snug sm:text-xl">{session.title}</h3>
         {when && <p className="mt-2 text-sm text-mute">{formatDateTime(when)}</p>}
         {state === "upcoming" && <Countdown target={session.scheduledStartTime} now={now} />}
         <a
           href={session.youtubeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className={`${state === "live" ? "btn-primary" : "btn-outline"} mt-auto w-full justify-center [margin-top:1.25rem]`}
+          className="btn-youtube mt-auto w-full justify-center [margin-top:1.25rem]"
         >
-          <Icon name="youtube" size={16} />{cta}
+          <Icon name="youtube-logo" size={22} />{cta}
         </a>
       </div>
     </article>

@@ -43,6 +43,14 @@ export function Icon({ name, size = 20, className = "", ...rest }) {
         <path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z" />
       </svg>
     );
+  /* Full-colour YouTube mark for red buttons: white play-container, red triangle. */
+  if (name === "youtube-logo")
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden="true" {...rest}>
+        <path fill="#fff" d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8z" />
+        <path fill="#FF0000" d="M10 15V9l5.2 3z" />
+      </svg>
+    );
   if (name === "instagram")
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" {...rest}>

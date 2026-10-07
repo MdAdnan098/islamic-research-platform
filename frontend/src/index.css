@@ -150,6 +150,7 @@
   /* Public buttons — Quran.com: 6px radius filled teal/brown, pill outline */
   .btn { @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-base font-semibold transition-colors duration-200 disabled:opacity-50; }
   .btn-primary { @apply btn bg-btn text-on-accent hover:opacity-90; }
+  .btn-youtube { @apply btn rounded-lg bg-[#FF0000] text-white hover:bg-[#CC0000] focus-visible:outline-offset-2; }
   .btn-outline { @apply btn rounded-full border border-rule bg-field text-ink shadow-soft hover:border-accent/60; }
   .btn-ghost { @apply btn text-mute hover:text-ink; }
 
@@ -228,3 +229,10 @@
   .a-btn-danger { @apply a-btn border-ad-danger/40 text-ad-danger hover:bg-ad-danger/10; }
   .a-card { @apply rounded-2xl border border-ad-rule bg-ad-card shadow-soft; }
 }
+
+/* LIVE NOW badge: soft expanding ring + gently breathing dot (no hard blinking). */
+@keyframes live-ring { 0% { box-shadow: 0 0 0 0 rgb(220 38 38 / .4); } 70%, 100% { box-shadow: 0 0 0 7px rgb(220 38 38 / 0); } }
+@keyframes live-dot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.7); opacity: .55; } }
+.live-badge { animation: live-ring 2.2s ease-out infinite; }
+.live-dot { animation: live-dot 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .live-badge, .live-dot { animation: none; } }

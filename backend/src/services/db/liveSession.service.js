@@ -100,13 +100,30 @@ export async function listLiveSessions(config, filters = {}) {
 }
 
 /**
+ * A "scheduled" session whose scheduledStartTime has passed is treated as LIVE
+ * automatically, so the admin doesn't have to flip it by hand. Only a stored
+ * status of "scheduled" is promoted (manual "live"/"ended" always win), it needs
+ * no actualEndTime, and it applies for a bounded window so a forgotten session
+ * doesn't show LIVE forever. The database is not written; YouTube sync / the
+ * admin can still set the real status. Keep AUTO_LIVE_WINDOW_MS in sync with the
+ * frontend (components/public/LiveSessions.jsx).
+ */
+export const AUTO_LIVE_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+export function effectiveStatus(s, now = Date.now()) {
+  if (s.status !== "scheduled" || !s.scheduledStartTime || s.actualEndTime) return s.status;
+  const start = new Date(s.scheduledStartTime).getTime();
+  return Number.isFinite(start) && start <= now && now - start <= AUTO_LIVE_WINDOW_MS ? "live" : s.status;
+}
+
+/**
  * Display order for the public site: live first, then upcoming (soonest
  * first), then recordings (most recent first).
  */
 export function sortForDisplay(sessions) {
   const time = (s) => new Date(s.scheduledStartTime || s.actualStartTime || s.createdAt).getTime();
   const endTime = (s) => new Date(s.actualEndTime || s.actualStartTime || s.scheduledStartTime || s.createdAt).getTime();
-  const group = (s) => (s.status === "live" ? 0 : s.status === "scheduled" ? 1 : 2);
+  const group = (s) => { const st = effectiveStatus(s); return st === "live" ? 0 : st === "scheduled" ? 1 : 2; };
   return [...sessions].sort((a, b) => {
     const g = group(a) - group(b);
     if (g !== 0) return g;
@@ -200,5 +217,5 @@ export function toSafeLiveSession(s) {
 /** Public projection: no admin/sync internals. */
 export function toPublicLiveSession(s) {
   const { isPublished, syncEnabled, source, lastSyncedAt, ...rest } = toSafeLiveSession(s);
-  return rest;
+  return { ...rest, status: effectiveStatus(s) };
 }
