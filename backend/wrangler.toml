@@ -1,4 +1,4 @@
-name = "islamic-research-backend"
+name = "atharitvbackend"
 main = "src/index.js"
 
 # Node.js compatibility (needed by the MongoDB Node.js driver for
@@ -17,12 +17,17 @@ keep_vars = true
 [vars]
 ENVIRONMENT = "production"
 ALLOWED_ORIGIN = "https://atharitv-website.pages.dev"
-# Media storage: ImageKit (temporary). Without this the Worker falls back to R2
-# and uploads fail with "R2 bucket binding (MEDIA_BUCKET) is not configured".
-MEDIA_PROVIDER = "imagekit"
+# Media storage: Cloudflare R2 (bucket bound below as MEDIA_BUCKET). Files are
+# served through the Worker at /api/public/media/:key; the bucket is not public.
+# Old ImageKit-era keys keep working via a redirect while IMAGEKIT_URL_ENDPOINT is set.
+MEDIA_PROVIDER = "r2"
 
-# R2 bucket binding for scanned pages / images / PDFs.
-# Create the bucket first with: wrangler r2 bucket create islamic-research-media
+# R2 bucket binding for scanned pages / images / PDFs. This mirrors the binding that
+# already exists on the production Worker (same name + bucket) so a `wrangler deploy`
+# does not drop it. It does not create a second binding.
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "atharitv-media"
 
 # YouTube live-session sync (optional). Uncomment AFTER YOUTUBE_API_KEY and
 # YOUTUBE_CHANNEL_ID are set as secrets; until then the job is a no-op anyway.

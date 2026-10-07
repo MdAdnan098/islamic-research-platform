@@ -10,14 +10,33 @@ import { uploadToImageKit, imagekitUrl } from "./imagekit.service.js";
  *   serve(key, config)                   -> Response for GET /api/public/media/:key, or null if missing
  */
 
+/**
+ * Legacy fallback: files uploaded while MEDIA_PROVIDER was "imagekit" are not in
+ * the R2 bucket. If ImageKit is still configured (IMAGEKIT_URL_ENDPOINT), redirect
+ * those keys to ImageKit so already-stored media keeps working without touching
+ * MongoDB. Returns null (-> 404) when ImageKit is not configured.
+ */
+function legacyImageKitRedirect(key, config) {
+  if (!config.imagekit?.urlEndpoint) return null;
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: imagekitUrl(config.imagekit, key),
+      "Cache-Control": "public, max-age=300",
+      "Access-Control-Allow-Origin": config.allowedOrigin || "*",
+      "Cross-Origin-Resource-Policy": "cross-origin",
+    },
+  });
+}
+
 function r2Provider(config) {
   return {
     name: "r2",
     put: (key, data, options) => putObject(config.mediaBucket, key, data, options),
-    // Unchanged R2 behaviour: stream the object from the bucket.
+    // Stream the object from the bucket through the Worker (the bucket itself is never public).
     async serve(key) {
       const object = await getObject(config.mediaBucket, key);
-      if (!object) return null;
+      if (!object) return legacyImageKitRedirect(key, config);
       return new Response(object.body, {
         headers: {
           "Content-Type": object.httpMetadata?.contentType || "application/octet-stream",
