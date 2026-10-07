@@ -22,7 +22,7 @@ function HeroCalligraphy() {
 
 function QuoteCard({ label, item }) {
   return (
-    <figure className="flex h-full flex-col items-center rounded-2xl border border-rule bg-soft px-6 py-9 shadow-elev text-center sm:px-8 sm:py-10">
+    <figure className="card-lift flex h-full flex-col items-center rounded-2xl border border-rule bg-soft px-6 py-9 text-center sm:px-8 sm:py-10">
       <figcaption className="rounded-full bg-card px-4 py-1 text-sm font-semibold text-accent">{label}</figcaption>
       <Text as="blockquote" force="arabic" className="home-arabic mt-6 text-[1.75rem] sm:text-[2.15rem]">{item.text}</Text>
       <Text as="p" className="home-urdu mt-4 max-w-3xl text-[1.2rem] text-ink sm:text-xl">{item.translation}</Text>
@@ -78,8 +78,8 @@ export default function Home() {
       <section className="container-page pb-4 pt-14 sm:pt-20">
         <SectionHeading eyebrow={t.home.sections} title={`${t.nav.aqaid} & ${t.nav.masail}`} />
         <div className="mt-8 grid items-stretch gap-5 md:grid-cols-2">
-          <CategoryCard to="/aqaid" title={t.home.aqeedahCard} cta={t.home.explore} />
-          <CategoryCard to="/masail" title={t.home.masailCard} cta={t.home.explore} />
+          <CategoryCard to="/aqaid" title="Aqeedah & Manhaj" subtitle="عقیدہ و منہج" />
+          <CategoryCard to="/masail" title="Fiqhi Masail" subtitle="فقہی مسائل" />
         </div>
       </section>
 

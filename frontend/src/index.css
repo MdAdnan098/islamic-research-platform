@@ -175,7 +175,7 @@
   @media (min-width: 640px) { .reading { font-size: 1.125rem; } .reading .script-latin { line-height: 1.7; } .reading .script-urdu, .reading .script-arabic { font-size: 1em; } }
   @media (min-width: 1024px) { .reading { font-size: 1.25rem; } }
   .reading p + p { margin-top: 1.1em; }
-  .card-lift { @apply shadow-elev transition duration-200 hover:border-accent/40; }
+  .card-lift { @apply shadow-elev transition duration-300 ease-out hover:-translate-y-1 hover:border-accent/40 hover:shadow-soft motion-reduce:transition-none motion-reduce:hover:translate-y-0; }
 
   /* Hero band with faint Islamic calligraphy behind the text */
   .hero-band { position: relative; isolation: isolate; overflow: hidden; background: rgb(var(--hero)); }

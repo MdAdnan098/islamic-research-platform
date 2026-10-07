@@ -15,7 +15,7 @@ export function ArticleCard({ article, category, showCategory = false }) {
       {/* Cover image on top of the card; corners rounded to sit inside the card's own radius */}
       <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-tint">
         {cover && (
-          <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+          <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]" />
         )}
       </div>
       <div className="flex flex-1 items-start px-3 pb-3 pt-4">
@@ -32,9 +32,9 @@ export function TopicCard({ topic, to }) {
   const cover = mediaUrl(topic.coverKey);
   return (
     <Link to={to} className="card-lift group flex h-full flex-col overflow-hidden rounded-2xl border border-rule bg-card">
-      <div className="aspect-[16/9] w-full bg-tint">
+      <div className="aspect-[16/9] w-full overflow-hidden bg-tint">
         {cover ? (
-          <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+          <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]" />
         ) : (
           <div className="h-full w-full bg-tint" />
         )}
@@ -48,35 +48,13 @@ export function TopicCard({ topic, to }) {
   );
 }
 
-/** Home page category card (Aqaid / Masail): plain card + shadow, with a fixed-gold Islamic ornament (colours do not follow the theme). */
-const GOLD = "194 162 103";
-function Star({ size, filled = false, className = "", style }) {
-  const p = filled ? { fill: `rgb(${GOLD})` } : { fill: "none", stroke: `rgb(${GOLD})`, strokeWidth: 1.2 };
+/** Home page category card (Aqeedah & Manhaj / Fiqhi Masail): English title, small Urdu line beneath. */
+export function CategoryCard({ to, title, subtitle }) {
   return (
-    <svg viewBox="0 0 100 100" width={size} height={size} className={className} style={style} aria-hidden="true" {...p}>
-      <rect x="18" y="18" width="64" height="64" />
-      <rect x="18" y="18" width="64" height="64" transform="rotate(45 50 50)" />
-    </svg>
-  );
-}
-
-export function CategoryCard({ to, title, cta }) {
-  return (
-    <Link to={to} className="card-lift group relative flex min-h-[13rem] flex-col overflow-hidden rounded-2xl border border-rule bg-card px-6 py-8 text-center sm:min-h-[15rem] sm:py-10">
-      {/* fine inner frame + faint eight-point star (rub el hizb) behind the title */}
-      <span aria-hidden="true" className="pointer-events-none absolute inset-2.5 rounded-xl border" style={{ borderColor: `rgb(${GOLD} / .38)` }} />
-      <Star size={170} className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ opacity: 0.11 }} />
-      <div className="relative flex flex-1 flex-col items-center justify-center">
-        <Text as="h3" className="text-[2.6rem] font-bold leading-tight text-accent sm:text-5xl">{title}</Text>
-        <span aria-hidden="true" className="mt-4 flex items-center gap-2.5">
-          <span className="h-px w-10" style={{ background: `rgb(${GOLD} / .7)` }} />
-          <Star size={14} filled />
-          <span className="h-px w-10" style={{ background: `rgb(${GOLD} / .7)` }} />
-        </span>
-      </div>
-      <span className="relative mt-6 inline-flex items-center justify-center gap-2 self-center rounded-full border border-accent/30 px-5 py-1.5 text-sm font-medium text-accent transition group-hover:bg-accent group-hover:text-white">
-        {cta} <Icon name="arrow" size={15} className="transition-transform group-hover:translate-x-1 rtl:rotate-180" />
-      </span>
+    <Link to={to} className="card-lift group flex min-h-[10rem] flex-col items-center justify-center rounded-2xl border border-rule bg-card px-6 py-9 text-center sm:min-h-[12rem]">
+      <h3 className="font-display text-[2rem] font-bold leading-tight text-accent sm:text-[2.5rem]">{title}</h3>
+      <span aria-hidden="true" className="mt-3 h-0.5 w-10 rounded-full bg-accent/40 transition-all duration-300 group-hover:w-16" />
+      {subtitle && <Text as="p" force="urdu" className="mt-3 text-base text-mute sm:text-lg">{subtitle}</Text>}
     </Link>
   );
 }

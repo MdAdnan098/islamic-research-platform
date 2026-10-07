@@ -17,7 +17,7 @@ function Quote({ b, text }) {
   const slant = s === "latin" ? "italic" : "not-italic";
   const mark = "pointer-events-none absolute select-none font-display text-[4.2rem] font-bold leading-none text-accent/25 sm:text-[6rem]";
   return (
-    <figure className="relative my-9 overflow-hidden rounded-2xl border border-rule bg-card px-6 pb-10 pt-11 shadow-elev sm:px-12 sm:pb-14 sm:pt-16">
+    <figure className="card-lift relative my-9 overflow-hidden rounded-2xl border border-rule bg-card px-6 pb-10 pt-11 sm:px-12 sm:pb-14 sm:pt-16">
       <span aria-hidden="true" className={`${mark} left-4 top-1 sm:left-6`}>&ldquo;</span>
       <span aria-hidden="true" className={`${mark} bottom-[-1.9rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
       {sacred && <p className="eyebrow relative mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
@@ -34,7 +34,7 @@ function Figure({ pages, caption, startOpen }) {
     <figure className="my-9">
       <div className={single ? "" : "grid grid-cols-2 items-start gap-3 sm:grid-cols-3"}>
         {pages.map((p, i) => (
-          <button key={i} onClick={() => setOpen(i)} className={`block w-full overflow-hidden rounded-lg border border-rule bg-card text-start shadow-elev transition hover:border-accent/60`} aria-label={p.caption || "Open"}>
+          <button key={i} onClick={() => setOpen(i)} className={`card-lift block w-full overflow-hidden rounded-lg border border-rule bg-card text-start`} aria-label={p.caption || "Open"}>
             <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-auto w-full bg-rule/30" />
           </button>
         ))}
@@ -51,7 +51,7 @@ function Pdf({ b }) {
   const url = mediaUrl(b.key);
   if (!url) return null;
   return (
-    <div className="my-9 rounded-2xl border border-rule bg-card p-4 shadow-elev sm:p-5">
+    <div className="card-lift my-9 rounded-2xl border border-rule bg-card p-4 sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-rule/50 text-bronze"><Icon name="file" size={22} /></span>

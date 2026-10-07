@@ -14,7 +14,7 @@ export function ReferenceCard({ reference: r }) {
   const line = [r.book, r.author, r.volume && `${t.article.volume} ${r.volume}`, r.page && `${t.article.page} ${r.page}`].filter(Boolean).join(" · ");
 
   return (
-    <aside className="my-9 overflow-hidden rounded-2xl border border-rule bg-card shadow-elev">
+    <aside className="card-lift my-9 overflow-hidden rounded-2xl border border-rule bg-card">
       <div className="p-3.5 sm:p-5">
         {/* fixed colours on purpose (do not change with the theme) */}
         <Text as="p" className="rounded-xl border-2 px-4 py-2.5 text-[1.05rem] font-semibold leading-snug sm:text-lg" style={{ background: "#e0efff", borderColor: "#3b82f6", color: "#1e3a8a" }}>{line}</Text>

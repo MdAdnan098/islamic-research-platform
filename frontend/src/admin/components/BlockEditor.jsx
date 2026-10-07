@@ -15,7 +15,9 @@ const I = ({ value, onChange, ...p }) => <input className="a-input" dir="auto" v
 function ReferenceField({ block, set }) {
   const { data, reload, setData } = useAsync((s) => adminApi.references.list({ limit: 100 }, s), []);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState(false);
   const list = data || [];
+  const current = list.find((r) => r.id === block.referenceId);
   return (
     <>
       <Field label="Reference">
@@ -25,8 +27,14 @@ function ReferenceField({ block, set }) {
             {list.map((r) => <option key={r.id} value={r.id}>{r.book}{r.volume ? ` · v${r.volume}` : ""}{r.page ? ` · p${r.page}` : ""}</option>)}
           </select>
           <button type="button" className="a-btn shrink-0" onClick={() => setCreating(true)}><Icon name="plus" size={15} />New</button>
+          {current && <button type="button" className="a-btn shrink-0" onClick={() => setEditing(true)}><Icon name="edit" size={15} />Edit</button>}
         </div>
       </Field>
+      {editing && current && (
+        <Modal title="Edit reference" wide onClose={() => setEditing(false)}>
+          <ReferenceForm initial={current} onCancel={() => setEditing(false)} onSaved={(r) => { setData((l) => (l || []).map((x) => (x.id === r.id ? r : x))); setEditing(false); reload(); }} />
+        </Modal>
+      )}
       {creating && (
         <Modal title="New reference" wide onClose={() => setCreating(false)}>
           <ReferenceForm onCancel={() => setCreating(false)} onSaved={(r) => { setData((l) => [r, ...(l || [])]); set({ referenceId: r.id }); setCreating(false); reload(); }} />
