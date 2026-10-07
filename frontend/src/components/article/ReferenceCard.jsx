@@ -10,30 +10,17 @@ export function ReferenceCard({ reference: r }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const scan = mediaUrl(r.mediaKey);
-  const meta = [[t.article.author, r.author], [t.article.volume, r.volume], [t.article.page, r.page]].filter(([, v]) => v);
+  // One compact line, like a citation: Book · Author · Jild · Safha
+  const line = [r.book, r.author, r.volume && `${t.article.volume} ${r.volume}`, r.page && `${t.article.page} ${r.page}`].filter(Boolean).join(" · ");
 
   return (
-    <aside className="my-9 overflow-hidden rounded-xl border border-rule bg-card shadow-elev">
-      <div className="p-5 sm:p-7">
-        <p className="eyebrow flex items-center gap-2"><Icon name="book" size={14} />{t.article.reference}</p>
-        <Text as="h4" className="mt-2 font-display text-xl font-semibold leading-snug sm:text-2xl">{r.book}</Text>
-
-        {meta.length > 0 && (
-          <dl className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-x-6 gap-y-3 border-y border-rule py-4">
-            {meta.map(([label, value]) => (
-              <div key={label}>
-                <dt className="text-[11px] font-semibold uppercase tracking-wider text-mute rtl:tracking-normal">{label}</dt>
-                <Text as="dd" className="mt-0.5 text-sm font-medium">{value}</Text>
-              </div>
-            ))}
-          </dl>
-        )}
+    <aside className="my-9 overflow-hidden rounded-2xl border border-rule bg-card shadow-elev">
+      <div className="p-3.5 sm:p-5">
+        {/* fixed colours on purpose (do not change with the theme) */}
+        <Text as="p" className="rounded-xl border-2 px-4 py-2.5 text-[1.05rem] font-semibold leading-snug sm:text-lg" style={{ background: "#e0efff", borderColor: "#3b82f6", color: "#1e3a8a" }}>{line}</Text>
 
         {r.referenceText && (
-          <blockquote className="mt-5">
-            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-mute rtl:tracking-normal">{t.article.text}</span>
-            <Text as="p" className="text-[1.05rem] leading-relaxed">{r.referenceText}</Text>
-          </blockquote>
+          <Text as="p" className="mt-4 text-[1.05rem] leading-relaxed sm:text-lg">{r.referenceText}</Text>
         )}
 
         {scan && (
