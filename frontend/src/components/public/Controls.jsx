@@ -92,7 +92,7 @@ const THEME_META = {
 };
 
 /** Theme dropdown: Default · Light · Sepia · Dark · Islamic. */
-export function ThemeSwitcher({ className = "", align = "end", compact = false, up = false }) {
+export function ThemeSwitcher({ className = "", align = "end", compact = false, up = false, showLabel = false }) {
   const { mode, theme, setMode } = useTheme();
   const [open, setOpen] = useState(false);
   const box = useRef(null);
@@ -110,9 +110,10 @@ export function ThemeSwitcher({ className = "", align = "end", compact = false, 
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`Theme: ${shown.label}`}
-        className={ICON_BTN}
+        className={showLabel ? `${ICON_BTN} !flex !w-auto items-center !rounded-md gap-2.5 px-3 text-sm font-medium` : ICON_BTN}
       >
         <Icon name={shown.icon} size={22} />
+        {showLabel && <span>Theme</span>}
       </button>
       {open && (
         <ul
