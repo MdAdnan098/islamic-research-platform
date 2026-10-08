@@ -28,22 +28,17 @@ export function ArticleCard({ article, category, showCategory = false }) {
   );
 }
 
+/** Topic = "folder": a folder-tab + tile with a folder icon (no cover image, no intro text); the topic name sits below the card. */
 export function TopicCard({ topic, to }) {
-  const cover = mediaUrl(topic.coverKey);
   return (
-    <Link to={to} className="card-lift group flex h-full flex-col overflow-hidden rounded-2xl border border-rule bg-card">
-      <div className="aspect-[16/9] w-full overflow-hidden bg-tint">
-        {cover ? (
-          <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]" />
-        ) : (
-          <div className="h-full w-full bg-tint" />
-        )}
+    <Link to={to} className="group block">
+      <div className="relative pt-3 transition duration-300 ease-out group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
+        <span aria-hidden="true" className="absolute start-5 top-0 h-5 w-20 rounded-t-xl border border-b-0 border-rule bg-tint transition-colors group-hover:border-accent/40" />
+        <div className="flex aspect-[16/9] w-full items-center justify-center rounded-2xl border border-rule bg-tint shadow-elev transition duration-300 group-hover:border-accent/40 group-hover:shadow-soft">
+          <Icon name="folder" size={56} className="text-accent/70 transition-transform duration-300 group-hover:scale-110" />
+        </div>
       </div>
-      <div className="flex flex-1 flex-col p-5">
-        <Text as="h3" className="line-clamp-2 min-h-[2.6em] font-display text-xl font-bold leading-snug">{topic.title}</Text>
-        <Text as="p" className="mt-2 line-clamp-2 min-h-[3.4em] text-base text-mute">{topic.intro || "\u00A0"}</Text>
-        <Icon name="arrow" size={16} className="mt-auto pt-4 text-accent transition-transform group-hover:translate-x-1 rtl:rotate-180" />
-      </div>
+      <Text as="h3" className="mt-3 line-clamp-2 px-1 text-center font-display text-lg font-bold leading-snug sm:text-xl">{topic.title}</Text>
     </Link>
   );
 }

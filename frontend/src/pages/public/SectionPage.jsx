@@ -17,7 +17,9 @@ export default function SectionPage({ section }) {
   const multi = (data?.length || 0) > 1;
   const arts = useAsync((signal) => loadSectionArticles(type, signal), [type]);
   // every published post of this section (general, dalail and radd alike) — the dalail/radd cards live inside the post itself
-  const posts = arts.data?.articles || [];
+  // Posts that sit inside a visible topic ("folder") are shown only inside that topic; loose posts stay here.
+  const topicIds = new Set((data || []).flatMap((c) => c.topics.map((tp) => tp.id)));
+  const posts = (arts.data?.articles || []).filter((a) => !(a.topicId && topicIds.has(a.topicId)));
   const catById = Object.fromEntries((arts.data?.cats || []).map((c) => [c.id, c]));
   const hasTopics = !!data?.some((c) => c.topics.length);
 
@@ -27,7 +29,7 @@ export default function SectionPage({ section }) {
       <h1 className="mt-1 text-3xl font-bold sm:text-4xl">{title}</h1>
       {!multi && data?.[0]?.description && <Text as="p" className="mt-5 max-w-2xl text-mute">{data[0].description}</Text>}
 
-      {arts.loading && !arts.data ? (
+      {(arts.loading && !arts.data) || (loading && !data) ? (
         <div className="mt-14"><CardSkeletons count={2} /></div>
       ) : arts.error && !arts.data ? (
         <div className="mt-14"><ErrorState error={arts.error} onRetry={arts.reload} /></div>
