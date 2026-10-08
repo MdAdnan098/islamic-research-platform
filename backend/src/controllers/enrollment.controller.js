@@ -77,9 +77,11 @@ export async function enroll(request, env, ctx, params) {
 /**
  * POST /api/public/courses/:id/enrollment-request  { fullName, whatsapp, email? }
  *
- * Creates a PENDING / UNPAID enrollment request. The body can't carry a status or payment field - the
- * server sets both (and ignores anything else sent). Nothing identifying the record is returned, and
- * there is no public endpoint to read or change enrollments.
+ * LEGACY, unpaid request form. A course that costs money can NEVER be joined this way: enrollment for a paid
+ * course only comes from a server-verified payment (POST /payment/order -> Razorpay -> /payments/verify or the
+ * webhook -> createEnrollmentFromPayment). This route therefore refuses every priced course with 402, so it can
+ * no longer produce a "successful enrollment" without payment. It stays only for a free (price 0) course, which
+ * the admin cannot open for enrollment anyway (assertOpenable), so in practice it is closed.
  */
 export async function requestEnrollment(request, env, ctx, params) {
   const config = loadConfig(env);
@@ -92,6 +94,9 @@ export async function requestEnrollment(request, env, ctx, params) {
 
   const course = isValidObjectIdString(params.id) ? await findCourseById(config, params.id) : null;
   if (!course) throw fail("Course not found.", 404, "NOT_FOUND");
+  if (typeof course.price === "number" && course.price > 0) {
+    throw fail("This course requires online payment. Please use Pay Now to enroll.", 402, "PAYMENT_REQUIRED");
+  }
   const closed = enrollmentGate(course, Date.now()); // same timestamp-based gate as paid enrollment
   if (closed) throw fail(closed.message, closed.status, closed.code);
   if (Number.isInteger(course.maxStudents) && (await countApprovedForCourse(config, params.id)) >= course.maxStudents) {

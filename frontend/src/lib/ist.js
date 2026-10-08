@@ -16,6 +16,19 @@ const safe = (f, v, suffix = "") => {
   return Number.isNaN(d.getTime()) ? "" : `${f.format(d)}${suffix}`;
 };
 export const formatIstDateTime = (v) => safe(DATE_TIME, v, " IST");
+
+/**
+ * "10 October 2026, 10:00 AM IST" — the exact instant from the backend's timestamp, always in IST.
+ * Built from Intl parts (not string surgery) so it never depends on the device's own timezone.
+ */
+const FULL_PARTS = fmt({ day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+export function formatIstFull(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  const p = Object.fromEntries(FULL_PARTS.formatToParts(d).map((x) => [x.type, x.value]));
+  return `${p.day} ${p.month} ${p.year}, ${p.hour}:${p.minute} ${String(p.dayPeriod || "").toUpperCase()} IST`;
+}
 export const formatIstDate = (v) => safe(DATE, v);
 export const formatIstTime = (v) => safe(TIME, v);
 

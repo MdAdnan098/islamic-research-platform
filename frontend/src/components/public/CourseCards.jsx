@@ -6,7 +6,7 @@ import { formatDate, formatPrice } from "../../lib/format.js";
 import { Icon } from "../ui/icons.jsx";
 import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../ui/feedback.jsx";
 import { useCourseListClock } from "../../lib/useServerClock.js";
-import { formatIstDateTime } from "../../lib/ist.js";
+import { formatIstFull } from "../../lib/ist.js";
 
 export const COURSE_STATUS = {
   enrollment_open: { label: "Enrollment Open", cls: "open-badge bg-green-600 text-white", cta: "Enroll Now" },
@@ -56,8 +56,10 @@ export function CourseCard({ course }) {
         {course.teacher && <p dir="auto" className="mt-1 text-sm text-mute">{course.teacher}</p>}
         {course.shortDescription && <p dir="auto" className="mt-3 line-clamp-3 text-sm text-mute">{course.shortDescription}</p>}
 
-        <dl className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          {course.startDate && <div className="flex gap-1.5"><dt className="text-mute">Starts</dt><dd className="font-medium">{course.sessions?.length ? formatIstDateTime(course.startDate) : formatDate(course.startDate)}</dd></div>}
+        {/* Overall course start / end = first class start and last class end, exactly as stored by the backend (IST). */}
+        <dl className="mt-4 space-y-1 text-sm">
+          {course.startDate && <div className="flex gap-1.5"><dt className="w-12 shrink-0 text-mute">Start</dt><dd className="font-medium">{course.sessions?.length ? formatIstFull(course.startDate) : formatDate(course.startDate)}</dd></div>}
+          {course.endDate && <div className="flex gap-1.5"><dt className="w-12 shrink-0 text-mute">End</dt><dd className="font-medium">{course.sessions?.length ? formatIstFull(course.endDate) : formatDate(course.endDate)}</dd></div>}
           <div className="flex gap-1.5"><dt className="sr-only">Price</dt><dd className="font-bold text-accent">{formatPrice(course.price, course.currency)}</dd></div>
         </dl>
 

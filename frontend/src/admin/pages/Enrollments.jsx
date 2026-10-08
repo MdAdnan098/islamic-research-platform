@@ -33,6 +33,8 @@ function Details({ e, onAction, onSendLink, onClose }) {
         <Row label="Payment"><StatusBadge status={e.paymentStatus} /></Row>
         {e.payment && <Row label="Gateway amount">{formatPrice(e.payment.amount / 100, e.payment.currency)}</Row>}
         {e.payment?.orderId && <Row label="Order">{e.payment.orderId}</Row>}
+        {e.payment?.gatewayPaymentId && <Row label="Payment ID">{e.payment.gatewayPaymentId}</Row>}
+        {e.payment?.paidAt && <Row label="Paid on">{dateTime(e.payment.paidAt)}</Row>}
         <Row label="Source">{e.source === "payment" ? "Paid online (automatic enrollment)" : "Legacy enrollment request"}</Row>
         <Row label="Enrolled / requested">{dateTime(e.createdAt)}</Row>
         <Row label="Last updated">{dateTime(e.updatedAt)}</Row>
@@ -112,7 +114,7 @@ export default function Enrollments() {
                 <button type="button" className="min-w-0 flex-1 basis-48 text-left" onClick={() => setSelectedId(e.id)}>
                   <p dir="auto" className="text-sm font-semibold">{e.fullName}</p>
                   <p dir="auto" className="text-xs text-ad-mute">{e.course?.title || "Deleted course"} · {formatDate(e.createdAt)}</p>
-                  <p className="text-xs text-ad-mute" dir="ltr">{e.whatsapp}</p>
+                  <p className="text-xs text-ad-mute" dir="ltr">{e.whatsapp}{e.email ? ` · ${e.email}` : ""}</p>
                 </button>
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={statusLabel(e)} />

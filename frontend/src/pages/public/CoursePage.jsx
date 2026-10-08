@@ -4,7 +4,7 @@ import { useAsync } from "../../lib/useAsync.js";
 import { useMeta } from "../../lib/useMeta.js";
 import { mediaUrl } from "../../lib/media.js";
 import { formatDate, formatPrice } from "../../lib/format.js";
-import { deriveSchedule, formatIstDateTime } from "../../lib/ist.js";
+import { deriveSchedule, formatIstFull } from "../../lib/ist.js";
 import { useServerClock } from "../../lib/useServerClock.js";
 import { CourseSchedule } from "../../components/public/CourseSchedule.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
@@ -12,7 +12,6 @@ import { BackLink } from "../../components/ui/BackLink.jsx";
 import { ErrorState, NotFoundState, Skeleton } from "../../components/ui/feedback.jsx";
 import { CourseStatusBadge } from "../../components/public/CourseCards.jsx";
 import { EnrollPanel } from "../../components/public/EnrollPanel.jsx";
-import { EnrollmentRequestPanel } from "../../components/public/EnrollmentRequestPanel.jsx";
 
 /** /courses/:slug — course details plus the enrollment / payment panel. */
 export default function CoursePage() {
@@ -38,7 +37,7 @@ export default function CoursePage() {
   const thumb = mediaUrl(course.thumbnailKey);
   const hasSessions = (course.sessions || []).length > 0;
   const live = deriveSchedule(course.sessions, now);
-  const when = (v) => (hasSessions ? formatIstDateTime(v) : formatDate(v));
+  const when = (v) => (hasSessions ? formatIstFull(v) : formatDate(v));
   return (
     <div className="container-page py-10 sm:py-14">
       <BackLink to="/courses">All courses</BackLink>
@@ -55,13 +54,13 @@ export default function CoursePage() {
           <div className="rounded-2xl border border-rule bg-card p-5 shadow-elev">
             <p className="text-3xl font-bold text-accent">{formatPrice(course.price, course.currency)}</p>
             <dl className="mt-3 space-y-1.5 text-sm">
-              {course.startDate && <div className="flex justify-between gap-3"><dt className="text-mute">Starts</dt><dd className="font-medium">{when(course.startDate)}</dd></div>}
-              {course.endDate && <div className="flex justify-between gap-3"><dt className="text-mute">Ends</dt><dd className="font-medium">{when(course.endDate)}</dd></div>}
+              {course.startDate && <div className="flex justify-between gap-3"><dt className="shrink-0 text-mute">Starts</dt><dd className="text-right font-medium">{when(course.startDate)}</dd></div>}
+              {course.endDate && <div className="flex justify-between gap-3"><dt className="shrink-0 text-mute">Ends</dt><dd className="text-right font-medium">{when(course.endDate)}</dd></div>}
               <div className="flex justify-between gap-3"><dt className="text-mute">Classes</dt><dd className="flex items-center gap-1.5 font-medium"><Icon name="monitor" size={15} />Online</dd></div>
             </dl>
             <div className="mt-5 border-t border-rule pt-5">
-              {/* Pay-first panel only once the server reports online payments are configured; otherwise the enrollment request form. */}
-              {course.paymentsEnabled && course.price > 0 ? <EnrollPanel course={course} onStale={reload} /> : <EnrollmentRequestPanel course={course} />}
+              {/* Paid course: the ONLY way in is Pay Now. There is deliberately no unpaid "request" fallback. */}
+              <EnrollPanel course={course} paymentsEnabled={!!course.paymentsEnabled} onStale={reload} />
             </div>
           </div>
         </aside>

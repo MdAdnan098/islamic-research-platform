@@ -40,7 +40,7 @@ function Notice({ tone = "info", children }) {
   return <p role={tone === "error" ? "alert" : "status"} className={`rounded-xl border px-4 py-3 text-sm ${cls}`}>{children}</p>;
 }
 
-export function EnrollPanel({ course, onStale }) {
+export function EnrollPanel({ course, paymentsEnabled = true, onStale }) {
   const [stage, setStage] = useState("loading"); // loading | idle | opening | verifying | pending | form (legacy: paid without details) | submitting | done
   const [error, setError] = useState("");
   const [form, setForm] = useState({ fullName: "", whatsapp: "", email: "" });
@@ -140,7 +140,7 @@ export function EnrollPanel({ course, onStale }) {
   if (stage === "done") {
     return (
       <div>
-        <Notice>You are enrolled. Your payment is confirmed — no further approval is needed.</Notice>
+        <Notice>You are successfully enrolled. Your payment is confirmed — no further approval is needed.</Notice>
         {claimRef.current && <StudentClasses course={course} claim={claimRef.current} />}
       </div>
     );
@@ -177,6 +177,10 @@ export function EnrollPanel({ course, onStale }) {
 
   // idle | opening
   if (!open) return <Notice>{CLOSED_MESSAGE[course.status] || "Enrollment is not available."}</Notice>;
+  // Payment is mandatory: when the gateway is not configured / the course has no price, show NO enrollment form at all.
+  if (!paymentsEnabled || !(course.price > 0)) {
+    return <Notice>Online payment is not available right now, so enrollment is temporarily unavailable. Please try again later or contact us.</Notice>;
+  }
   const busy = stage === "opening";
   return (
     <form onSubmit={startPayment} className="space-y-3" noValidate>

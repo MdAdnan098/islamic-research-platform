@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { parseCourseInstant, istNextDayStart, DAY_MS } from "../src/utils/ist.js";
 import { computeLifecycle, computeArchiveAt, enrollmentGate, isPubliclyVisible, studentSessions, ACCESS_LEAD_MS } from "../src/utils/courseLifecycle.js";
 import { validateSessions, validateSchedule } from "../src/utils/validate.courses.js";
+import { formatIstFull } from "../../frontend/src/lib/ist.js";
 
 const ist = (s) => parseCourseInstant(s).getTime(); // IST wall-clock string -> UTC ms
 
@@ -137,4 +138,14 @@ test("validation: sessions ordering, overlap, link and closing-time rules", () =
   assert.equal(validateSchedule({ sessions: ok, enrollmentClosesAt: "2026-10-09T18:00" }).length, 0);
   assert.equal(validateSchedule({ sessions: ok, enrollmentClosesAt: "2026-10-11T21:00" }).length, 0); // exactly at final end is allowed
   assert.equal(validateSchedule({ sessions: ok, enrollmentClosesAt: "2026-10-11T21:01" }).length, 1);
+});
+
+test("Course card date/time: exact IST instant from the backend timestamp, whatever the device timezone is", () => {
+  // Same instants the backend stores (parseCourseInstant) -> same wall-clock text in IST.
+  assert.equal(formatIstFull(parseCourseInstant("2026-10-10T10:00")), "10 October 2026, 10:00 AM IST");
+  assert.equal(formatIstFull(parseCourseInstant("2026-10-10T13:00")), "10 October 2026, 1:00 PM IST");
+  assert.equal(formatIstFull(parseCourseInstant("2026-10-12T21:00").toISOString()), "12 October 2026, 9:00 PM IST");
+  assert.equal(formatIstFull(parseCourseInstant("2026-10-10T00:00")), "10 October 2026, 12:00 AM IST");
+  assert.equal(formatIstFull(null), "");
+  assert.equal(formatIstFull("not a date"), "");
 });

@@ -275,6 +275,6 @@ export function toSafeEnrollment(e, { course, payment } = {}) {
     createdAt: e.createdAt,
     updatedAt: e.updatedAt,
     course: course ? { id: String(course._id), title: course.title, slug: course.slug, price: course.price, currency: course.currency || "INR", meetingLink: pickMeetingLink(course) } : null,
-    payment: payment ? { status: payment.status, amount: payment.amount, currency: payment.currency, orderId: payment.orderId, gatewayPaymentId: payment.paymentId || null } : null,
+    payment: payment ? { status: payment.status, amount: payment.amount, currency: payment.currency, orderId: payment.orderId, gatewayPaymentId: payment.paymentId || null, paidAt: payment.verifiedAt || null } : null,
   };
 }

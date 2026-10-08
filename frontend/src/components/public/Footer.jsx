@@ -44,12 +44,12 @@ export function Footer() {
   const info = [["/about", t.nav.about], ["/disclaimer", t.nav.disclaimer], ["/privacy", t.nav.privacy]];
   return (
     <footer className="mt-20 border-t border-rule bg-footer">
-      <div className="container-page grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+      <div className="container-page grid gap-10 py-14 md:grid-cols-[1.2fr_1fr_1fr_1.2fr] lg:grid-cols-[1.4fr_.8fr_.8fr_1.2fr_.95fr]">
         <div>
           <Logo size={42} />
           <p className="mt-5 max-w-sm text-base text-mute">{t.footer.about}</p>
         </div>
-        {/* Links + Information sit side by side (on phones too); on desktop they become separate columns */}
+        {/* Links + Information sit side by side (on phones too); from md they become separate columns */}
         <div className="grid grid-cols-2 gap-x-6 md:contents">
           <div>
             <p className="text-lg font-bold">{t.footer.links}</p>
@@ -68,36 +68,43 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        <div>
-          <p className="text-lg font-bold">{t.footer.follow}</p>
-          <div className="mt-4 flex gap-3">
-            {SOCIALS.map(({ key, label, Glyph, bg }) => (
-              <a
-                key={key}
-                href={SOCIAL[key]}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-                title={label}
-                style={{ background: bg }}
-                className="grid h-11 w-11 place-items-center rounded-full shadow-soft transition duration-200 hover:-translate-y-0.5 hover:opacity-90"
-              >
-                <Glyph />
-              </a>
-            ))}
+        {/* Two separate groups: Contact (phone + email) and Follow us on (social icons).
+            Phones: side by side in one row (shorter than before). md: stacked in the 4th column. lg+: two own columns. */}
+        <div className="flex items-start justify-between gap-x-5 md:block md:space-y-5 lg:contents">
+          <div className="min-w-0">
+            <p className="text-lg font-bold">{t.footer.contact}</p>
+            <ul className="mt-3 space-y-2 text-sm lg:mt-4 lg:space-y-2.5 lg:text-base">
+              <li>
+                <a href={`tel:${CONTACT.phone.replace(/[^+\d]/g, "")}`} dir="ltr" className="inline-flex items-center gap-2 text-mute transition-colors hover:text-ink">
+                  <PhoneIcon />{CONTACT.phone}
+                </a>
+              </li>
+              <li>
+                <a href={`mailto:${CONTACT.email}`} dir="ltr" className="inline-flex items-center gap-2 break-all text-mute transition-colors hover:text-ink">
+                  <MailIcon />{CONTACT.email}
+                </a>
+              </li>
+            </ul>
           </div>
-          <ul className="mt-5 space-y-2.5 text-base">
-            <li>
-              <a href={`tel:${CONTACT.phone.replace(/[^+\d]/g, "")}`} dir="ltr" className="inline-flex items-center gap-2 text-mute transition-colors hover:text-ink">
-                <PhoneIcon />{CONTACT.phone}
-              </a>
-            </li>
-            <li>
-              <a href={`mailto:${CONTACT.email}`} dir="ltr" className="inline-flex items-center gap-2 break-all text-mute transition-colors hover:text-ink">
-                <MailIcon />{CONTACT.email}
-              </a>
-            </li>
-          </ul>
+          <div className="shrink-0">
+            <p className="text-lg font-bold">{t.footer.follow}</p>
+            <div className="mt-3 flex gap-2 lg:mt-4 lg:gap-3">
+              {SOCIALS.map(({ key, label, Glyph, bg }) => (
+                <a
+                  key={key}
+                  href={SOCIAL[key]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  title={label}
+                  style={{ background: bg }}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full shadow-soft transition duration-200 hover:-translate-y-0.5 hover:opacity-90 lg:h-11 lg:w-11"
+                >
+                  <Glyph />
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
       <div className="border-t border-rule">

@@ -29,5 +29,5 @@ export default {
   },
   viewer: { zoomIn: "Bada karein", zoomOut: "Chhota karein", reset: "Reset", prev: "Pichla", next: "Agla", close: "Band karein", pageOf: "Page {n} / {total}" },
   common: { loading: "Load ho raha hai…", error: "Kuch ghalat ho gaya.", retry: "Dobara koshish karein", empty: "Kuch nahi mila.", home: "Home par jayein", notFound: "Safha nahi mila" },
-  footer: { about: "Quran, Sunnat aur salaf ke fahm par mabni tahqiqi library.", links: "Links", info: "Information", follow: "Hum se rabta karein", rights: "All Rights Reserved" },
+  footer: { about: "Quran, Sunnat aur salaf ke fahm par mabni tahqiqi library.", links: "Links", info: "Information", contact: "Hum se rabta karein", follow: "Follow us on", rights: "All Rights Reserved" },
 };
