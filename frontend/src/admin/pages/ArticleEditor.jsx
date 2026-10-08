@@ -30,6 +30,10 @@ export default function ArticleEditor() {
   const saved = useRef("");
 
   const cats = useAsync((s) => adminApi.categories.list({ status: "active" }, s), []);
+  // Topics ("folders") of the selected category - reloads whenever the category changes.
+  const topicsRes = useAsync((s) => (f.categoryId ? adminApi.topics.list({ categoryId: f.categoryId }, s) : []), [f.categoryId]);
+  const topicOptions = (topicsRes.data || []).filter((t) => t.status === "active" || t.id === f.topicId).sort((a, b) => (a.ordering ?? 0) - (b.ordering ?? 0));
+
   const loaded = useAsync(async (s) => {
     if (isNew) return null;
     const a = await adminApi.articles.get(id, s);
@@ -140,6 +144,16 @@ export default function ArticleEditor() {
                 return items.length ? <optgroup key={type} label={label}>{items.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup> : null;
               })}
             </select></Field>
+            <Field label="Topic">
+              <select className="a-input" dir="auto" value={f.topicId || ""} onChange={(e) => setF((s) => ({ ...s, topicId: e.target.value }))} disabled={topicsRes.loading && !topicsRes.data}>
+                <option value="">— Koi topic nahi (seedha category mein) —</option>
+                {topicOptions.map((t) => <option key={t.id} value={t.id}>{t.title}{t.status !== "active" ? " (archived)" : ""}</option>)}
+                {f.topicId && !topicOptions.some((t) => t.id === f.topicId) && <option value={f.topicId}>(current topic)</option>}
+              </select>
+              {topicsRes.error ? <span className="mt-1 block text-xs text-ad-danger">Topics load nahi hue. Page refresh karke dekhein.</span>
+                : topicsRes.data && topicOptions.length === 0 ? <span className="mt-1 block text-xs text-ad-mute">Is category mein abhi koi topic nahi hai. Pehle Topics page mein topic banayein.</span>
+                : <span className="mt-1 block text-xs text-ad-mute">Article publish hone par is topic ke andar dikhega. Latest Posts mein har published article aata hai.</span>}
+            </Field>
           </div>
           <div className="a-card space-y-3 p-4">
             <h2 className="text-sm font-semibold">Cover image</h2>
