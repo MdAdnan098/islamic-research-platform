@@ -70,7 +70,7 @@ export function Footer() {
         </div>
         {/* Two separate groups: Contact (phone + email) and Follow us on (social icons).
             Phones: side by side in one row (shorter than before). md: stacked in the 4th column. lg+: two own columns. */}
-        <div className="flex items-start justify-between gap-x-5 md:block md:space-y-5 lg:contents">
+        <div className="flex items-start justify-between gap-x-5 md:block md:space-y-5 lg:contents lg:space-y-0">
           <div className="min-w-0">
             <p className="text-lg font-bold">{t.footer.contact}</p>
             <ul className="mt-3 space-y-2 text-sm lg:mt-4 lg:space-y-2.5 lg:text-base">
