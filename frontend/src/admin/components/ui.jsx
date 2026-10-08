@@ -108,7 +108,7 @@ export function Field({ label, hint, children, className = "" }) {
 
 const TONES = {
   published: "bg-ad-ok/12 text-ad-ok", active: "bg-ad-ok/12 text-ad-ok",
-  draft: "bg-ad-warn/12 text-ad-warn", archived: "bg-ad-mute/15 text-ad-mute",
+  draft: "bg-ad-warn/12 text-ad-warn", unpaid: "bg-ad-warn/12 text-ad-warn", approved: "bg-ad-ok/12 text-ad-ok", rejected: "bg-ad-danger/12 text-ad-danger", archived: "bg-ad-mute/15 text-ad-mute",
   // live sessions / courses / payments / enrollments
   live: "bg-ad-danger/12 text-ad-danger", scheduled: "bg-ad-warn/12 text-ad-warn", ended: "bg-ad-mute/15 text-ad-mute",
   enrollment_open: "bg-ad-ok/12 text-ad-ok", coming_soon: "bg-ad-warn/12 text-ad-warn", enrollment_closed: "bg-ad-mute/15 text-ad-mute", completed: "bg-ad-mute/15 text-ad-mute",

@@ -134,6 +134,7 @@ export function validateEnrollmentUpdate(data) {
   const errors = [];
   if (!data || typeof data !== "object") return [err("Request body must be a JSON object.")];
   if (data.status !== undefined && !inList(data.status, ENROLLMENT_STATUSES)) errors.push(err(`status must be one of: ${ENROLLMENT_STATUSES.join(", ")}.`, "INVALID_STATUS"));
+  if (data.paymentStatus !== undefined || data.paymentId !== undefined) errors.push(err("Payment fields are controlled by the server and cannot be edited.", "FORBIDDEN_FIELD"));
   if (data.meetLinkSent !== undefined && typeof data.meetLinkSent !== "boolean") errors.push(err("meetLinkSent must be a boolean."));
   if (data.status === undefined && data.meetLinkSent === undefined) errors.push(err("Nothing to update."));
   return errors;

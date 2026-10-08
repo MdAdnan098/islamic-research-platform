@@ -37,13 +37,17 @@ function assertOpenable(merged) {
   }
 }
 
+/** True only when Razorpay secrets are configured; the site then shows the pay-first panel instead of the enrollment request form. */
+const onlinePaymentsEnabled = (config) => Boolean(config.razorpay?.keyId && config.razorpay?.keySecret);
+
 /* ----------------------------- public ----------------------------- */
 
 /** GET /api/public/courses — published courses (not draft / archived); never includes the meeting link. */
 export async function publicList(request, env) {
   const config = loadConfig(env);
   const courses = await listCourses(config, { publicOnly: true });
-  return jsonSuccess({ courses: courses.map(toPublicCourse) }, { allowedOrigin: config.allowedOrigin });
+  const paymentsEnabled = onlinePaymentsEnabled(config);
+  return jsonSuccess({ courses: courses.map((c) => ({ ...toPublicCourse(c), paymentsEnabled })) }, { allowedOrigin: config.allowedOrigin });
 }
 
 /** GET /api/public/courses/:slug — unpublished / draft / archived respond exactly like a missing course. */
@@ -51,7 +55,7 @@ export async function publicBySlug(request, env, ctx, params) {
   const config = loadConfig(env);
   const course = await findCourseBySlug(config, params.slug);
   if (!course || !course.isPublished || course.status === "draft" || course.status === "archived") throw fail("Not found.", 404, "NOT_FOUND");
-  return jsonSuccess({ course: toPublicCourse(course) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ course: { ...toPublicCourse(course), paymentsEnabled: onlinePaymentsEnabled(config) } }, { allowedOrigin: config.allowedOrigin });
 }
 
 /* ------------------------------ admin ------------------------------ */

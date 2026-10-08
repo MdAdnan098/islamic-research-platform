@@ -53,6 +53,7 @@ export const adminApi = {
   },
   enrollments: {
     list: (params, signal) => request(`/api/admin/enrollments${qs(params)}`, { signal }).then((d) => d.enrollments),
+    get: (id, signal) => request(`/api/admin/enrollments/${id}`, { signal }).then((d) => d.enrollment),
     update: (id, body) => request(`/api/admin/enrollments/${id}`, json("PATCH", body)).then((d) => d.enrollment),
   },
   payments: {

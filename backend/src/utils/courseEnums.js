@@ -15,4 +15,18 @@ export const CURRENCIES = ["INR"];
 export const PAYMENT_STATUSES = ["created", "pending", "paid", "failed", "refunded"];
 export const PAYMENT_GATEWAYS = ["razorpay"];
 
-export const ENROLLMENT_STATUSES = ["pending", "confirmed", "cancelled"];
+/**
+ * Enrollment lifecycle (admin-controlled). "confirmed" is the legacy name of "approved" used by the
+ * first, payment-first version of the module; old documents are read as "approved" (see enrollment.service.js).
+ */
+export const ENROLLMENT_STATUSES = ["pending", "approved", "rejected", "cancelled"];
+export const LEGACY_ENROLLMENT_STATUS = { confirmed: "approved" };
+/** Money state of an enrollment. ONLY server-side code may change it - never a client request. */
+export const ENROLLMENT_PAYMENT_STATUSES = ["unpaid", "paid", "failed", "refunded"];
+/** Admin transitions: from -> allowed next statuses. */
+export const ENROLLMENT_TRANSITIONS = {
+  pending: ["approved", "rejected", "cancelled"],
+  approved: ["pending", "cancelled"],
+  rejected: ["pending"],
+  cancelled: ["pending"],
+};

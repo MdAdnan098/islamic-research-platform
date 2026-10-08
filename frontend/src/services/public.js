@@ -29,6 +29,7 @@ export const publicApi = {
   createOrder: (courseId) => request(`/api/public/courses/${courseId}/payment/order`, { method: "POST", body: {} }),
   verifyPayment: (body) => request("/api/public/payments/verify", { method: "POST", body }),
   paymentStatus: (body) => request("/api/public/payments/status", { method: "POST", body }),
+  enrollmentRequest: (courseId, body) => request(`/api/public/courses/${courseId}/enrollment-request`, { method: "POST", body }),
   enroll: (courseId, body) => request(`/api/public/courses/${courseId}/enroll`, { method: "POST", body }),
 };
 

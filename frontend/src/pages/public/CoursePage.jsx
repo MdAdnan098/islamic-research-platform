@@ -9,6 +9,7 @@ import { BackLink } from "../../components/ui/BackLink.jsx";
 import { ErrorState, NotFoundState, Skeleton } from "../../components/ui/feedback.jsx";
 import { CourseStatusBadge } from "../../components/public/CourseCards.jsx";
 import { EnrollPanel } from "../../components/public/EnrollPanel.jsx";
+import { EnrollmentRequestPanel } from "../../components/public/EnrollmentRequestPanel.jsx";
 
 /** /courses/:slug — course details plus the enrollment / payment panel. */
 export default function CoursePage() {
@@ -50,7 +51,8 @@ export default function CoursePage() {
               <div className="flex justify-between gap-3"><dt className="text-mute">Classes</dt><dd className="flex items-center gap-1.5 font-medium"><Icon name="monitor" size={15} />Online</dd></div>
             </dl>
             <div className="mt-5 border-t border-rule pt-5">
-              <EnrollPanel course={course} />
+              {/* Pay-first panel only once the server reports online payments are configured; otherwise the enrollment request form. */}
+              {course.paymentsEnabled && course.price > 0 ? <EnrollPanel course={course} /> : <EnrollmentRequestPanel course={course} />}
             </div>
           </div>
         </aside>
