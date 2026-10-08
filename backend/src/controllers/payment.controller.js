@@ -4,7 +4,8 @@ import { enforceRateLimit } from "../middleware/rateLimit.js";
 import { jsonSuccess } from "../utils/response.js";
 import { timingSafeEqual } from "../utils/password.js";
 import { safeParseJson, isValidObjectIdString } from "../utils/validate.js";
-import { ORDER_ID_RE, PAYMENT_ID_RE, SIGNATURE_RE, CLAIM_TOKEN_RE } from "../utils/validate.courses.js";
+import { ORDER_ID_RE, PAYMENT_ID_RE, SIGNATURE_RE, CLAIM_TOKEN_RE, validatePaidEnrollmentInput, normalizeWhatsapp } from "../utils/validate.courses.js";
+import { enrollmentGate } from "../utils/courseLifecycle.js";
 import { findCourseById, findCoursesByIds, toSafeCourse } from "../services/db/course.service.js";
 import {
   createPaymentRecord,
@@ -18,7 +19,7 @@ import {
   listPayments,
   toSafePayment,
 } from "../services/db/payment.service.js";
-import { findEnrollmentByPaymentId } from "../services/db/enrollment.service.js";
+import { findEnrollmentByPaymentId, createEnrollmentFromPayment, findPaidEnrollmentForStudent } from "../services/db/enrollment.service.js";
 import {
   getRazorpay,
   createRazorpayOrder,
@@ -37,6 +38,19 @@ function fail(message, status, code) {
 
 const notFoundOrder = () => fail("Order not found.", 404, "NOT_FOUND");
 
+/**
+ * Turns a verified payment into an enrollment. Never throws: the money is already captured, so a failure here
+ * must not turn into an error for the student — the status endpoint retries this (it is idempotent).
+ */
+async function autoEnroll(config, payment) {
+  try {
+    return await createEnrollmentFromPayment(config, payment);
+  } catch (err) {
+    console.error("Automatic enrollment failed; it will be retried on the next status check:", err.code || err.message);
+    return null;
+  }
+}
+
 /** Looks up a payment by order id and checks the caller holds its claim token. Generic 404 otherwise. */
 export async function findPaymentForClaim(config, orderId, claimToken) {
   if (typeof orderId !== "string" || !ORDER_ID_RE.test(orderId) || typeof claimToken !== "string" || !CLAIM_TOKEN_RE.test(claimToken)) {
@@ -50,19 +64,32 @@ export async function findPaymentForClaim(config, orderId, claimToken) {
 /* ----------------------------- public ----------------------------- */
 
 /**
- * POST /api/public/courses/:id/payment/order
- * The amount is ALWAYS computed here from the course price in the
- * database — the client cannot choose or change it.
+ * POST /api/public/courses/:id/payment/order   { fullName, whatsapp, email }
+ * The amount is ALWAYS computed here from the course price in the database — the client cannot choose or
+ * change it. This is where enrollment closing is enforced: the check compares the Worker's clock with the
+ * stored enrollmentClosesAt, so from that exact instant no new order (and therefore no new payment) can start.
+ * (A checkout that was already opened before the deadline may still complete — otherwise someone could be
+ * charged without being enrolled — and it enrolls automatically.)
  */
 export async function createOrder(request, env, ctx, params) {
   const config = loadConfig(env);
   enforceRateLimit(request, "payment-order", { max: 10 });
   const { keyId } = getRazorpay(config); // 503 until Razorpay secrets are configured
 
+  const body = await safeParseJson(request);
+  const inputErrors = validatePaidEnrollmentInput(body);
+  if (inputErrors.length > 0) throw fail(inputErrors[0].message, 400, inputErrors[0].code || "INVALID_INPUT");
+
   const course = isValidObjectIdString(params.id) ? await findCourseById(config, params.id) : null;
-  if (!course || !course.isPublished || course.status === "draft" || course.status === "archived") throw fail("Course not found.", 404, "NOT_FOUND");
-  if (course.status !== "enrollment_open") throw fail("Enrollment is not open for this course.", 409, "ENROLLMENT_CLOSED");
+  if (!course) throw fail("Course not found.", 404, "NOT_FOUND");
+  const closed = enrollmentGate(course, Date.now());
+  if (closed) throw fail(closed.message, closed.status, closed.code);
   if (!(typeof course.price === "number" && course.price > 0)) throw fail("This course cannot be purchased online.", 409, "NOT_PURCHASABLE");
+
+  const student = { fullName: body.fullName.trim(), whatsapp: normalizeWhatsapp(body.whatsapp), email: body.email.trim().toLowerCase() };
+  if (await findPaidEnrollmentForStudent(config, course._id, student.whatsapp)) {
+    throw fail("You are already enrolled in this course with this WhatsApp number.", 409, "ALREADY_ENROLLED");
+  }
 
   if (Number.isInteger(course.maxStudents) && (await countPaidForCourse(config, course._id)) >= course.maxStudents) {
     throw fail("This course is full.", 409, "COURSE_FULL");
@@ -88,6 +115,7 @@ export async function createOrder(request, env, ctx, params) {
     currency,
     receipt,
     claimTokenHash: await sha256Hex(claimToken),
+    student,
   });
 
   return jsonSuccess(
@@ -114,7 +142,10 @@ export async function verify(request, env) {
 
   const payment = await findPaymentByOrderId(config, orderId);
   if (!payment) throw notFoundOrder();
-  if (payment.status === "paid" || payment.status === "refunded") return jsonSuccess({ status: payment.status }, { allowedOrigin: config.allowedOrigin });
+  if (payment.status === "paid" || payment.status === "refunded") {
+    const enrollment = payment.status === "paid" ? await autoEnroll(config, payment) : null;
+    return jsonSuccess({ status: payment.status, enrolled: !!enrollment }, { allowedOrigin: config.allowedOrigin });
+  }
 
   if (!(await verifyCheckoutSignature(config, { orderId, paymentId, signature }))) {
     throw fail("Payment signature could not be verified.", 400, "INVALID_SIGNATURE");
@@ -145,7 +176,8 @@ export async function verify(request, env) {
   }
 
   const updated = await markPaid(config, orderId, { paymentId, via: gatewayPayment ? "api" : "signature" });
-  return jsonSuccess({ status: updated.status }, { allowedOrigin: config.allowedOrigin });
+  const enrollment = updated.status === "paid" ? await autoEnroll(config, updated) : null;
+  return jsonSuccess({ status: updated.status, enrolled: !!enrollment }, { allowedOrigin: config.allowedOrigin });
 }
 
 /**
@@ -158,7 +190,8 @@ export async function status(request, env) {
   enforceRateLimit(request, "payment-status", { max: 60 });
   const body = await safeParseJson(request);
   const payment = await findPaymentForClaim(config, body?.orderId, body?.claimToken);
-  const enrollment = payment.status === "paid" ? await findEnrollmentByPaymentId(config, payment._id) : null;
+  // A paid payment whose enrollment is missing (e.g. a crash between the two steps) is healed here.
+  const enrollment = payment.status === "paid" ? (await findEnrollmentByPaymentId(config, payment._id)) || (await autoEnroll(config, payment)) : null;
   return jsonSuccess(
     { status: payment.status, courseId: String(payment.courseId), enrolled: !!enrollment },
     { allowedOrigin: config.allowedOrigin }
@@ -200,7 +233,8 @@ export async function webhook(request, env) {
         console.error("Webhook amount mismatch for order", entity.order_id);
         return ok();
       }
-      await markPaid(config, entity.order_id, { paymentId: entity.id, via: "webhook" });
+      const paid = await markPaid(config, entity.order_id, { paymentId: entity.id, via: "webhook" });
+      if (paid?.status === "paid") await autoEnroll(config, paid);
       return ok();
     }
     case "payment.failed": {

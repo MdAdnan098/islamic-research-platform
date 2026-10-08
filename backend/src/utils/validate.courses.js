@@ -8,6 +8,9 @@ import { isNonEmptyString, isValidObjectIdString } from "./validate.js";
 import { isValidSlugFormat } from "./slug.js";
 import { extractYouTubeVideoId } from "./youtube.js";
 import { LIVE_STATUSES, COURSE_STATUSES, MEETING_PROVIDERS, CURRENCIES, ENROLLMENT_STATUSES } from "./courseEnums.js";
+import { parseCourseInstant } from "./ist.js";
+
+export const MAX_COURSE_SESSIONS = 120;
 
 const err = (message, code = "INVALID_INPUT") => ({ message, code });
 const inList = (v, list) => typeof v === "string" && list.includes(v);
@@ -78,9 +81,13 @@ export function validateCourseInput(data, { partial = false } = {}) {
   if (data.thumbnailKey !== undefined && data.thumbnailKey !== null && data.thumbnailKey !== "" && !/^[a-f0-9-]{36}\.(jpg|png|webp|gif)$/.test(data.thumbnailKey)) {
     errors.push(err("thumbnailKey must be a key returned by the media upload endpoint (image)."));
   }
-  for (const key of ["startDate", "endDate"]) {
-    if (data[key] !== undefined && parseDateInput(data[key]) === undefined) errors.push(err(`${key} must be a valid date.`));
+  for (const key of ["startDate", "endDate", "enrollmentClosesAt"]) {
+    if (data[key] !== undefined && parseCourseInstant(data[key]) === undefined) errors.push(err(`${key} must be a valid date/time (IST, e.g. 2026-10-10T19:30).`));
   }
+  if (data.retentionDays !== undefined && (!Number.isInteger(data.retentionDays) || data.retentionDays < 0 || data.retentionDays > 365)) {
+    errors.push(err("retentionDays must be a whole number between 0 and 365."));
+  }
+  if (data.sessions !== undefined) errors.push(...validateSessions(data.sessions));
   if (!partial || data.price !== undefined) {
     if (typeof data.price !== "number" || !Number.isFinite(data.price) || data.price < 0 || data.price > 1_000_000) {
       errors.push(err("price must be a number between 0 and 1,000,000."));
@@ -102,10 +109,40 @@ export function validateCourseInput(data, { partial = false } = {}) {
   }
   if (data.isPublished !== undefined && typeof data.isPublished !== "boolean") errors.push(err("isPublished must be a boolean."));
 
-  const start = parseDateInput(data.startDate);
-  const end = parseDateInput(data.endDate);
+  const start = parseCourseInstant(data.startDate);
+  const end = parseCourseInstant(data.endDate);
   if (start && end && end < start) errors.push(err("endDate cannot be before startDate."));
   return errors;
+}
+
+/** Each class day: exact start/end instants (IST input), optional title and private Google Meet link. Days must be in order and must not overlap. */
+export function validateSessions(sessions) {
+  const errors = [];
+  if (!Array.isArray(sessions)) return [err("sessions must be an array.")];
+  if (sessions.length > MAX_COURSE_SESSIONS) return [err(`A course can have at most ${MAX_COURSE_SESSIONS} class days.`)];
+  let previousEnd = null;
+  sessions.forEach((s, i) => {
+    const n = i + 1;
+    if (!s || typeof s !== "object") { errors.push(err(`Day ${n}: invalid entry.`)); return; }
+    const start = parseCourseInstant(s.startsAt);
+    const end = parseCourseInstant(s.endsAt);
+    if (!start || !end) { errors.push(err(`Day ${n}: a valid start and end date/time is required.`)); return; }
+    if (end <= start) errors.push(err(`Day ${n}: the class must end after it starts.`));
+    if (previousEnd && start < previousEnd) errors.push(err(`Day ${n}: classes must be in order and cannot overlap the previous day.`));
+    previousEnd = end;
+    if (s.title !== undefined && s.title !== null && (typeof s.title !== "string" || s.title.length > 150)) errors.push(err(`Day ${n}: title must be up to 150 characters.`));
+    if (s.meetingLink !== undefined && s.meetingLink !== null && s.meetingLink !== "" && !isValidMeetLink(s.meetingLink)) errors.push(err(`Day ${n}: meetingLink must be an https://meet.google.com/... link.`));
+  });
+  return errors;
+}
+
+/** Cross-field rule on the MERGED course: enrollment must close no later than the final class ends. */
+export function validateSchedule({ sessions, enrollmentClosesAt }) {
+  const closes = parseCourseInstant(enrollmentClosesAt);
+  if (!closes || !Array.isArray(sessions) || sessions.length === 0) return [];
+  const ends = sessions.map((s) => parseCourseInstant(s?.endsAt)).filter(Boolean);
+  const lastEnd = ends.length ? new Date(Math.max(...ends.map((d) => d.getTime()))) : null;
+  return lastEnd && closes > lastEnd ? [err("Enrollment closing time cannot be after the final class ends.")] : [];
 }
 
 /** WhatsApp number: optional leading +, 8–15 digits (spaces/dashes/brackets allowed on input). Returns normalized "+<digits>" or null. */
@@ -127,6 +164,13 @@ export function validateEnrollmentInput(data) {
   if (data.email !== undefined && data.email !== null && data.email !== "" && (typeof data.email !== "string" || data.email.length > 254 || !EMAIL_RE.test(data.email.trim()))) {
     errors.push(err("email must be a valid email address."));
   }
+  return errors;
+}
+
+/** Paid flow: the student's details are collected BEFORE payment, so the email is required here. */
+export function validatePaidEnrollmentInput(data) {
+  const errors = validateEnrollmentInput(data);
+  if (errors.length === 0 && (typeof data.email !== "string" || !data.email.trim())) errors.push(err("Your Gmail / email address is required."));
   return errors;
 }
 

@@ -1,7 +1,8 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "./mongo.service.js";
 import { normalizeSlug, slugify } from "../../utils/slug.js";
-import { parseDateInput } from "../../utils/validate.courses.js";
+import { parseCourseInstant } from "../../utils/ist.js";
+import { computeArchiveAt, computeLifecycle, normalizeSessions } from "../../utils/courseLifecycle.js";
 
 /**
  * Data access for the `courses` collection.
@@ -9,7 +10,15 @@ import { parseDateInput } from "../../utils/validate.courses.js";
  * Document shape:
  *   { _id, title, slug, description, shortDescription, teacher, thumbnailKey,
  *     startDate, endDate, price, currency, status, meetingProvider,
- *     meetingLink, maxStudents, isPublished, sortOrder, createdAt, updatedAt }
+ *     meetingLink, maxStudents, isPublished, sortOrder, createdAt, updatedAt,
+ *     // timing (all absolute instants, BSON Dates; admin input is read as IST — see utils/ist.js)
+ *     enrollmentClosesAt,  // Date | null — enrollment is open strictly before this instant
+ *     sessions,            // [{ title, startsAt, endsAt, meetingLink }] one per class day, in order
+ *     retentionDays,       // int >= 0 — extra days the card stays public after the final day ends
+ *     archiveAt }          // Date | null — derived on save: 00:00 IST after the final class + retentionDays
+ *
+ * When `sessions` is non-empty, startDate / endDate are derived from the first start / last end on every save.
+ * The lifecycle state itself (Upcoming / LIVE NOW / Completed / ...) is NEVER stored: see utils/courseLifecycle.js.
  *
  * `price` is in major units (rupees); the payment layer converts to
  * paise. `thumbnailKey` follows the existing media convention (a key from
@@ -36,6 +45,7 @@ export async function ensureCourseIndexes(config) {
   const c = await getCollection(config);
   await c.createIndex({ slug: 1 }, { unique: true });
   await c.createIndex({ isPublished: 1, status: 1, sortOrder: 1 });
+  await c.createIndex({ archiveAt: 1 }, { sparse: true });
 }
 
 export function courseSlugFromInput(input) {
@@ -44,12 +54,25 @@ export function courseSlugFromInput(input) {
 
 const trimOrNull = (v) => (typeof v === "string" && v.trim() ? v.trim() : null);
 const dateOrNull = (v) => {
-  const d = parseDateInput(v);
+  const d = parseCourseInstant(v);
   return d === undefined ? null : d;
 };
 
+/** Stored shape of the class days (Dates, sorted, empty link -> null). */
+function storedSessions(raw) {
+  return normalizeSessions(raw).map((s) => ({ title: s.title, startsAt: s.startsAt, endsAt: s.endsAt, meetingLink: s.meetingLink }));
+}
+
+/** Fields that follow from the schedule: course start/end from the first/last class, plus the cleanup instant. */
+function scheduleFields(sessions, retentionDays) {
+  if (sessions.length === 0) return { archiveAt: null };
+  return { startDate: sessions[0].startsAt, endDate: sessions[sessions.length - 1].endsAt, archiveAt: computeArchiveAt(sessions, retentionDays) };
+}
+
 export async function createCourse(config, input) {
   const now = new Date();
+  const sessions = storedSessions(input.sessions);
+  const retentionDays = Number.isInteger(input.retentionDays) ? input.retentionDays : 0;
   const doc = {
     title: input.title.trim(),
     slug: input.slug,
@@ -67,6 +90,10 @@ export async function createCourse(config, input) {
     maxStudents: Number.isInteger(input.maxStudents) ? input.maxStudents : null,
     isPublished: input.isPublished === true && (input.status || "draft") !== "archived",
     sortOrder: Number.isInteger(input.sortOrder) ? input.sortOrder : 0,
+    enrollmentClosesAt: dateOrNull(input.enrollmentClosesAt),
+    sessions,
+    retentionDays,
+    ...scheduleFields(sessions, retentionDays),
     createdAt: now,
     updatedAt: now,
   };
@@ -100,10 +127,13 @@ export async function findCoursesByIds(config, ids) {
 }
 
 /** @param {{ publicOnly?: boolean }} filters */
-export async function listCourses(config, { publicOnly = false } = {}) {
+export async function listCourses(config, { publicOnly = false, now = new Date() } = {}) {
   const c = await getCollection(config);
-  // Public: published and neither a draft nor archived. (A draft/archived course that was published by mistake still stays hidden.)
-  const query = publicOnly ? { isPublished: true, status: { $nin: ["draft", "archived"] } } : {};
+  // Public: published, neither a draft nor archived, and not past its cleanup instant. The archiveAt comparison is
+  // done by the database query itself, so a course disappears at the exact configured moment with no cron involved.
+  const query = publicOnly
+    ? { isPublished: true, status: { $nin: ["draft", "archived"] }, $or: [{ archiveAt: null }, { archiveAt: { $gt: now } }] }
+    : {};
   return c.find(query).sort({ sortOrder: 1, startDate: 1, createdAt: -1 }).limit(200).toArray();
 }
 
@@ -128,6 +158,14 @@ export async function updateCourse(config, id, updates) {
   if (($set.status ?? existing.status) === "archived") $set.isPublished = false;
   if (updates.maxStudents !== undefined) $set.maxStudents = Number.isInteger(updates.maxStudents) ? updates.maxStudents : null;
 
+  if (updates.enrollmentClosesAt !== undefined) $set.enrollmentClosesAt = dateOrNull(updates.enrollmentClosesAt);
+  if (updates.retentionDays !== undefined) $set.retentionDays = updates.retentionDays;
+  if (updates.sessions !== undefined || updates.retentionDays !== undefined) {
+    const sessions = updates.sessions !== undefined ? storedSessions(updates.sessions) : storedSessions(existing.sessions);
+    if (updates.sessions !== undefined) $set.sessions = sessions;
+    Object.assign($set, scheduleFields(sessions, $set.retentionDays ?? existing.retentionDays ?? 0));
+  }
+
   const c = await getCollection(config);
   try {
     await c.updateOne({ _id: new ObjectId(id) }, { $set });
@@ -145,6 +183,20 @@ export async function archiveCourse(config, id) {
   const c = await getCollection(config);
   await c.updateOne({ _id: new ObjectId(id) }, { $set: { status: "archived", isPublished: false, updatedAt: new Date() } });
   return findCourseById(config, id);
+}
+
+/**
+ * Persists the cleanup: every course whose archiveAt has passed becomes archived + unpublished.
+ * Purely for tidiness of the stored data — the public queries already exclude these courses by timestamp, so
+ * correctness never depends on this running. Payments / enrollments / R2 media are NOT touched.
+ */
+export async function archiveExpiredCourses(config, now = new Date()) {
+  const c = await getCollection(config);
+  const result = await c.updateMany(
+    { status: { $nin: ["archived", "draft"] }, archiveAt: { $ne: null, $lte: now } },
+    { $set: { status: "archived", isPublished: false, archivedAt: now, updatedAt: now } }
+  );
+  return { archived: result.modifiedCount };
 }
 
 /** Bulk ordering update (single bulkWrite) — items: [{ id, ordering }] → sortOrder. Admin-only, low concurrency. */
@@ -167,8 +219,8 @@ export async function deleteCourse(config, id) {
 
 const iso = (d) => (d ? d : null);
 
-/** Admin projection — includes the private meeting link. */
-export function toSafeCourse(course) {
+/** Admin projection — includes the private meeting links and the live-computed lifecycle. */
+export function toSafeCourse(course, now = Date.now()) {
   if (!course) return null;
   return {
     id: String(course._id),
@@ -188,14 +240,25 @@ export function toSafeCourse(course) {
     maxStudents: course.maxStudents ?? null,
     isPublished: !!course.isPublished,
     sortOrder: course.sortOrder ?? 0,
+    enrollmentClosesAt: iso(course.enrollmentClosesAt),
+    retentionDays: course.retentionDays ?? 0,
+    archiveAt: iso(course.archiveAt),
+    sessions: normalizeSessions(course.sessions).map((s) => ({ title: s.title, startsAt: s.startsAt, endsAt: s.endsAt, meetingLink: s.meetingLink })),
+    lifecycle: computeLifecycle(course, now),
+    serverTime: new Date(now).toISOString(),
     createdAt: course.createdAt,
     updatedAt: course.updatedAt,
   };
 }
 
-/** Public projection — NEVER includes meetingLink / meetingProvider / maxStudents. */
-export function toPublicCourse(course) {
+/**
+ * Public projection — NEVER includes meetingLink / per-day meeting links / meetingProvider / maxStudents.
+ * `status` is the EFFECTIVE status (enrollment_open flips to enrollment_closed at the exact closing instant, etc.).
+ * `serverTime` lets the browser align its clock for visual countdowns; the state itself is decided here.
+ */
+export function toPublicCourse(course, now = Date.now()) {
   if (!course) return null;
-  const { meetingLink, meetingProvider, maxStudents, isPublished, sortOrder, ...rest } = toSafeCourse(course);
-  return rest;
+  const { meetingLink, meetingProvider, maxStudents, isPublished, sortOrder, sessions, retentionDays, archiveAt, lifecycle, ...rest } = toSafeCourse(course, now);
+  const { archiveAt: _hidden, sessions: days, ...publicLifecycle } = lifecycle;
+  return { ...rest, status: lifecycle.effectiveStatus, sessions: days, lifecycle: publicLifecycle };
 }

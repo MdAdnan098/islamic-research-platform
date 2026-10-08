@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "./mongo.service.js";
 import { normalizeWhatsapp } from "../../utils/validate.courses.js";
 import { ENROLLMENT_PAYMENT_STATUSES, ENROLLMENT_TRANSITIONS, LEGACY_ENROLLMENT_STATUS } from "../../utils/courseEnums.js";
+import { pickMeetingLink } from "../../utils/courseLifecycle.js";
 
 /**
  * Data access for the `enrollments` collection (one collection for both entry points).
@@ -11,7 +12,7 @@ import { ENROLLMENT_PAYMENT_STATUSES, ENROLLMENT_TRANSITIONS, LEGACY_ENROLLMENT_
  *     status,         // pending | approved | rejected | cancelled   (admin-controlled; legacy "confirmed" = approved)
  *     paymentStatus,  // unpaid | paid | failed | refunded           (server-controlled ONLY)
  *     paymentId,      // payments._id - only present once a verified payment is attached
- *     source,         // "request" (enrollment request form) | "payment" (paid via Razorpay flow)
+ *     source,         // "request" (legacy enrollment request form) | "payment" (paid via Razorpay — created automatically, status "approved")
  *     activeKey,      // "<courseId>:<whatsapp>" while status is pending/approved - drives the duplicate guard
  *     meetLinkSentAt, createdAt, updatedAt }
  *
@@ -106,7 +107,7 @@ export async function createEnrollment(config, { courseId, paymentId, fullName, 
     fullName: fullName.trim(),
     whatsapp: normalizeWhatsapp(whatsapp),
     email: typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null,
-    status: "pending",
+    status: "approved", // verified payment = enrolled; no admin approval step
     paymentStatus: "paid",
     source: "payment",
     meetLinkSentAt: null,
@@ -121,6 +122,50 @@ export async function createEnrollment(config, { courseId, paymentId, fullName, 
     if (e.code === 11000) throw fail("An enrollment has already been submitted for this payment.", 409, "ALREADY_ENROLLED");
     throw e;
   }
+}
+
+/**
+ * Automatic enrollment: called by the server right after a payment is verified as paid (checkout verify,
+ * webhook, or the status endpoint healing a missed step). Idempotent — the unique paymentId index plus the
+ * lookup below guarantee exactly one enrollment per payment, however many times / in whatever order it runs.
+ * There is no admin approval step: a verified payment IS the enrollment (status "approved").
+ */
+export async function createEnrollmentFromPayment(config, payment) {
+  if (!payment || payment.status !== "paid" || !payment.student) return null;
+  const existing = await findEnrollmentByPaymentId(config, payment._id);
+  if (existing) return existing;
+  const { fullName, whatsapp, email } = payment.student;
+  const now = new Date();
+  const doc = {
+    courseId: new ObjectId(payment.courseId),
+    paymentId: new ObjectId(payment._id),
+    fullName: String(fullName).trim(),
+    whatsapp: normalizeWhatsapp(whatsapp),
+    email: typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null,
+    status: "approved",
+    paymentStatus: "paid",
+    source: "payment",
+    meetLinkSentAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const c = await getCollection(config);
+  try {
+    const result = await c.insertOne(doc);
+    return { ...doc, _id: result.insertedId };
+  } catch (e) {
+    if (e.code === 11000) return findEnrollmentByPaymentId(config, payment._id); // the other path won the race
+    throw e;
+  }
+}
+
+/** A paid, still-active enrollment for this WhatsApp number in this course (blocks paying twice). */
+export async function findPaidEnrollmentForStudent(config, courseId, whatsapp) {
+  const c = await getCollection(config);
+  return c.findOne(
+    { courseId: new ObjectId(courseId), whatsapp: normalizeWhatsapp(whatsapp), paymentStatus: "paid", status: { $in: ACTIVE_STATUSES } },
+    { projection: { _id: 1 } }
+  );
 }
 
 /**
@@ -157,17 +202,22 @@ export async function countApprovedForCourse(config, courseId) {
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export async function listEnrollments(config, { courseId, status, paymentStatus, q, limit = 100, skip = 0 } = {}) {
+export async function listEnrollments(config, { courseId, status, paymentStatus, q, includeUnpaid = false, limit = 100, skip = 0 } = {}) {
   const c = await getCollection(config);
   const query = {};
+  // Admins see successful (paid / refunded) enrollments only. Legacy unpaid requests stay in the database and
+  // are reachable with includeUnpaid (or an explicit paymentStatus filter).
+  const and = [];
+  if (!includeUnpaid && !paymentStatus) and.push({ $or: [{ paymentStatus: { $in: ["paid", "refunded"] } }, { paymentId: { $type: "objectId" } }] });
   if (courseId && ObjectId.isValid(courseId)) query.courseId = new ObjectId(courseId);
   if (status) query.status = status === "approved" ? { $in: ["approved", "confirmed"] } : status;
   if (paymentStatus) query.paymentStatus = paymentStatus;
   if (typeof q === "string" && q.trim()) {
     const rx = new RegExp(escapeRegex(q.trim().slice(0, 100)), "i");
     const digits = q.replace(/\D/g, "");
-    query.$or = [{ fullName: rx }, { email: rx }, ...(digits.length >= 3 ? [{ whatsapp: new RegExp(escapeRegex(digits)) }] : [])];
+    and.push({ $or: [{ fullName: rx }, { email: rx }, ...(digits.length >= 3 ? [{ whatsapp: new RegExp(escapeRegex(digits)) }] : [])] });
   }
+  if (and.length) query.$and = and;
   return c.find(query).sort({ createdAt: -1 }).skip(Math.max(skip, 0)).limit(Math.min(Math.max(limit, 1), 200)).toArray();
 }
 
@@ -224,7 +274,7 @@ export function toSafeEnrollment(e, { course, payment } = {}) {
     meetLinkSentAt: e.meetLinkSentAt || null,
     createdAt: e.createdAt,
     updatedAt: e.updatedAt,
-    course: course ? { id: String(course._id), title: course.title, slug: course.slug, price: course.price, currency: course.currency || "INR", meetingLink: course.meetingLink || null } : null,
+    course: course ? { id: String(course._id), title: course.title, slug: course.slug, price: course.price, currency: course.currency || "INR", meetingLink: pickMeetingLink(course) } : null,
     payment: payment ? { status: payment.status, amount: payment.amount, currency: payment.currency, orderId: payment.orderId, gatewayPaymentId: payment.paymentId || null } : null,
   };
 }

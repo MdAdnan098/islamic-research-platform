@@ -2,7 +2,8 @@ import { loadConfig } from "../config/env.js";
 import { requireAdmin } from "../middleware/adminAuth.js";
 import { jsonSuccess } from "../utils/response.js";
 import { safeParseJson, isValidObjectIdString, validateReorderInput } from "../utils/validate.js";
-import { validateCourseInput } from "../utils/validate.courses.js";
+import { validateCourseInput, validateSchedule } from "../utils/validate.courses.js";
+import { isPubliclyVisible } from "../utils/courseLifecycle.js";
 import { normalizeSlug } from "../utils/slug.js";
 import {
   createCourse,
@@ -42,20 +43,31 @@ const onlinePaymentsEnabled = (config) => Boolean(config.razorpay?.keyId && conf
 
 /* ----------------------------- public ----------------------------- */
 
-/** GET /api/public/courses — published courses (not draft / archived); never includes the meeting link. */
+// Course state depends on the clock, so these responses must never be served from a cache.
+const NO_STORE = { "Cache-Control": "no-store" };
+
+/**
+ * GET /api/public/courses — published courses (not draft / archived / past their cleanup time); never includes
+ * any meeting link. One `now` is used for the query and for every course's lifecycle, so the list is consistent.
+ */
 export async function publicList(request, env) {
   const config = loadConfig(env);
-  const courses = await listCourses(config, { publicOnly: true });
+  const now = Date.now();
+  const courses = await listCourses(config, { publicOnly: true, now: new Date(now) });
   const paymentsEnabled = onlinePaymentsEnabled(config);
-  return jsonSuccess({ courses: courses.map((c) => ({ ...toPublicCourse(c), paymentsEnabled })) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess(
+    { courses: courses.filter((c) => isPubliclyVisible(c, now)).map((c) => ({ ...toPublicCourse(c, now), paymentsEnabled })) },
+    { allowedOrigin: config.allowedOrigin, headers: NO_STORE }
+  );
 }
 
 /** GET /api/public/courses/:slug — unpublished / draft / archived respond exactly like a missing course. */
 export async function publicBySlug(request, env, ctx, params) {
   const config = loadConfig(env);
+  const now = Date.now();
   const course = await findCourseBySlug(config, params.slug);
-  if (!course || !course.isPublished || course.status === "draft" || course.status === "archived") throw fail("Not found.", 404, "NOT_FOUND");
-  return jsonSuccess({ course: { ...toPublicCourse(course), paymentsEnabled: onlinePaymentsEnabled(config) } }, { allowedOrigin: config.allowedOrigin });
+  if (!course || !isPubliclyVisible(course, now)) throw fail("Not found.", 404, "NOT_FOUND");
+  return jsonSuccess({ course: { ...toPublicCourse(course, now), paymentsEnabled: onlinePaymentsEnabled(config) } }, { allowedOrigin: config.allowedOrigin, headers: NO_STORE });
 }
 
 /* ------------------------------ admin ------------------------------ */
@@ -64,7 +76,7 @@ export async function adminList(request, env) {
   const config = loadConfig(env);
   await requireAdmin(request, env);
   const courses = await listCourses(config);
-  return jsonSuccess({ courses: courses.map(toSafeCourse) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ courses: courses.map((c) => toSafeCourse(c)) }, { allowedOrigin: config.allowedOrigin });
 }
 
 export async function adminGet(request, env, ctx, params) {
@@ -85,6 +97,8 @@ export async function adminCreate(request, env) {
   const errors = validateCourseInput(data);
   if (errors.length > 0) throwValidation(errors);
   assertOpenable(data);
+  const scheduleErrors = validateSchedule(data);
+  if (scheduleErrors.length > 0) throwValidation(scheduleErrors);
 
   const course = await createCourse(config, data);
   return jsonSuccess({ course: toSafeCourse(course) }, { status: 201, allowedOrigin: config.allowedOrigin });
@@ -104,6 +118,11 @@ export async function adminUpdate(request, env, ctx, params) {
   const errors = validateCourseInput(data, { partial: true });
   if (errors.length > 0) throwValidation(errors);
   assertOpenable({ status: data.status ?? existing.status, price: data.price ?? existing.price });
+  const scheduleErrors = validateSchedule({
+    sessions: data.sessions !== undefined ? data.sessions : existing.sessions,
+    enrollmentClosesAt: data.enrollmentClosesAt !== undefined ? data.enrollmentClosesAt : existing.enrollmentClosesAt,
+  });
+  if (scheduleErrors.length > 0) throwValidation(scheduleErrors);
 
   const course = await updateCourse(config, params.id, data);
   return jsonSuccess({ course: toSafeCourse(course) }, { allowedOrigin: config.allowedOrigin });

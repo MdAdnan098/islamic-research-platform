@@ -4,11 +4,13 @@ import { useMeta } from "../../lib/useMeta.js";
 import { BackLink } from "../../components/ui/BackLink.jsx";
 import { CardSkeletons, EmptyState, ErrorState } from "../../components/ui/feedback.jsx";
 import { CourseGrid } from "../../components/public/CourseCards.jsx";
+import { useCourseListClock } from "../../lib/useServerClock.js";
 
 /** /courses — all published courses. */
 export default function CoursesPage() {
   useMeta({ title: "Our Courses" });
   const { data, error, loading, reload } = useAsync((signal) => publicApi.courses(signal), []);
+  useCourseListClock(data, reload); // cards follow the server's schedule without a manual refresh
 
   return (
     <div className="container-page py-10 sm:py-14">

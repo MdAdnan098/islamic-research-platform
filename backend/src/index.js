@@ -18,6 +18,8 @@ import { routes as adminCourseRoutes } from "./routes/admin.courses.routes.js";
 import { routes as publicPaymentRoutes } from "./routes/public.payments.routes.js";
 import { routes as adminEnrollmentRoutes } from "./routes/admin.enrollments.routes.js";
 import { runScheduledSync } from "./services/youtube/youtube.service.js";
+import { archiveExpiredCourses } from "./services/db/course.service.js";
+import { loadConfig } from "./config/env.js";
 
 /**
  * Route table: [method, pattern, handler]. Patterns support ":param"
@@ -72,11 +74,17 @@ export default {
   },
 
   /**
-   * Cron Trigger entry point (YouTube live-session sync). Only runs if a
-   * cron is configured in wrangler.toml / the dashboard, and does nothing
-   * unless YOUTUBE_API_KEY is set.
+   * Cron Trigger entry point (YouTube live-session sync + persisting course cleanup). Only runs if a
+   * cron is configured in wrangler.toml / the dashboard. The YouTube part does nothing unless
+   * YOUTUBE_API_KEY is set.
    */
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runScheduledSync(env));
+    // Course cleanup is persistence only (public queries already hide expired courses by timestamp).
+    ctx.waitUntil(
+      (async () => {
+        try { await archiveExpiredCourses(loadConfig(env)); } catch (err) { console.error("Course cleanup failed:", err.message); }
+      })()
+    );
   },
 };

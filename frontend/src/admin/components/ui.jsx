@@ -114,6 +114,8 @@ const TONES = {
   enrollment_open: "bg-ad-ok/12 text-ad-ok", coming_soon: "bg-ad-warn/12 text-ad-warn", enrollment_closed: "bg-ad-mute/15 text-ad-mute", completed: "bg-ad-mute/15 text-ad-mute",
   paid: "bg-ad-ok/12 text-ad-ok", confirmed: "bg-ad-ok/12 text-ad-ok", pending: "bg-ad-warn/12 text-ad-warn", created: "bg-ad-mute/15 text-ad-mute",
   failed: "bg-ad-danger/12 text-ad-danger", cancelled: "bg-ad-danger/12 text-ad-danger", refunded: "bg-ad-mute/15 text-ad-mute",
+  // enrolled = paid + automatically enrolled; course lifecycle phases
+  enrolled: "bg-ad-ok/12 text-ad-ok", upcoming: "bg-ad-warn/12 text-ad-warn", in_progress: "bg-ad-danger/12 text-ad-danger", unscheduled: "bg-ad-mute/15 text-ad-mute",
 };
 export function StatusBadge({ status }) {
   return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${TONES[status] || TONES.archived}`}>{String(status).replace(/_/g, " ")}</span>;

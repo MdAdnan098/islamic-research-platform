@@ -26,7 +26,8 @@ export const publicApi = {
   course: (slug, signal) => request(`/api/public/courses/${encodeURIComponent(slug)}`, { signal }).then((d) => d.course),
 
   // Payment + enrollment. Prices/amounts are decided by the server; nothing here is trusted by it.
-  createOrder: (courseId) => request(`/api/public/courses/${courseId}/payment/order`, { method: "POST", body: {} }),
+  createOrder: (courseId, body) => request(`/api/public/courses/${courseId}/payment/order`, { method: "POST", body }),
+  courseAccess: (courseId, body, signal) => request(`/api/public/courses/${courseId}/access`, { method: "POST", body, signal }),
   verifyPayment: (body) => request("/api/public/payments/verify", { method: "POST", body }),
   paymentStatus: (body) => request("/api/public/payments/status", { method: "POST", body }),
   enrollmentRequest: (courseId, body) => request(`/api/public/courses/${courseId}/enrollment-request`, { method: "POST", body }),

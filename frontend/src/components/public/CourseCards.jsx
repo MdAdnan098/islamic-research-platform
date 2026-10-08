@@ -5,6 +5,8 @@ import { mediaUrl } from "../../lib/media.js";
 import { formatDate, formatPrice } from "../../lib/format.js";
 import { Icon } from "../ui/icons.jsx";
 import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../ui/feedback.jsx";
+import { useCourseListClock } from "../../lib/useServerClock.js";
+import { formatIstDateTime } from "../../lib/ist.js";
 
 export const COURSE_STATUS = {
   enrollment_open: { label: "Enrollment Open", cls: "open-badge bg-green-600 text-white", cta: "Enroll Now" },
@@ -13,11 +15,21 @@ export const COURSE_STATUS = {
   completed: { label: "Completed", cls: "bg-card text-mute border border-rule", cta: "View Details" },
 };
 
-export function CourseStatusBadge({ status, className = "" }) {
-  const s = COURSE_STATUS[status] || COURSE_STATUS.coming_soon;
+// Class-lifecycle badges (from the server's lifecycle snapshot). While classes are running or finished they take
+// the place of the enrollment badge; before the first class the enrollment badge stays.
+const PHASE_BADGE = {
+  live_now: "bg-red-600 text-white",
+  day_completed: "bg-card text-accent border border-accent/30",
+  all_completed: "bg-card text-mute border border-rule",
+};
+
+export function CourseStatusBadge({ status, lifecycle, className = "" }) {
+  const phase = lifecycle && PHASE_BADGE[lifecycle.badge] ? lifecycle : null;
+  const s = phase ? { label: phase.label, cls: PHASE_BADGE[phase.badge] } : COURSE_STATUS[status] || COURSE_STATUS.coming_soon;
+  const dot = phase ? phase.badge === "live_now" : status === "enrollment_open";
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${s.cls} ${className}`}>
-      {status === "enrollment_open" && <span className="live-dot h-2 w-2 rounded-full bg-white" aria-hidden="true" />}
+      {dot && <span className="live-dot h-2 w-2 rounded-full bg-white" aria-hidden="true" />}
       {s.label}
     </span>
   );
@@ -39,13 +51,13 @@ export function CourseCard({ course }) {
       <div className="flex flex-1 flex-col px-2 pb-2 pt-4">
         <div className="flex items-start justify-between gap-2">
           <h3 dir="auto" className="line-clamp-2 min-w-0 flex-1 font-display text-lg font-bold leading-snug sm:text-xl">{course.title}</h3>
-          <CourseStatusBadge status={course.status} className="mt-0.5 shrink-0 whitespace-nowrap" />
+          <CourseStatusBadge status={course.status} lifecycle={course.lifecycle} className="mt-0.5 shrink-0 whitespace-nowrap" />
         </div>
         {course.teacher && <p dir="auto" className="mt-1 text-sm text-mute">{course.teacher}</p>}
         {course.shortDescription && <p dir="auto" className="mt-3 line-clamp-3 text-sm text-mute">{course.shortDescription}</p>}
 
         <dl className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          {course.startDate && <div className="flex gap-1.5"><dt className="text-mute">Starts</dt><dd className="font-medium">{formatDate(course.startDate)}</dd></div>}
+          {course.startDate && <div className="flex gap-1.5"><dt className="text-mute">Starts</dt><dd className="font-medium">{course.sessions?.length ? formatIstDateTime(course.startDate) : formatDate(course.startDate)}</dd></div>}
           <div className="flex gap-1.5"><dt className="sr-only">Price</dt><dd className="font-bold text-accent">{formatPrice(course.price, course.currency)}</dd></div>
         </dl>
 
@@ -74,7 +86,7 @@ export function CourseCompactCard({ course }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 dir="auto" className="line-clamp-2 min-w-0 flex-1 font-display text-lg font-bold leading-snug sm:text-xl">{course.title}</h3>
-            <CourseStatusBadge status={course.status} className="mt-0.5 shrink-0 whitespace-nowrap" />
+            <CourseStatusBadge status={course.status} lifecycle={course.lifecycle} className="mt-0.5 shrink-0 whitespace-nowrap" />
           </div>
           {meta && <span dir="auto" className="mt-2 block text-xs text-mute">{meta}</span>}
         </div>
@@ -101,6 +113,7 @@ export function CourseGrid({ courses }) {
 /** Home page section — loads independently so a failure here never blanks the rest of the page. */
 export function CoursesSection() {
   const { data, error, loading, reload } = useAsync((signal) => publicApi.courses(signal), []);
+  useCourseListClock(data, reload); // re-fetches at the exact next transition, so cards flip to LIVE NOW / Completed / gone on time
   const visible = (data || []).slice(0, 3);
 
   return (

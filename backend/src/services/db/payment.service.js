@@ -41,7 +41,7 @@ export async function ensurePaymentIndexes(config) {
   await c.createIndex({ createdAt: -1 });
 }
 
-export async function createPaymentRecord(config, { courseId, orderId, amount, currency, receipt, claimTokenHash }) {
+export async function createPaymentRecord(config, { courseId, orderId, amount, currency, receipt, claimTokenHash, student = null }) {
   const now = new Date();
   const doc = {
     courseId: new ObjectId(courseId),
@@ -53,6 +53,7 @@ export async function createPaymentRecord(config, { courseId, orderId, amount, c
     gateway: "razorpay",
     receipt,
     claimTokenHash,
+    student,
     verifiedAt: null,
     verifiedVia: null,
     failureCode: null,
