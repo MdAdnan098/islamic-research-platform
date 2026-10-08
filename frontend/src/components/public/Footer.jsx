@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { BRAND, SOCIAL, CONTACT } from "../../config/env.js";
 import { useI18n } from "../../i18n/index.jsx";
 import { Logo } from "../brand/Logo.jsx";
+import { AdminTapZone } from "./AdminAccess.jsx";
 
 /* Brand glyphs (white) drawn on a brand-coloured round button. */
 const YouTube = () => (
@@ -108,10 +109,10 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-rule">
-        <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-sm text-mute sm:flex-row">
+        <AdminTapZone className="container-page flex flex-col items-center justify-between gap-2 py-5 text-sm text-mute sm:flex-row">
           <span>© {new Date().getFullYear()} <span className="text-accent">{BRAND.name}</span>. {t.footer.rights}</span>
           <span className="whitespace-nowrap">{BRAND.tagline}</span>
-        </div>
+        </AdminTapZone>
       </div>
     </footer>
   );

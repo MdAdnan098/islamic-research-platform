@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Navbar } from "../components/public/Navbar.jsx";
 import { Footer } from "../components/public/Footer.jsx";
+import { AdminAccessDialog } from "../components/public/AdminAccess.jsx";
 
 export function PublicLayout({ children }) {
   const { pathname } = useLocation();
@@ -12,6 +13,7 @@ export function PublicLayout({ children }) {
       <Navbar />
       <main id="main" className="flex-1">{children ?? <Outlet />}</main>
       <Footer />
+      <AdminAccessDialog />
     </div>
   );
 }
