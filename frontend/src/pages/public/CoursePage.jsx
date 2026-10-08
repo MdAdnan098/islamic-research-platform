@@ -14,7 +14,7 @@ import { EnrollPanel } from "../../components/public/EnrollPanel.jsx";
 export default function CoursePage() {
   const { slug } = useParams();
   const { data: course, error, loading, reload } = useAsync((signal) => publicApi.course(slug, signal), [slug]);
-  useMeta({ title: course?.title, description: course?.shortDescription });
+  useMeta({ title: course?.title, description: course?.shortDescription || course?.description?.slice(0, 160), image: mediaUrl(course?.thumbnailKey) });
 
   if (loading && !course) {
     return (

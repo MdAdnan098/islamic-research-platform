@@ -6,7 +6,8 @@
 
 export const LIVE_STATUSES = ["scheduled", "live", "ended"];
 
-export const COURSE_STATUSES = ["draft", "coming_soon", "enrollment_open", "enrollment_closed", "completed"];
+/** "archived" = taken off the public site but kept (with its enrollments / payments) in the database. */
+export const COURSE_STATUSES = ["draft", "coming_soon", "enrollment_open", "enrollment_closed", "completed", "archived"];
 export const MEETING_PROVIDERS = ["google_meet"];
 /** Extensible: add a code here (and make sure Razorpay supports it) to sell in another currency. */
 export const CURRENCIES = ["INR"];

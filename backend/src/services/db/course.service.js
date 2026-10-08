@@ -65,7 +65,7 @@ export async function createCourse(config, input) {
     meetingProvider: input.meetingProvider || "google_meet",
     meetingLink: trimOrNull(input.meetingLink),
     maxStudents: Number.isInteger(input.maxStudents) ? input.maxStudents : null,
-    isPublished: input.isPublished === true,
+    isPublished: input.isPublished === true && (input.status || "draft") !== "archived",
     sortOrder: Number.isInteger(input.sortOrder) ? input.sortOrder : 0,
     createdAt: now,
     updatedAt: now,
@@ -102,8 +102,8 @@ export async function findCoursesByIds(config, ids) {
 /** @param {{ publicOnly?: boolean }} filters */
 export async function listCourses(config, { publicOnly = false } = {}) {
   const c = await getCollection(config);
-  // Public: published and not a draft. (A draft that was published by mistake still stays hidden.)
-  const query = publicOnly ? { isPublished: true, status: { $ne: "draft" } } : {};
+  // Public: published and neither a draft nor archived. (A draft/archived course that was published by mistake still stays hidden.)
+  const query = publicOnly ? { isPublished: true, status: { $nin: ["draft", "archived"] } } : {};
   return c.find(query).sort({ sortOrder: 1, startDate: 1, createdAt: -1 }).limit(200).toArray();
 }
 
@@ -124,6 +124,8 @@ export async function updateCourse(config, id, updates) {
   for (const key of ["price", "currency", "status", "meetingProvider", "isPublished", "sortOrder"]) {
     if (updates[key] !== undefined) $set[key] = updates[key];
   }
+  // An archived course is never public, whatever isPublished says.
+  if (($set.status ?? existing.status) === "archived") $set.isPublished = false;
   if (updates.maxStudents !== undefined) $set.maxStudents = Number.isInteger(updates.maxStudents) ? updates.maxStudents : null;
 
   const c = await getCollection(config);
@@ -134,6 +136,26 @@ export async function updateCourse(config, id, updates) {
     throw e;
   }
   return findCourseById(config, id);
+}
+
+/** Takes a course off the public site without deleting it (keeps enrollments / payments intact). */
+export async function archiveCourse(config, id) {
+  const existing = await findCourseById(config, id);
+  if (!existing) throw fail("Course not found.", 404, "NOT_FOUND");
+  const c = await getCollection(config);
+  await c.updateOne({ _id: new ObjectId(id) }, { $set: { status: "archived", isPublished: false, updatedAt: new Date() } });
+  return findCourseById(config, id);
+}
+
+/** Bulk ordering update (single bulkWrite) — items: [{ id, ordering }] → sortOrder. Admin-only, low concurrency. */
+export async function reorderCourses(config, items) {
+  const c = await getCollection(config);
+  const now = new Date();
+  const ops = items.map(({ id, ordering }) => ({
+    updateOne: { filter: { _id: new ObjectId(id) }, update: { $set: { sortOrder: ordering, updatedAt: now } } },
+  }));
+  const result = await c.bulkWrite(ops, { ordered: false });
+  return { matched: result.matchedCount, modified: result.modifiedCount };
 }
 
 export async function deleteCourse(config, id) {

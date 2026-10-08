@@ -48,6 +48,8 @@ export const adminApi = {
   courses: {
     ...crud("/api/admin/courses", "courses", "course"),
     remove: (id) => request(`/api/admin/courses/${id}`, { method: "DELETE" }),
+    archive: (id) => request(`/api/admin/courses/${id}/archive`, json("POST", {})).then((d) => d.course),
+    reorder: (items) => request("/api/admin/courses/reorder", json("POST", { items })),
   },
   enrollments: {
     list: (params, signal) => request(`/api/admin/enrollments${qs(params)}`, { signal }).then((d) => d.enrollments),

@@ -1,7 +1,7 @@
 import { loadConfig } from "../config/env.js";
 import { requireAdmin } from "../middleware/adminAuth.js";
 import { jsonSuccess } from "../utils/response.js";
-import { safeParseJson, isValidObjectIdString } from "../utils/validate.js";
+import { safeParseJson, isValidObjectIdString, validateReorderInput } from "../utils/validate.js";
 import { validateCourseInput } from "../utils/validate.courses.js";
 import { normalizeSlug } from "../utils/slug.js";
 import {
@@ -10,6 +10,8 @@ import {
   findCourseBySlug,
   listCourses,
   updateCourse,
+  archiveCourse,
+  reorderCourses,
   deleteCourse,
   courseSlugFromInput,
   toSafeCourse,
@@ -37,18 +39,18 @@ function assertOpenable(merged) {
 
 /* ----------------------------- public ----------------------------- */
 
-/** GET /api/public/courses — published, non-draft courses; never includes the meeting link. */
+/** GET /api/public/courses — published courses (not draft / archived); never includes the meeting link. */
 export async function publicList(request, env) {
   const config = loadConfig(env);
   const courses = await listCourses(config, { publicOnly: true });
   return jsonSuccess({ courses: courses.map(toPublicCourse) }, { allowedOrigin: config.allowedOrigin });
 }
 
-/** GET /api/public/courses/:slug — unpublished / draft respond exactly like a missing course. */
+/** GET /api/public/courses/:slug — unpublished / draft / archived respond exactly like a missing course. */
 export async function publicBySlug(request, env, ctx, params) {
   const config = loadConfig(env);
   const course = await findCourseBySlug(config, params.slug);
-  if (!course || !course.isPublished || course.status === "draft") throw fail("Not found.", 404, "NOT_FOUND");
+  if (!course || !course.isPublished || course.status === "draft" || course.status === "archived") throw fail("Not found.", 404, "NOT_FOUND");
   return jsonSuccess({ course: toPublicCourse(course) }, { allowedOrigin: config.allowedOrigin });
 }
 
@@ -101,6 +103,29 @@ export async function adminUpdate(request, env, ctx, params) {
 
   const course = await updateCourse(config, params.id, data);
   return jsonSuccess({ course: toSafeCourse(course) }, { allowedOrigin: config.allowedOrigin });
+}
+
+/** POST /api/admin/courses/:id/archive — hides the course from the public site; nothing is deleted. */
+export async function adminArchive(request, env, ctx, params) {
+  const config = loadConfig(env);
+  await requireAdmin(request, env);
+  if (!isValidObjectIdString(params.id)) throw fail("Course not found.", 404, "NOT_FOUND");
+  const course = await archiveCourse(config, params.id);
+  return jsonSuccess({ course: toSafeCourse(course) }, { allowedOrigin: config.allowedOrigin });
+}
+
+/** POST /api/admin/courses/reorder  { items: [{ id, ordering }] } — same contract as categories/topics. */
+export async function adminReorder(request, env) {
+  const config = loadConfig(env);
+  await requireAdmin(request, env);
+  const body = await safeParseJson(request);
+  const errors = validateReorderInput(body);
+  if (errors.length > 0) throwValidation(errors);
+  if (body.items.some((i) => !Number.isInteger(i.ordering) || Math.abs(i.ordering) > 100000)) {
+    throw fail("ordering must be a whole number.", 400, "INVALID_INPUT");
+  }
+  const result = await reorderCourses(config, body.items);
+  return jsonSuccess({ reordered: result }, { allowedOrigin: config.allowedOrigin });
 }
 
 /** A course with any payment history can't be hard-deleted — unpublish or mark it completed instead. */

@@ -60,7 +60,7 @@ export async function createOrder(request, env, ctx, params) {
   const { keyId } = getRazorpay(config); // 503 until Razorpay secrets are configured
 
   const course = isValidObjectIdString(params.id) ? await findCourseById(config, params.id) : null;
-  if (!course || !course.isPublished || course.status === "draft") throw fail("Course not found.", 404, "NOT_FOUND");
+  if (!course || !course.isPublished || course.status === "draft" || course.status === "archived") throw fail("Course not found.", 404, "NOT_FOUND");
   if (course.status !== "enrollment_open") throw fail("Enrollment is not open for this course.", 409, "ENROLLMENT_CLOSED");
   if (!(typeof course.price === "number" && course.price > 0)) throw fail("This course cannot be purchased online.", 409, "NOT_PURCHASABLE");
 
