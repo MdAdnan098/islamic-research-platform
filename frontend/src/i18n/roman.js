@@ -15,7 +15,7 @@ export default {
     latest: "Latest Posts", noPosts: "Is zubaan mein abhi koi post maujood nahi.",
   },
   topic: {
-    topics: "Topics", intro: "Mukhtasar Taaruf", dalail: "Hamare Dalail", radd: "Dalail Ka Jaiza / Radd",
+    tahreer: "Tahreer", topics: "Topics", intro: "Mukhtasar Taaruf", dalail: "Hamare Dalail", radd: "Dalail Ka Jaiza / Radd",
     more: "Mazeed Mazameen", noTopics: "Abhi koi topic maujood nahi.", noTopicsLang: "Is zubaan mein abhi koi topic maujood nahi.", noItems: "Is hisse mein abhi koi tahqeeq nahi.",
     inCategory: "Category",
     dalailDesc: "Quran o Sunnat se hamare dalail.", raddDesc: "Mukhalif dalail ka ilmi jaiza aur radd.", posts: "Mazameen",

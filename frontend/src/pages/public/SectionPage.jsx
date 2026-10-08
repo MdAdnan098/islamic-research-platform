@@ -21,7 +21,7 @@ export default function SectionPage({ section }) {
   const topicIds = new Set((data || []).flatMap((c) => c.topics.map((tp) => tp.id)));
   const posts = (arts.data?.articles || []).filter((a) => !(a.topicId && topicIds.has(a.topicId)));
   const catById = Object.fromEntries((arts.data?.cats || []).map((c) => [c.id, c]));
-  const hasTopics = !!data?.some((c) => c.topics.length);
+  const topics = (data || []).flatMap((c) => c.topics);
 
   return (
     <div className="container-page py-12 sm:py-16">
@@ -29,37 +29,33 @@ export default function SectionPage({ section }) {
       <h1 className="mt-1 text-3xl font-bold sm:text-4xl">{title}</h1>
       {!multi && data?.[0]?.description && <Text as="p" className="mt-5 max-w-2xl text-mute">{data[0].description}</Text>}
 
-      {(arts.loading && !arts.data) || (loading && !data) ? (
-        <div className="mt-14"><CardSkeletons count={2} /></div>
-      ) : arts.error && !arts.data ? (
-        <div className="mt-14"><ErrorState error={arts.error} onRetry={arts.reload} /></div>
-      ) : posts.length > 0 && (
-        <section className="mt-10">
-          <h2 className="mb-6 border-b border-rule pb-3 font-display text-2xl font-bold sm:text-3xl">{t.topic.posts}</h2>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} />)}
+      {loading && !data ? (
+        <div className="mt-10"><CardSkeletons count={3} /></div>
+      ) : error && !data ? (
+        <div className="mt-10"><ErrorState error={error} onRetry={reload} /></div>
+      ) : topics.length > 0 && (
+        <>
+          <hr className="mt-8 border-rule" />
+          <h2 className="mt-6 font-display text-xl font-bold sm:text-2xl">{t.topic.topics}</h2>
+          {/* Folders stay at the top: 3 per row on mobile, a little larger and as many as fit on wider screens */}
+          <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-4">
+            {topics.map((tp) => <TopicCard key={tp.id} topic={tp} to={`/${section}/${tp.slug}`} />)}
           </div>
-        </section>
+        </>
       )}
 
-      {loading && !data ? null : error && !data ? (
-        <div className="mt-14"><ErrorState error={error} onRetry={reload} /></div>
-      ) : hasTopics && (
-        <div className="mt-14 space-y-14">
-          {data.filter((c) => c.topics.length).map((c) => (
-            <section key={c.id}>
-              {multi && (
-                <div className="mb-6">
-                  <Text as="h2" className="font-display text-2xl font-bold">{c.name}</Text>
-                  {c.description && <Text as="p" className="mt-1 text-sm text-mute">{c.description}</Text>}
-                </div>
-              )}
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {c.topics.map((tp) => <TopicCard key={tp.id} topic={tp} to={`/${section}/${tp.slug}`} />)}
-              </div>
-            </section>
-          ))}
-        </div>
+      {(arts.loading && !arts.data) || (loading && !data) ? (
+        <div className="mt-10"><CardSkeletons count={2} /></div>
+      ) : arts.error && !arts.data ? (
+        <div className="mt-10"><ErrorState error={arts.error} onRetry={arts.reload} /></div>
+      ) : posts.length > 0 && (
+        <>
+          <hr className="mt-10 border-rule" />
+          <h2 className="mt-6 font-display text-xl font-bold sm:text-2xl">{t.topic.tahreer}</h2>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} />)}
+          </div>
+        </>
       )}
     </div>
   );

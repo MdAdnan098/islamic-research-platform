@@ -28,17 +28,17 @@ export function ArticleCard({ article, category, showCategory = false }) {
   );
 }
 
-/** Topic = "folder": a folder-tab + tile with a folder icon (no cover image, no intro text); the topic name sits below the card. */
+/** Topic = "folder": compact folder-tab + tile with a folder icon; the topic name sits below the card. Sized for 3 per row on mobile. */
 export function TopicCard({ topic, to }) {
   return (
-    <Link to={to} className="group block">
-      <div className="relative pt-3 transition duration-300 ease-out group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
-        <span aria-hidden="true" className="absolute start-5 top-0 h-5 w-20 rounded-t-xl border border-b-0 border-rule bg-tint transition-colors group-hover:border-accent/40" />
-        <div className="flex aspect-[16/9] w-full items-center justify-center rounded-2xl border border-rule bg-tint shadow-elev transition duration-300 group-hover:border-accent/40 group-hover:shadow-soft">
-          <Icon name="folder" size={56} className="text-accent/70 transition-transform duration-300 group-hover:scale-110" />
+    <Link to={to} className="group block min-w-0">
+      <div className="relative pt-2 transition duration-300 ease-out group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
+        <span aria-hidden="true" className="absolute start-3 top-0 h-3 w-10 rounded-t-lg border border-b-0 border-rule bg-tint transition-colors group-hover:border-accent/40 sm:h-3.5 sm:w-12" />
+        <div className="flex aspect-[5/4] w-full items-center justify-center rounded-xl border border-rule bg-tint shadow-elev transition duration-300 group-hover:border-accent/40 group-hover:shadow-soft">
+          <Icon name="folder" size={34} className="text-accent/70 sm:h-10 sm:w-10" />
         </div>
       </div>
-      <Text as="h3" className="mt-3 line-clamp-2 px-1 text-center font-display text-lg font-bold leading-snug sm:text-xl">{topic.title}</Text>
+      <Text as="h3" className="mt-2 line-clamp-2 px-0.5 text-center font-display text-xs font-bold leading-snug sm:text-sm">{topic.title}</Text>
     </Link>
   );
 }
