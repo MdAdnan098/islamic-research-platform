@@ -43,9 +43,14 @@ export function buildRouter(routeDefs) {
       if (!result) continue;
 
       const params = {};
-      route.paramNames.forEach((name, i) => {
-        params[name] = decodeURIComponent(result[i + 1]);
-      });
+      try {
+        route.paramNames.forEach((name, i) => {
+          params[name] = decodeURIComponent(result[i + 1]);
+        });
+      } catch {
+        // Malformed %-escape in the path (e.g. "/%E0%A4%A"): treat as not found.
+        return null;
+      }
       return { handler: route.handler, params };
     }
     return null;

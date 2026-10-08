@@ -5,12 +5,20 @@
  */
 
 function withCors(headers, allowedOrigin) {
+  // No allowed origin (production without ALLOWED_ORIGIN) => no CORS headers, never a wildcard.
+  // Credentials are only advertised for a concrete origin, never together with "*".
+  const cors = allowedOrigin
+    ? {
+        "Access-Control-Allow-Origin": allowedOrigin,
+        ...(allowedOrigin !== "*" ? { "Access-Control-Allow-Credentials": "true" } : {}),
+        "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      }
+    : {};
   return {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": allowedOrigin || "*",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    Vary: "Origin",
+    ...cors,
     ...headers,
   };
 }

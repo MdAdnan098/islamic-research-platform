@@ -19,7 +19,8 @@ import { routes as publicPaymentRoutes } from "./routes/public.payments.routes.j
 import { routes as adminEnrollmentRoutes } from "./routes/admin.enrollments.routes.js";
 import { runScheduledSync } from "./services/youtube/youtube.service.js";
 import { archiveExpiredCourses } from "./services/db/course.service.js";
-import { loadConfig } from "./config/env.js";
+import { loadConfig, resolveAllowedOrigin } from "./config/env.js";
+import { requireAdmin } from "./middleware/adminAuth.js";
 
 /**
  * Route table: [method, pattern, handler]. Patterns support ":param"
@@ -54,23 +55,65 @@ const routeDefs = [
 
 const router = buildRouter(routeDefs);
 
+/**
+ * Admin endpoints that must work WITHOUT a session (they carry their own checks).
+ * Every OTHER /api/admin/* route is authenticated here, in front of its controller,
+ * so a controller that forgets to call requireAdmin can never be reached anonymously.
+ */
+const ADMIN_OPEN_PATHS = new Set([
+  "/api/admin/login",
+  "/api/admin/logout",
+  "/api/admin/register",
+  "/api/admin/reset-password",
+]);
+
+function guardAdmin(pathname, handler) {
+  if (!pathname.startsWith("/api/admin/") || ADMIN_OPEN_PATHS.has(pathname)) return handler;
+  return async (request, env, ctx, params) => {
+    await requireAdmin(request, env);
+    return handler(request, env, ctx, params);
+  };
+}
+
+/**
+ * Non-breaking security headers for every response. CSP / frame protection are limited to
+ * JSON responses: media (images / PDFs) is embedded by the site, so it only gets the
+ * content-type and referrer headers.
+ */
+function withSecurityHeaders(request, response, pathname) {
+  const headers = new Headers(response.headers);
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Referrer-Policy", "no-referrer");
+  if (new URL(request.url).protocol === "https:") headers.set("Strict-Transport-Security", "max-age=31536000");
+  if ((headers.get("Content-Type") || "").startsWith("application/json")) {
+    headers.set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
+    headers.set("X-Frame-Options", "DENY");
+  }
+  // Authenticated responses must never be stored by browsers or shared caches.
+  if (pathname.startsWith("/api/admin/") && !headers.has("Cache-Control")) headers.set("Cache-Control", "no-store");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+async function handle(request, env, ctx) {
+  const allowedOrigin = resolveAllowedOrigin(env);
+
+  const preflight = handlePreflight(request, allowedOrigin);
+  if (preflight) return preflight;
+
+  const url = new URL(request.url);
+  const match = router.match(request.method, url.pathname);
+
+  if (!match) {
+    return jsonError("Not found", { status: 404, code: "NOT_FOUND", allowedOrigin });
+  }
+
+  return withErrorHandling(guardAdmin(url.pathname, match.handler))(request, env, ctx, match.params);
+}
+
 export default {
   async fetch(request, env, ctx) {
-    const preflight = handlePreflight(request, env.ALLOWED_ORIGIN);
-    if (preflight) return preflight;
-
-    const url = new URL(request.url);
-    const match = router.match(request.method, url.pathname);
-
-    if (!match) {
-      return jsonError("Not found", {
-        status: 404,
-        code: "NOT_FOUND",
-        allowedOrigin: env.ALLOWED_ORIGIN,
-      });
-    }
-
-    return withErrorHandling(match.handler)(request, env, ctx, match.params);
+    const response = await handle(request, env, ctx);
+    return withSecurityHeaders(request, response, new URL(request.url).pathname);
   },
 
   /**

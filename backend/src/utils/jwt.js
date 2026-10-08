@@ -50,42 +50,78 @@ export async function signJwt(payload, secret, { expiresInSeconds }) {
   return `${data}.${base64UrlEncode(signature)}`;
 }
 
+function invalidToken(message = "Invalid session token.", code = "INVALID_TOKEN") {
+  const err = new Error(message);
+  err.status = 401;
+  err.code = code;
+  return err;
+}
+
+const B64URL_RE = /^[A-Za-z0-9_-]+$/;
+const CLOCK_SKEW_SECONDS = 60;
+
 /**
  * @param {string} token
  * @param {string} secret - ADMIN_JWT_SECRET
  * @returns {Promise<object>} decoded payload
- * @throws on invalid signature, malformed token, or expiry
+ * @throws a 401 error on ANY problem: malformed token, wrong algorithm, bad
+ *   signature, missing/invalid claims, or expiry. Nothing here can surface as a
+ *   500 — decoding failures are caught and reported as an invalid token.
  */
 export async function verifyJwt(token, secret) {
-  if (typeof token !== "string" || token.split(".").length !== 3) {
-    const err = new Error("Malformed session token.");
-    err.status = 401;
-    err.code = "INVALID_TOKEN";
-    throw err;
+  if (typeof token !== "string" || token.length > 4096) throw invalidToken("Malformed session token.");
+
+  const parts = token.split(".");
+  if (parts.length !== 3 || !parts.every((part) => B64URL_RE.test(part))) {
+    throw invalidToken("Malformed session token.");
   }
 
-  const [headerB64, payloadB64, signatureB64] = token.split(".");
-  const data = `${headerB64}.${payloadB64}`;
-  const key = await importHmacKey(secret);
+  const [headerB64, payloadB64, signatureB64] = parts;
 
-  const valid = await crypto.subtle.verify("HMAC", key, base64UrlDecodeToBuffer(signatureB64), encoder.encode(data));
-
-  if (!valid) {
-    const err = new Error("Invalid session token.");
-    err.status = 401;
-    err.code = "INVALID_TOKEN";
-    throw err;
+  let header;
+  try {
+    header = JSON.parse(base64UrlDecodeToString(headerB64));
+  } catch {
+    throw invalidToken("Malformed session token.");
+  }
+  // We only ever issue HS256; refuse anything else (e.g. "none") outright.
+  if (!header || header.alg !== "HS256" || (header.typ !== undefined && header.typ !== "JWT")) {
+    throw invalidToken();
   }
 
-  const payload = JSON.parse(base64UrlDecodeToString(payloadB64));
+  let valid = false;
+  try {
+    const key = await importHmacKey(secret);
+    valid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      base64UrlDecodeToBuffer(signatureB64),
+      encoder.encode(`${headerB64}.${payloadB64}`)
+    );
+  } catch {
+    valid = false;
+  }
+  if (!valid) throw invalidToken();
+
+  let payload;
+  try {
+    payload = JSON.parse(base64UrlDecodeToString(payloadB64));
+  } catch {
+    throw invalidToken("Malformed session token.");
+  }
+
+  // Required claims: subject, issued-at and expiry must all be present and well-typed.
+  if (
+    !payload || typeof payload !== "object" || Array.isArray(payload) ||
+    typeof payload.sub !== "string" || !payload.sub ||
+    !Number.isFinite(payload.iat) || !Number.isFinite(payload.exp)
+  ) {
+    throw invalidToken();
+  }
+
   const now = Math.floor(Date.now() / 1000);
-
-  if (typeof payload.exp === "number" && payload.exp < now) {
-    const err = new Error("Session expired.");
-    err.status = 401;
-    err.code = "SESSION_EXPIRED";
-    throw err;
-  }
+  if (payload.exp <= now) throw invalidToken("Session expired.", "SESSION_EXPIRED");
+  if (payload.iat > now + CLOCK_SKEW_SECONDS) throw invalidToken();
 
   return payload;
 }

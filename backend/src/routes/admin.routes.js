@@ -1,15 +1,17 @@
 import { loadConfig } from "../config/env.js";
 import { requireAdmin, SESSION_TTL_SECONDS } from "../middleware/adminAuth.js";
-import { enforceLoginRateLimit } from "../middleware/rateLimit.js";
+import {
+  assertLoginAllowed, recordLoginFailure, clearLoginFailures,
+  assertSecretKeyAttemptsAllowed, recordSecretKeyFailure, clearSecretKeyFailures,
+} from "../middleware/rateLimit.js";
 import { jsonSuccess, jsonError } from "../utils/response.js";
-import { safeParseJson } from "../utils/validate.js";
 import { signJwt } from "../utils/jwt.js";
 import { serializeCookie, ADMIN_SESSION_COOKIE } from "../utils/cookies.js";
 import {
   findAdminByUsername, findAdminById, touchLastLogin, toSafeAdmin,
   ensureAdminIndexes, createAdmin, setAdminPassword,
 } from "../services/db/admin.service.js";
-import { verifyPassword, hashPassword, timingSafeEqual } from "../utils/password.js";
+import { verifyPassword, hashPassword, secretsEqual, DUMMY_PASSWORD_HASH } from "../utils/password.js";
 
 /**
  * Admin API routes (authenticated except /login).
@@ -23,6 +25,42 @@ function genericCredentialsError() {
   err.status = 401;
   err.code = "INVALID_CREDENTIALS";
   return err;
+}
+
+const MAX_AUTH_BODY_CHARS = 8 * 1024; // auth payloads are tiny; refuse anything larger up front
+const MAX_USERNAME_CHARS = 254; // legacy admins may sign in with an email address
+const MAX_PASSWORD_CHARS = 256;
+const MAX_SECRET_KEY_CHARS = 512;
+
+function fail(message, status, code) {
+  const err = new Error(message);
+  err.status = status;
+  err.code = code;
+  return err;
+}
+
+/** Reads a small JSON object body. Returns null for missing/invalid JSON or a non-object. */
+async function readAuthBody(request) {
+  const declared = Number(request.headers.get("content-length") || 0);
+  if (declared > MAX_AUTH_BODY_CHARS) throw fail("Request body is too large.", 413, "PAYLOAD_TOO_LARGE");
+  let text;
+  try { text = await request.text(); } catch { return null; }
+  if (text.length > MAX_AUTH_BODY_CHARS) throw fail("Request body is too large.", 413, "PAYLOAD_TOO_LARGE");
+  try {
+    const value = JSON.parse(text);
+    return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+let warnedWeakSecret = false;
+function warnIfWeakJwtSecret(secret) {
+  if (!warnedWeakSecret && secret.length < 32) {
+    warnedWeakSecret = true;
+    // Never logs the value itself — only the fact that it is short.
+    console.warn("ADMIN_JWT_SECRET is shorter than 32 characters; rotate it to a long random value.");
+  }
 }
 
 /**
@@ -41,25 +79,33 @@ export async function login(request, env) {
     });
   }
 
-  const body = await safeParseJson(request);
+  warnIfWeakJwtSecret(config.adminJwtSecret);
+
+  const body = await readAuthBody(request);
   const { username, password } = body || {};
-  if (typeof username !== "string" || !username.trim() || typeof password !== "string" || !password || password.length > 256) {
+  if (
+    typeof username !== "string" || !username.trim() || username.length > MAX_USERNAME_CHARS ||
+    typeof password !== "string" || !password || password.length > MAX_PASSWORD_CHARS
+  ) {
     return jsonError("Username and password are required.", { status: 400, code: "INVALID_INPUT", allowedOrigin: config.allowedOrigin });
   }
 
   // Best-effort, per-isolate only — see middleware/rateLimit.js for limitations.
-  enforceLoginRateLimit(request, username);
+  // Only FAILED attempts count and every lock expires by itself.
+  assertLoginAllowed(request, username);
 
   const admin = await findAdminByUsername(config, username);
-  if (!admin || admin.active === false) {
+  const usable = !!admin && admin.active !== false;
+
+  // Always run one PBKDF2 verification (against a dummy hash for unknown/inactive users) so the
+  // response time does not reveal whether the username exists.
+  const passwordValid = await verifyPassword(password, usable ? admin.passwordHash : DUMMY_PASSWORD_HASH);
+  if (!usable || !passwordValid) {
+    recordLoginFailure(request, username);
     throw genericCredentialsError();
   }
 
-  const passwordValid = await verifyPassword(password, admin.passwordHash);
-  if (!passwordValid) {
-    throw genericCredentialsError();
-  }
-
+  clearLoginFailures(request, username);
   await touchLastLogin(config, admin._id);
 
   const token = await signJwt(
@@ -131,42 +177,53 @@ export async function ping(request, env) {
 }
 
 const USERNAME_RE = /^[a-z0-9._-]{3,32}$/;
+const MIN_PASSWORD_CHARS = 12;
 
-function fail(message, status, code) {
-  const err = new Error(message);
-  err.status = status;
-  err.code = code;
-  return err;
-}
-
-/** Shared by register + reset: checks the admin secret key (constant-time). */
-function assertSecretKey(config, provided) {
+/**
+ * Shared by register + reset: checks the admin secret key.
+ * Constant-time (length-independent), brute-force throttled, and never echoes the key.
+ */
+async function assertSecretKey(request, config, provided) {
+  assertSecretKeyAttemptsAllowed(request);
   if (!config.adminRegisterKey) throw fail("Admin secret key is not configured on this environment.", 500, "CONFIG_ERROR");
-  const ok = typeof provided === "string" && timingSafeEqual(provided, config.adminRegisterKey);
+
+  const ok = typeof provided === "string" && provided.length <= MAX_SECRET_KEY_CHARS && (await secretsEqual(provided, config.adminRegisterKey));
   // Same generic message for a wrong key, so nothing is revealed.
-  if (!ok) throw fail("Invalid secret key.", 403, "INVALID_SECRET_KEY");
+  if (!ok) {
+    recordSecretKeyFailure(request);
+    throw fail("Invalid secret key.", 403, "INVALID_SECRET_KEY");
+  }
+  clearSecretKeyFailures(request);
 }
 
-function checkNewPassword(password) {
-  if (typeof password !== "string" || password.length < 8) throw fail("Password must be at least 8 characters.", 400, "INVALID_INPUT");
-  if (password.length > 256) throw fail("Password is too long.", 400, "INVALID_INPUT");
+/** New passwords (register + reset): at least 12 characters, not trivially weak, not the username. */
+function checkNewPassword(password, username) {
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_CHARS) {
+    throw fail(`Password must be at least ${MIN_PASSWORD_CHARS} characters.`, 400, "INVALID_INPUT");
+  }
+  if (password.length > MAX_PASSWORD_CHARS) throw fail("Password is too long.", 400, "INVALID_INPUT");
+  if (/^(.)\1+$/.test(password)) throw fail("Password is too easy to guess.", 400, "INVALID_INPUT");
+  if (username && username.length >= 3 && password.toLowerCase().includes(username.toLowerCase())) {
+    throw fail("Password must not contain the username.", 400, "INVALID_INPUT");
+  }
 }
 
 /**
  * POST /api/admin/register  { username, password, secretKey }
- * Creates an admin account. Allowed any number of times — the secret key is the gate.
+ * Creates an admin account. The secret key is the gate: without ADMIN_REGISTER_KEY configured
+ * the endpoint is closed, and ADMIN_REGISTRATION_DISABLED=true closes it deliberately.
  */
 export async function register(request, env) {
   const config = loadConfig(env);
-  const body = (await safeParseJson(request)) || {};
-  enforceLoginRateLimit(request, "register");
-  assertSecretKey(config, body.secretKey);
+  const body = (await readAuthBody(request)) || {};
+  if (config.adminRegistrationDisabled) throw fail("Admin registration is disabled.", 403, "REGISTRATION_DISABLED");
+  await assertSecretKey(request, config, body.secretKey);
 
   const username = typeof body.username === "string" ? body.username.trim().toLowerCase() : "";
   if (!USERNAME_RE.test(username)) {
     throw fail("Username must be 3–32 characters: letters, numbers, dot, dash or underscore.", 400, "INVALID_INPUT");
   }
-  checkNewPassword(body.password);
+  checkNewPassword(body.password, username);
 
   await ensureAdminIndexes(config);
   if (await findAdminByUsername(config, username)) throw fail("This username is already taken.", 409, "USERNAME_TAKEN");
@@ -183,15 +240,17 @@ export async function register(request, env) {
 /**
  * POST /api/admin/reset-password  { username, secretKey, newPassword }
  * Forgot-password flow: the admin secret key authorises setting a new password.
+ * All sessions issued before the reset stop working (see setAdminPassword / requireAdmin).
  */
 export async function resetPassword(request, env) {
   const config = loadConfig(env);
-  const body = (await safeParseJson(request)) || {};
-  enforceLoginRateLimit(request, "reset");
-  assertSecretKey(config, body.secretKey);
-  checkNewPassword(body.newPassword);
+  const body = (await readAuthBody(request)) || {};
+  await assertSecretKey(request, config, body.secretKey);
 
-  const admin = typeof body.username === "string" ? await findAdminByUsername(config, body.username) : null;
+  const username = typeof body.username === "string" && body.username.length <= MAX_USERNAME_CHARS ? body.username.trim().toLowerCase() : "";
+  checkNewPassword(body.newPassword, username);
+
+  const admin = username ? await findAdminByUsername(config, username) : null;
   if (!admin || admin.active === false) throw fail("No admin account found with that username.", 404, "NOT_FOUND");
 
   await setAdminPassword(config, admin._id, await hashPassword(body.newPassword));

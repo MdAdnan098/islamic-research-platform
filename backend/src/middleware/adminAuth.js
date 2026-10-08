@@ -1,5 +1,7 @@
 import { verifyJwt } from "../utils/jwt.js";
 import { parseCookies, ADMIN_SESSION_COOKIE } from "../utils/cookies.js";
+import { loadConfig } from "../config/env.js";
+import { findAdminById } from "../services/db/admin.service.js";
 
 /**
  * Admin session lifetime. Exported so the login route signs tokens with
@@ -7,19 +9,14 @@ import { parseCookies, ADMIN_SESSION_COOKIE } from "../utils/cookies.js";
  */
 export const SESSION_TTL_SECONDS = 2 * 60 * 60; // 2 hours
 
-/**
- * Verifies the admin session cookie and returns its decoded payload
- * ({ sub, email, role, iat, exp }).
- *
- * Same signature/contract as before (throws on failure, returns on
- * success) so existing callers (e.g. the /api/admin/ping route) keep
- * working unchanged — only the internal logic is now real.
- *
- * @param {Request} request
- * @param {object} env
- * @returns {Promise<{ sub: string, email: string, role: string }>}
- */
-export async function requireAdmin(request, env) {
+function unauthenticated(code = "UNAUTHENTICATED") {
+  const err = new Error("Not authenticated.");
+  err.status = 401;
+  err.code = code;
+  return err;
+}
+
+async function verifySession(request, env) {
   if (!env.ADMIN_JWT_SECRET) {
     const err = new Error("Admin authentication is not configured on this environment.");
     err.status = 500;
@@ -29,16 +26,45 @@ export async function requireAdmin(request, env) {
 
   const cookies = parseCookies(request);
   const token = cookies[ADMIN_SESSION_COOKIE];
+  if (!token) throw unauthenticated();
 
-  if (!token) {
-    const err = new Error("Not authenticated.");
-    err.status = 401;
-    err.code = "UNAUTHENTICATED";
-    throw err;
+  // verifyJwt throws a well-formed 401 for malformed/forged/expired tokens or missing claims.
+  const payload = await verifyJwt(token, env.ADMIN_JWT_SECRET);
+
+  // The token alone is not enough: the admin must still exist, still be active, and must
+  // not have had their password reset since this token was issued. This is what makes
+  // deactivation and password reset take effect immediately instead of after the 2h expiry.
+  const admin = await findAdminById(loadConfig(env), payload.sub);
+  if (!admin || admin.active === false) throw unauthenticated();
+
+  const changedAt = admin.passwordChangedAt instanceof Date ? admin.passwordChangedAt.getTime() : null;
+  // `>=`: a token issued in the same second as the reset is treated as older (fail closed).
+  if (changedAt !== null && Math.floor(changedAt / 1000) >= payload.iat) {
+    throw unauthenticated("SESSION_REVOKED");
   }
 
-  // verifyJwt already throws a well-formed 401 for invalid/expired tokens.
-  return verifyJwt(token, env.ADMIN_JWT_SECRET);
+  return { ...payload, role: admin.role || payload.role };
+}
+
+// One verification (and one DB lookup) per request, even though both the router-level
+// guard and the individual controllers call requireAdmin.
+const verifiedRequests = new WeakMap();
+
+/**
+ * Verifies the admin session cookie and returns its decoded payload
+ * ({ sub, username, role, iat, exp }). Throws a 401 on any failure.
+ *
+ * @param {Request} request
+ * @param {object} env
+ * @returns {Promise<{ sub: string, username: string, role: string }>}
+ */
+export async function requireAdmin(request, env) {
+  let pending = verifiedRequests.get(request);
+  if (!pending) {
+    pending = verifySession(request, env);
+    verifiedRequests.set(request, pending);
+  }
+  return pending;
 }
 
 /**

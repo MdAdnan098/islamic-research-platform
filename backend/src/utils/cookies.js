@@ -16,7 +16,11 @@ export function parseCookies(request) {
     if (idx === -1) return acc;
     const key = pair.slice(0, idx).trim();
     const value = pair.slice(idx + 1).trim();
-    if (key) acc[key] = decodeURIComponent(value);
+    if (key) {
+      // A malformed %-escape must never turn into a 500 — fall back to the raw value
+      // (it will simply fail token verification and yield a 401).
+      try { acc[key] = decodeURIComponent(value); } catch { acc[key] = value; }
+    }
     return acc;
   }, {});
 }

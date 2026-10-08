@@ -7,7 +7,7 @@ import { getDb } from "./mongo.service.js";
  * this file only knows about admin documents.
  *
  * Document shape:
- *   { _id, email, passwordHash, role, active, createdAt, updatedAt, lastLoginAt }
+ *   { _id, username, email, passwordHash, role, active, createdAt, updatedAt, lastLoginAt, passwordChangedAt }
  */
 
 const COLLECTION = "admins";
@@ -44,9 +44,15 @@ export async function createAdmin(config, { username, passwordHash }) {
   return doc;
 }
 
+/**
+ * Sets a new password and stamps `passwordChangedAt`. requireAdmin rejects any session
+ * token issued before that moment, so a reset signs out every existing session.
+ * (Additive field — no migration needed; admins without it are simply unaffected.)
+ */
 export async function setAdminPassword(config, id, passwordHash) {
   const collection = await getAdminsCollection(config);
-  await collection.updateOne({ _id: new ObjectId(id) }, { $set: { passwordHash, updatedAt: new Date() } });
+  const now = new Date();
+  await collection.updateOne({ _id: new ObjectId(id) }, { $set: { passwordHash, updatedAt: now, passwordChangedAt: now } });
 }
 
 export async function findAdminById(config, id) {

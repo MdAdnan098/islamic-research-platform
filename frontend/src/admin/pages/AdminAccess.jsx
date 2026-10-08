@@ -27,7 +27,7 @@ export default function AdminAccess({ mode }) {
 
   async function submit(e) {
     e.preventDefault();
-    if (f.password.length < 8) return toast("Password must be at least 8 characters.", "error");
+    if (f.password.length < 12) return toast("Password must be at least 12 characters.", "error");
     if (f.password !== f.confirm) return toast("Passwords do not match.", "error");
     setBusy(true);
     try {
@@ -46,7 +46,7 @@ export default function AdminAccess({ mode }) {
         <div className="flex flex-col items-center gap-2 pb-2"><LogoMark size={46} /><h1 className="text-xl font-bold">{m.title}</h1><p className="text-center text-xs text-ad-mute">{m.sub}</p></div>
         <Field id="un" label="Username" type="text" autoComplete="username" autoCapitalize="none" value={f.username} onChange={set("username")} />
         <Field id="sk" label="Admin secret key" type="password" autoComplete="off" value={f.secretKey} onChange={set("secretKey")} />
-        <Field id="pw" label={mode === "reset" ? "New password" : "Password"} type="password" autoComplete="new-password" minLength={8} value={f.password} onChange={set("password")} />
+        <Field id="pw" label={mode === "reset" ? "New password" : "Password"} type="password" autoComplete="new-password" minLength={12} value={f.password} onChange={set("password")} />
         <Field id="cf" label="Confirm password" type="password" autoComplete="new-password" value={f.confirm} onChange={set("confirm")} />
         <button className="a-btn-primary w-full !py-2.5" disabled={busy || done}>{busy ? m.busy : m.btn}</button>
         <p className="text-center text-sm"><Link to="/admin/login" className="text-ad-brand hover:underline">Back to sign in</Link></p>
