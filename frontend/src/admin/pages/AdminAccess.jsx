@@ -5,14 +5,28 @@ import { AdminShell } from "../AdminLayout.jsx";
 import { HomeLink } from "../components/HomeLink.jsx";
 import { useToast } from "../components/ui.jsx";
 import { LogoMark } from "../../components/brand/Logo.jsx";
+import { Icon } from "../../components/ui/icons.jsx";
 
 const MODES = {
   register: { title: "Create admin account", sub: "Needs the admin secret key", btn: "Create account", busy: "Creating…", ok: "Account created. You can sign in now." },
   reset: { title: "Reset password", sub: "Use the admin secret key to set a new password", btn: "Set new password", busy: "Saving…", ok: "Password updated. You can sign in now." },
 };
 
-function Field({ id, label, ...p }) {
-  return <div><label className="a-label" htmlFor={id}>{label}</label><input id={id} required className="a-input" {...p} /></div>;
+function Field({ id, label, type, ...p }) {
+  const [shown, setShown] = useState(false);
+  if (type !== "password") return <div><label className="a-label" htmlFor={id}>{label}</label><input id={id} required className="a-input" type={type} {...p} /></div>;
+  // Password-type fields get a small show/hide eye (display only; the value is unchanged).
+  return (
+    <div>
+      <label className="a-label" htmlFor={id}>{label}</label>
+      <div className="relative">
+        <input id={id} required className="a-input !pr-10" type={shown ? "text" : "password"} {...p} />
+        <button type="button" onClick={() => setShown((v) => !v)} aria-label={shown ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`} aria-pressed={shown} title={shown ? "Hide" : "Show"} className="absolute inset-y-0 right-0 grid w-10 place-items-center text-ad-mute hover:text-ad-ink">
+          <Icon name={shown ? "eyeOff" : "eye"} size={16} />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /** Hidden admin pages: /admin/register and /admin/forgot-password (not linked from the public site). */

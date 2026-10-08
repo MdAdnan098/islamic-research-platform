@@ -4,8 +4,8 @@ import { useAsync } from "../../lib/useAsync.js";
 import { formatDate, formatPrice } from "../../lib/format.js";
 import { Empty, ErrorBox, Modal, PageHeader, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
+import { waLink, enrollmentMessage } from "../../lib/whatsapp.js";
 
-const waLink = (number, text) => `https://wa.me/${String(number).replace(/\D/g, "")}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 const dateTime = (iso) => (iso ? new Date(iso).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "—");
 
 const PAYMENT_STATUSES = [["paid", "Paid"], ["refunded", "Refunded"]];
@@ -26,7 +26,7 @@ function Details({ e, onAction, onSendLink, onClose }) {
     <Modal title="Enrollment details" onClose={onClose}>
       <dl className="divide-y divide-ad-rule">
         <Row label="Student">{e.fullName}</Row>
-        <Row label="WhatsApp"><a className="underline" href={waLink(e.whatsapp)} target="_blank" rel="noopener noreferrer">{e.whatsapp}</a></Row>
+        <Row label="WhatsApp">{waLink(e.whatsapp) ? <a className="underline" href={waLink(e.whatsapp)} target="_blank" rel="noopener noreferrer">{e.whatsapp}</a> : e.whatsapp || "—"}</Row>
         <Row label="Email">{e.email ? <a className="underline" href={`mailto:${e.email}`}>{e.email}</a> : "—"}</Row>
         <Row label="Course">{e.course?.title || "Deleted course"}{typeof price === "number" ? ` · ${formatPrice(price, e.course.currency)}` : ""}</Row>
         <Row label="Status"><StatusBadge status={statusLabel(e)} /></Row>
@@ -86,8 +86,18 @@ export default function Enrollments() {
   /** Opens WhatsApp with the Meet link pre-filled (the link only ever travels admin → student), then records that it was sent. */
   function sendMeetLink(e) {
     const text = `Assalamu alaikum ${e.fullName}, here is your class link for ${e.course.title}: ${e.course.meetingLink}`;
-    window.open(waLink(e.whatsapp, text), "_blank", "noopener,noreferrer");
+    const url = waLink(e.whatsapp, text);
+    if (!url) { toast("This student has no valid WhatsApp number.", "error"); return; }
+    window.open(url, "_blank", "noopener,noreferrer");
     update(e, { meetLinkSent: true });
+  }
+
+  /** Opens the student's WhatsApp chat (wa.me click-to-chat). Paid enrollments get the confirmation message typed in
+   *  but NOT sent — the admin presses Send. Nothing is stored and no API is involved. */
+  function openWhatsApp(e) {
+    const url = waLink(e.whatsapp, e.paymentStatus === "paid" ? enrollmentMessage(e) : null);
+    if (!url) { toast("This student has no valid WhatsApp number.", "error"); return; }
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   const filtered = !!(courseId || paymentStatus || q);
@@ -126,7 +136,7 @@ export default function Enrollments() {
                   <button key={s} className={s === "approved" ? "a-btn-primary" : "a-btn"} onClick={() => changeStatus(e, s)}>{ACTION_LABEL[s]}</button>
                 ))}
                 <button className="a-btn" onClick={() => setSelectedId(e.id)}><Icon name="eye" size={14} />Details</button>
-                <a className="a-btn" href={waLink(e.whatsapp)} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} />WhatsApp</a>
+                <button type="button" className="a-btn" onClick={() => openWhatsApp(e)} disabled={!waLink(e.whatsapp)} title={waLink(e.whatsapp) ? "Open WhatsApp chat" : "No valid WhatsApp number"}><Icon name="external" size={14} />WhatsApp</button>
               </div>
             </li>
           ))}

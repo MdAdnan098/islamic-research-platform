@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "./mongo.service.js";
 import { normalizeWhatsapp } from "../../utils/validate.courses.js";
 import { ENROLLMENT_PAYMENT_STATUSES, ENROLLMENT_TRANSITIONS, LEGACY_ENROLLMENT_STATUS } from "../../utils/courseEnums.js";
-import { pickMeetingLink } from "../../utils/courseLifecycle.js";
+import { pickMeetingLink, normalizeSessions } from "../../utils/courseLifecycle.js";
 
 /**
  * Data access for the `enrollments` collection (one collection for both entry points).
@@ -274,7 +274,7 @@ export function toSafeEnrollment(e, { course, payment } = {}) {
     meetLinkSentAt: e.meetLinkSentAt || null,
     createdAt: e.createdAt,
     updatedAt: e.updatedAt,
-    course: course ? { id: String(course._id), title: course.title, slug: course.slug, price: course.price, currency: course.currency || "INR", meetingLink: pickMeetingLink(course) } : null,
+    course: course ? { id: String(course._id), title: course.title, slug: course.slug, price: course.price, currency: course.currency || "INR", meetingLink: pickMeetingLink(course), sessions: normalizeSessions(course.sessions).map((s) => ({ startsAt: s.startsAt.toISOString(), endsAt: s.endsAt.toISOString() })) } : null,
     payment: payment ? { status: payment.status, amount: payment.amount, currency: payment.currency, orderId: payment.orderId, gatewayPaymentId: payment.paymentId || null, paidAt: payment.verifiedAt || null } : null,
   };
 }
