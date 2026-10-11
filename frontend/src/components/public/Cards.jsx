@@ -5,9 +5,16 @@ import { pickVersion } from "../../lib/versions.js";
 import { Text } from "../ui/Text.jsx";
 import { Icon } from "../ui/icons.jsx";
 
-export function ArticleCard({ article, category, showCategory = false }) {
+const sectionLabel = (t, type) => (type === "aqeedah" ? t.nav.aqaid : type === "masail" ? t.nav.masail : null);
+
+/** Subtle breadcrumb text: "Aqaid › Folder › Subfolder" (section, then visible folders). */
+export function trailLabel(t, article) {
+  return [sectionLabel(t, article.section), ...(article.folders || []).map((f) => f.title)].filter(Boolean).join(" › ");
+}
+
+export function ArticleCard({ article, category, showCategory = false, showPath = false }) {
   const { t, contentLang } = useI18n();
-  const label = showCategory && category ? (category.type === "aqeedah" ? t.nav.aqaid : t.nav.masail) : null;
+  const label = showPath ? trailLabel(t, article) : showCategory && category ? sectionLabel(t, category.type) : null;
   const cover = mediaUrl(article.coverKey);
   const title = pickVersion(article.title, article.titleTr, article.language, contentLang);
   return (
@@ -21,7 +28,7 @@ export function ArticleCard({ article, category, showCategory = false }) {
       <div className="flex flex-1 items-start px-3 pb-3 pt-4">
         <div className="min-w-0">
           <Text as="h3" className="line-clamp-2 font-display text-lg font-bold leading-snug sm:text-xl">{title}</Text>
-          {label && <span className="mt-2 inline-block text-xs text-mute">{label}</span>}
+          {label && <Text as="span" className="mt-2 block text-xs text-mute">{label}</Text>}
         </div>
       </div>
     </Link>
@@ -29,7 +36,7 @@ export function ArticleCard({ article, category, showCategory = false }) {
 }
 
 /** Topic = "folder": compact folder-tab + tile with a folder icon; the topic name sits below the card. Sized for 3 per row on mobile. */
-export function TopicCard({ topic, to }) {
+export function TopicCard({ topic, to, label }) {
   return (
     <Link to={to} className="group block min-w-0">
       <div className="relative pt-2 transition duration-300 ease-out group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
@@ -39,6 +46,21 @@ export function TopicCard({ topic, to }) {
         </div>
       </div>
       <Text as="h3" className="mt-2 line-clamp-2 px-0.5 text-center font-display text-xs font-bold leading-snug sm:text-sm">{topic.title}</Text>
+      {label && <span className="mt-0.5 block text-center text-[11px] text-mute">{label}</span>}
+    </Link>
+  );
+}
+
+/** Compact folder tile used inside the single homepage "Folders" card: icon, name, subtle section label. */
+export function FolderTile({ folder, to }) {
+  const { t } = useI18n();
+  return (
+    <Link to={to} className="group flex min-w-0 items-center gap-3 rounded-xl border border-rule bg-tint px-3 py-3 transition hover:border-accent/40">
+      <Icon name="folder" size={26} className="shrink-0 text-accent/80" />
+      <div className="min-w-0">
+        <Text as="h3" className="line-clamp-2 font-display text-sm font-bold leading-snug sm:text-base">{folder.title}</Text>
+        {sectionLabel(t, folder.section) && <span className="block text-[11px] text-mute">{sectionLabel(t, folder.section)}</span>}
+      </div>
     </Link>
   );
 }

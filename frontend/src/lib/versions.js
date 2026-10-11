@@ -1,3 +1,5 @@
+import { withoutVersionMarks } from "./highlights.js";
+
 /**
  * Multi-script versions. An article keeps ONE structure (blocks). Text blocks
  * (heading / paragraph / non-sacred quote) carry `tr: { en, hi, ur }` with the
@@ -67,7 +69,8 @@ export function applyPaste(lang, parsed, titleTr, blocks) {
     const v = parsed[i + 1];
     if (!v || !isConvertible(b)) return b;
     count++;
-    return { ...b, tr: { ...(b.tr || {}), [lang]: v } };
+    // A pasted translation replaces that version's text, so highlights that belonged to the old text are dropped.
+    return withoutVersionMarks({ ...b, tr: { ...(b.tr || {}), [lang]: v } }, lang);
   });
   let tt = titleTr || {};
   if (parsed[0]) { tt = { ...tt, [lang]: parsed[0] }; count++; }

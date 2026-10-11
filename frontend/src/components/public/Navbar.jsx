@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { SOCIAL } from "../../config/env.js";
 import { useI18n } from "../../i18n/index.jsx";
 import { Logo } from "../brand/Logo.jsx";
@@ -12,6 +12,14 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   const header = useRef(null);
+  const nav = useNavigate();
+  const [q, setQ] = useState("");
+  const submitSearch = (e) => {
+    e.preventDefault();
+    const v = q.trim();
+    setOpen(false);
+    if (v) { nav(`/search?q=${encodeURIComponent(v)}`); setQ(""); } else nav("/search");
+  };
   useEffect(() => { setOpen(false); }, [pathname]);
 
   // Close the menu when tapping outside the header.
@@ -45,6 +53,7 @@ export function Navbar() {
         </nav>
 
         <div className="-me-1.5 flex shrink-0 items-center gap-1.5">
+          <Link to="/search" aria-label={t.search.open} title={t.search.title} className="grid h-10 w-10 place-items-center rounded-full text-ink transition-colors hover:bg-tint"><Icon name="search" size={21} /></Link>
           <ThemeSwitcher compact />
           <LanguageDropdown />
           <button
@@ -62,6 +71,11 @@ export function Navbar() {
       {open && (
         <div className="animate-fade border-t border-rule bg-paper md:absolute md:end-8 md:top-full md:mt-2 md:w-72 md:overflow-hidden md:rounded-xl md:border md:shadow-soft">
           <nav className="flex flex-col px-5 py-2 sm:px-8 md:px-4" aria-label="Menu">
+            <form onSubmit={submitSearch} role="search" className="flex gap-2 border-b border-rule py-3">
+              <input type="search" value={q} onChange={(e) => setQ(e.target.value)} maxLength={100} dir="auto" placeholder={t.search.placeholder} aria-label={t.search.title}
+                className="min-w-0 flex-1 rounded-full border border-rule bg-field px-4 py-2 text-base text-ink placeholder:text-mute focus:border-accent focus:outline-none" />
+              <button type="submit" className="btn-primary !px-4 !py-2 text-sm">{t.search.button}</button>
+            </form>
             {links.map((l) => (
               <NavLink key={l.to} {...l} className={(s) => `${itemCls(s)} md:hidden`}>{l.label}</NavLink>
             ))}

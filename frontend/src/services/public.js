@@ -19,6 +19,14 @@ export const publicApi = {
   topics: (categoryId, signal) =>
     cached(`topics:${categoryId}`, 60_000, () => request(`/api/public/topics${qs({ categoryId })}`, { signal }).then((d) => d.topics)),
   articles: (params, signal) => request(`/api/public/articles${qs(params)}`, { signal }).then((d) => d.articles),
+  /** Paged listing: { articles, hasMore, page }. params: { type, general, topicId, page, limit } */
+  articlePage: (params, signal) => request(`/api/public/articles${qs(params)}`, { signal }),
+  /** Root folders (top level only): { folders, total, hasMore }. params: { type, page, limit } */
+  folders: (params, signal) => request(`/api/public/folders${qs(params)}`, { signal }),
+  folder: (type, slug, signal) => request(`/api/public/folders/by-slug${qs({ type, slug })}`, { signal }),
+  /** One combined newest-first feed (any section / folder depth). { articles, hasMore, page } */
+  latest: (params, signal) => request(`/api/public/latest${qs(params)}`, { signal }),
+  search: (params, signal) => request(`/api/public/search${qs(params)}`, { signal }),
   article: (slug, signal) => request(`/api/public/articles/${encodeURIComponent(slug)}`, { signal }),
 
   liveSessions: (params, signal) => request(`/api/public/live-sessions${qs(params)}`, { signal }).then((d) => d.sessions),
@@ -32,51 +40,3 @@ export const publicApi = {
   paymentStatus: (body) => request("/api/public/payments/status", { method: "POST", body }),
   enroll: (courseId, body) => request(`/api/public/courses/${courseId}/enroll`, { method: "POST", body }),
 };
-
-/** Ids of topics (in a category) that have published articles in `language`. */
-async function topicIdsWithArticles(categoryId, language, signal) {
-  const ids = new Set();
-  for (let page = 1; page <= 5; page++) {
-    const batch = await publicApi.articles({ categoryId, language, limit: 100, page }, signal);
-    batch.forEach((a) => a.topicId && ids.add(a.topicId));
-    if (batch.length < 100) break;
-  }
-  return ids;
-}
-
-/**
- * Categories of one section type (aqeedah | masail), each with its topics.
- * With `language`, topics without any published article in that language are hidden.
- */
-export async function loadSection(type, { language, signal } = {}) {
-  const cats = (await publicApi.categories(signal)).filter((c) => c.type === type).sort((a, b) => a.ordering - b.ordering);
-  return Promise.all(
-    cats.map(async (c) => {
-      const [topics, allowed] = await Promise.all([
-        publicApi.topics(c.id, signal),
-        language ? topicIdsWithArticles(c.id, language, signal) : null,
-      ]);
-      return { ...c, topics: topics.filter((tp) => !allowed || allowed.has(tp.id)).sort((a, b) => a.ordering - b.ordering) };
-    })
-  );
-}
-
-/** All published articles of one section type (aqeedah | masail), newest first, plus its categories. */
-export async function loadSectionArticles(type, signal) {
-  const cats = (await publicApi.categories(signal)).filter((c) => c.type === type);
-  const lists = await Promise.all(cats.map((c) => publicApi.articles({ categoryId: c.id, limit: 100 }, signal)));
-  const articles = lists.flat().sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
-  return { cats, articles };
-}
-
-/** Every published article across all categories (newest first), plus the categories. */
-export async function loadAllArticles(signal) {
-  const cats = await publicApi.categories(signal);
-  const articles = [];
-  for (let page = 1; page <= 10; page++) {
-    const batch = await publicApi.articles({ limit: 100, page }, signal);
-    articles.push(...batch);
-    if (batch.length < 100) break;
-  }
-  return { cats, articles };
-}

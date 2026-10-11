@@ -5,13 +5,16 @@ import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { isSlug, slugify } from "../../lib/format.js";
 import { newBlock, referenceIdsOf, withIds } from "../../lib/blocks.js";
+import { applyEdits, cleanBlocksHl } from "../../lib/highlights.js";
+import { flattenTree, folderLabel } from "../../lib/folders.js";
+import { FolderForm } from "../components/FolderForm.jsx";
 import { BlockEditor } from "../components/BlockEditor.jsx";
 import { MediaUploader } from "../components/MediaUploader.jsx";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
 import { VersionsPanel } from "../components/VersionsPanel.jsx";
 import { detectLang } from "../../lib/versions.js";
-import { ErrorBox, Field, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
+import { ErrorBox, Field, Modal, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 
 const BLANK = { titleTr: {}, title: "", slug: "", language: "ur", categoryId: "", topicId: "", excerpt: "", seoTitle: "", seoDescription: "", coverKey: "", status: "draft" };
 const pick = (a) => ({ ...BLANK, ...Object.fromEntries(Object.keys(BLANK).map((k) => [k, a[k] ?? ""])), titleTr: a.titleTr || {} });
@@ -26,19 +29,23 @@ export default function ArticleEditor() {
   const [blocks, setBlocks] = useState(() => [newBlock("text")]);
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [addFolder, setAddFolder] = useState(false);
+  const [hlOn, setHlOn] = useState(false);
+  const rev = useRef(null); // updatedAt of the version this editor is based on (stale-save guard)
   const lang = detectLang(f.title, blocks); // the script the admin wrote in
   const saved = useRef("");
 
   const cats = useAsync((s) => adminApi.categories.list({ status: "active" }, s), []);
   // Topics ("folders") of the selected category - reloads whenever the category changes.
   const topicsRes = useAsync((s) => (f.categoryId ? adminApi.topics.list({ categoryId: f.categoryId }, s) : []), [f.categoryId]);
-  const topicOptions = (topicsRes.data || []).filter((t) => t.status === "active" || t.id === f.topicId).sort((a, b) => (a.ordering ?? 0) - (b.ordering ?? 0));
+  const topicOptions = flattenTree((topicsRes.data || []).filter((t) => t.status === "active" || t.id === f.topicId));
 
   const loaded = useAsync(async (s) => {
     if (isNew) return null;
     const a = await adminApi.articles.get(id, s);
     setF(pick(a)); setBlocks(withIds(a.blocks));
     saved.current = JSON.stringify([pick(a), withIds(a.blocks)]);
+    rev.current = a.updatedAt;
     return a;
   }, [id]);
 
@@ -71,7 +78,7 @@ export default function ArticleEditor() {
     if (!isSlug(slug)) slug = "article-" + Math.random().toString(36).slice(2, 8);
     if (slug !== f.slug) setF((s) => ({ ...s, slug }));
     const body = {
-      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), titleTr: Object.fromEntries(Object.entries(f.titleTr || {}).filter(([, v]) => v && v.trim())), slug, language: lang || "en", blocks,
+      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), titleTr: Object.fromEntries(Object.entries(f.titleTr || {}).filter(([, v]) => v && v.trim())), slug, language: lang || "en", blocks: cleanBlocksHl(blocks, lang || "en"),
       references: referenceIdsOf(blocks), excerpt: f.excerpt.trim() || null,
       seoTitle: f.seoTitle.trim() || null, seoDescription: f.seoDescription.trim() || null, coverKey: f.coverKey || null,
     };
@@ -79,13 +86,14 @@ export default function ArticleEditor() {
     try {
       let a;
       try {
-        a = isNew ? await adminApi.articles.create(body) : await adminApi.articles.update(id, body);
+        a = isNew ? await adminApi.articles.create(body) : await adminApi.articles.update(id, { ...body, baseUpdatedAt: rev.current });
       } catch (e) {
         // Same link name already used by another article: add a short suffix and retry once.
         if (!isNew || !/slug/i.test(e.message)) throw e;
         a = await adminApi.articles.create({ ...body, slug: `${slug}-${Math.random().toString(36).slice(2, 6)}` });
       }
       saved.current = JSON.stringify([pick(a), withIds(a.blocks)]);
+      rev.current = a.updatedAt;
       toast(live === "published" ? "Changes save ho gaye — post live update ho gayi" : "Saved");
       if (isNew) nav(`/admin/articles/${a.id}`, { replace: true });
       else { setF(pick(a)); loaded.reload(); }
@@ -131,7 +139,7 @@ export default function ArticleEditor() {
       <div className="grid gap-6 xl:grid-cols-[1fr_330px]">
         <div className="min-w-0 space-y-6">
           <input className="a-input !py-3 !text-xl !font-semibold" dir="auto" placeholder="Article title" value={f.title} onChange={(e) => setF((s) => ({ ...s, title: e.target.value, slug: isNew ? slugify(e.target.value) : s.slug }))} />
-          <BlockEditor blocks={blocks} onChange={setBlocks} />
+          <BlockEditor blocks={blocks} onChange={setBlocks} baseLang={lang || "en"} />
           <VersionsPanel baseLang={lang} title={f.title} titleTr={f.titleTr} setTitleTr={(titleTr) => setF((s) => ({ ...s, titleTr }))} blocks={blocks} setBlocks={setBlocks} toast={toast} />
         </div>
 
@@ -144,12 +152,13 @@ export default function ArticleEditor() {
                 return items.length ? <optgroup key={type} label={label}>{items.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup> : null;
               })}
             </select></Field>
-            <Field label="Topic">
+            <Field label="Folder / Topic">
               <select className="a-input" dir="auto" value={f.topicId || ""} onChange={(e) => setF((s) => ({ ...s, topicId: e.target.value }))} disabled={topicsRes.loading && !topicsRes.data}>
                 <option value="">— Koi topic nahi (seedha category mein) —</option>
-                {topicOptions.map((t) => <option key={t.id} value={t.id}>{t.title}{t.status !== "active" ? " (archived)" : ""}</option>)}
+                {topicOptions.map((t) => <option key={t.id} value={t.id}>{folderLabel(t)}{t.status !== "active" ? " (hidden)" : ""}</option>)}
                 {f.topicId && !topicOptions.some((t) => t.id === f.topicId) && <option value={f.topicId}>(current topic)</option>}
               </select>
+              <button type="button" className="a-btn mt-2 !py-1" onClick={() => setAddFolder(true)} disabled={!cats.data?.length}><Icon name="plus" size={14} />Add Folder</button>
               {topicsRes.error ? <span className="mt-1 block text-xs text-ad-danger">Topics load nahi hue. Page refresh karke dekhein.</span>
                 : topicsRes.data && topicOptions.length === 0 ? <span className="mt-1 block text-xs text-ad-mute">Is category mein abhi koi topic nahi hai. Pehle Topics page mein topic banayein.</span>
                 : <span className="mt-1 block text-xs text-ad-mute">Article publish hone par is topic ke andar dikhega. Latest Posts mein har published article aata hai.</span>}
@@ -162,13 +171,31 @@ export default function ArticleEditor() {
         </aside>
       </div>
       {dialog}
+      {addFolder && (
+        <Modal wide title="New folder" onClose={() => setAddFolder(false)}>
+          <FolderForm
+            categories={cats.data || []}
+            defaultCategoryId={f.categoryId}
+            onCancel={() => setAddFolder(false)}
+            onDone={(created) => {
+              setAddFolder(false);
+              topicsRes.reload();
+              if (created.categoryId === f.categoryId) setF((s) => ({ ...s, topicId: created.id })); // article form data is untouched; only the folder is picked
+              else toast("Folder bana diya, par ye dusri category ka hai — article ki category nahi badli.");
+            }}
+          />
+        </Modal>
+      )}
       {preview && createPortal(
         <div className="fixed inset-0 z-[70] overflow-y-auto bg-paper font-sans text-ink">
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-rule bg-card/95 px-4 py-2.5 backdrop-blur">
             <span className="text-sm font-medium">Preview — abhi tak ka likha hua (save nahi hua)</span>
-            <button className="rounded-lg border border-rule px-3 py-1 text-sm hover:border-accent/60" onClick={() => setPreview(null)}>✕ Band karein</button>
+            <div className="flex items-center gap-2">
+              <button className="rounded-lg border border-rule px-3 py-1 text-sm hover:border-accent/60" aria-pressed={hlOn} onClick={() => setHlOn((v) => !v)}>Highlight: {hlOn ? "ON" : "OFF"}</button>
+              <button className="rounded-lg border border-rule px-3 py-1 text-sm hover:border-accent/60" onClick={() => setPreview(null)}>✕ Band karein</button>
+            </div>
           </div>
-          <ArticleView article={{ ...f, language: lang || "en", title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs} />
+          <ArticleView article={{ ...f, language: lang || "en", title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs} editor={hlOn ? { enabled: true, onApply: async (edits) => setBlocks((bs) => applyEdits(bs, edits)) } : undefined} />
         </div>,
         document.body
       )}

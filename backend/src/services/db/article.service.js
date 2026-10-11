@@ -4,6 +4,8 @@ import { findCategoryById } from "./category.service.js";
 import { findTopicById } from "./topic.service.js";
 import { normalizeSlug, slugify } from "../../utils/slug.js";
 import { validateArticleInput } from "../../utils/validate.js";
+import { buildArticleSearchFields, escapeRegex } from "../../utils/searchText.js";
+import { HL_LANGS, isHighlightable, normalizeRanges, versionText } from "../../utils/highlights.js";
 
 /**
  * Data access for the `articles` collection.
@@ -19,8 +21,14 @@ import { validateArticleInput } from "../../utils/validate.js";
  *   {
  *     _id, categoryId, topicId, title, slug, blocks[], language, status,
  *     authorId, references[] (reference ObjectIds), createdAt, updatedAt,
- *     publishedAt
+ *     publishedAt, searchTitle, searchText
  *   }
+ *
+ * `searchTitle` / `searchText` are derived, normalised copies used only by public search (never returned by
+ * the API). They are rebuilt on every create/update; articles saved before they existed are filled in by
+ * `backfillSearchFields` (scripts/backfill-search.mjs, and a small bounded step on each public search).
+ *
+ * Text-like blocks may carry `hl` (highlight ranges) - see utils/highlights.js.
  *
  * References are stored as ObjectId links only — never embedded.
  */
@@ -78,6 +86,41 @@ export async function ensureArticleIndexes(config) {
   await collection.createIndex({ slug: 1 }, { unique: true });
   await collection.createIndex({ categoryId: 1, topicId: 1, status: 1 });
   await collection.createIndex({ language: 1, status: 1 });
+  // Public listings: newest published first, with a stable _id tie-break.
+  await collection.createIndex({ status: 1, publishedAt: -1, _id: -1 });
+  await collection.createIndex({ topicId: 1, status: 1, publishedAt: -1 });
+}
+
+function throwConflict(message = "This article was changed after you opened it. Reload it before saving so nothing is overwritten.") {
+  const err = new Error(message);
+  err.status = 409;
+  err.code = "CONFLICT";
+  throw err;
+}
+
+/** Strictly increasing updatedAt, so two saves in the same millisecond still differ (the stale-write guard compares it). */
+function nextUpdatedAt(previous) {
+  const now = new Date();
+  return previous && now.getTime() <= new Date(previous).getTime() ? new Date(new Date(previous).getTime() + 1) : now;
+}
+
+function parseBaseUpdatedAt(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) {
+    const err = new Error("baseUpdatedAt must be a valid ISO date.");
+    err.status = 400;
+    err.code = "INVALID_INPUT";
+    throw err;
+  }
+  return d;
+}
+
+async function loadReferenceDocs(config, ids = []) {
+  const valid = [...new Set(ids.map(String))].filter((id) => ObjectId.isValid(id));
+  if (!valid.length) return [];
+  const db = await getDb(config);
+  return db.collection("references").find({ _id: { $in: valid.map((id) => new ObjectId(id)) } }).project({ book: 1, author: 1 }).toArray();
 }
 
 export async function createArticle(config, input) {
@@ -121,6 +164,7 @@ export async function createArticle(config, input) {
     updatedAt: now,
     publishedAt: status === "published" ? now : null,
   };
+  Object.assign(doc, buildArticleSearchFields(doc, await loadReferenceDocs(config, data.references || [])));
 
   try {
     const result = await collection.insertOne(doc);
@@ -196,8 +240,11 @@ export async function updateArticle(config, id, updates) {
     if (String(topic.categoryId) !== String(effectiveCategoryId)) throwTopicCategoryMismatch();
   }
 
+  const baseUpdatedAt = parseBaseUpdatedAt(updates.baseUpdatedAt);
+  if (baseUpdatedAt && existing.updatedAt && new Date(existing.updatedAt).getTime() !== baseUpdatedAt.getTime()) throwConflict();
+
   const collection = await getArticlesCollection(config);
-  const $set = { updatedAt: new Date() };
+  const $set = { updatedAt: nextUpdatedAt(existing.updatedAt) };
 
   for (const key of ["title", "titleTr", "slug", "blocks", "language", "status", "excerpt", "seoTitle", "seoDescription", "coverKey"]) {
     if (data[key] !== undefined) {
@@ -213,8 +260,20 @@ export async function updateArticle(config, id, updates) {
     $set.publishedAt = new Date();
   }
 
+  // Keep the derived search copies in step with whatever changed.
+  const touchesSearch = ["title", "titleTr", "blocks", "excerpt", "seoTitle", "seoDescription", "references"].some((k) => data[k] !== undefined);
+  if (touchesSearch || existing.searchText === undefined) {
+    const merged = { ...existing, ...$set };
+    const refIds = data.references !== undefined ? data.references : (existing.references || []);
+    Object.assign($set, buildArticleSearchFields(merged, await loadReferenceDocs(config, refIds)));
+  }
+
   try {
-    await collection.updateOne({ _id: new ObjectId(id) }, { $set });
+    // With baseUpdatedAt the write only applies if nobody saved in between (compare-and-swap).
+    const filter = { _id: new ObjectId(id) };
+    if (baseUpdatedAt && existing.updatedAt) filter.updatedAt = existing.updatedAt;
+    const res = await collection.updateOne(filter, { $set });
+    if (baseUpdatedAt && res.matchedCount === 0) throwConflict();
   } catch (err) {
     if (err.code === 11000) {
       const dupErr = new Error("An article with this slug already exists.");
@@ -262,6 +321,179 @@ export async function countArticlesUsingReference(config, referenceId) {
   if (!ObjectId.isValid(referenceId)) return 0;
   const collection = await getArticlesCollection(config);
   return collection.countDocuments({ references: new ObjectId(referenceId) });
+}
+
+/* ----------------------------------------------------------------------------- */
+/* Public listings, search, highlights                                            */
+/* ----------------------------------------------------------------------------- */
+
+/** Card-sized public shape: no blocks, no search copies, no author. */
+export function toListArticle(article) {
+  return {
+    id: String(article._id),
+    categoryId: String(article.categoryId),
+    topicId: article.topicId ? String(article.topicId) : null,
+    title: article.title,
+    titleTr: article.titleTr || null,
+    slug: article.slug,
+    language: article.language,
+    excerpt: article.excerpt || null,
+    coverKey: article.coverKey || null,
+    createdAt: article.createdAt,
+    publishedAt: article.publishedAt || null,
+  };
+}
+
+const LIST_PROJECTION = { blocks: 0, searchText: 0, searchTitle: 0, authorId: 0, references: 0, seoTitle: 0, seoDescription: 0 };
+// publishedAt is the publication timestamp; legacy articles without one fall back to createdAt.
+const SORT_AT = { $addFields: { sortAt: { $ifNull: ["$publishedAt", "$createdAt"] } } };
+
+function clampPaging(page, limit, { maxLimit = 50, defaultLimit = 12 } = {}) {
+  const safeLimit = Math.min(Math.max(Number.isInteger(limit) ? limit : defaultLimit, 1), maxLimit);
+  const safePage = Math.min(Math.max(Number.isInteger(page) ? page : 1, 1), 10_000);
+  return { limit: safeLimit, skip: (safePage - 1) * safeLimit, page: safePage };
+}
+
+/**
+ * Published articles, newest first, with a deterministic tie-break (_id) so pages never repeat or skip rows
+ * that share a timestamp. Always limited to the given (public) categories.
+ * `topicId` = direct articles of one folder; `general` = articles with no folder (or whose folder is hidden).
+ */
+export async function listPublicArticles(config, { categoryIds, topicId, general, hiddenTopicIds = [], language, page, limit } = {}) {
+  const paging = clampPaging(page, limit);
+  const valid = (categoryIds || []).filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (!valid.length) return { articles: [], hasMore: false, page: paging.page, limit: paging.limit };
+
+  const match = { status: "published", categoryId: { $in: valid } };
+  if (topicId && ObjectId.isValid(topicId)) match.topicId = new ObjectId(topicId);
+  else if (general) match.topicId = { $in: [null, ...hiddenTopicIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id))] };
+  if (language) match.language = language;
+
+  const collection = await getArticlesCollection(config);
+  const rows = await collection
+    .aggregate([{ $match: match }, { $project: LIST_PROJECTION }, SORT_AT, { $sort: { sortAt: -1, _id: -1 } }, { $skip: paging.skip }, { $limit: paging.limit + 1 }])
+    .toArray();
+
+  return { articles: rows.slice(0, paging.limit).map(toListArticle), hasMore: rows.length > paging.limit, page: paging.page, limit: paging.limit };
+}
+
+/**
+ * Public search. Every token must appear in the article's normalised searchText (title, body in every script
+ * version, excerpt, SEO text, captions, reference book/author), OR the article sits in one of `folderIds`
+ * (folders whose name matched the query, descendants included). Tokens are regex-escaped literals.
+ * Title matches rank first, then newest.
+ */
+export async function searchPublicArticles(config, { tokens, phrase, categoryIds, folderIds = [], matchedCategoryIds = [], language, page, limit } = {}) {
+  const paging = clampPaging(page, limit, { defaultLimit: 12 });
+  const valid = (categoryIds || []).filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (!valid.length || !tokens?.length) return { articles: [], hasMore: false, page: paging.page, limit: paging.limit };
+
+  const textMatch = { $and: tokens.map((t) => ({ searchText: { $regex: escapeRegex(t) } })) };
+  const folderObjectIds = folderIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  const matchedCats = matchedCategoryIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  const or = [textMatch];
+  if (folderObjectIds.length) or.push({ topicId: { $in: folderObjectIds } });
+  if (matchedCats.length) or.push({ categoryId: { $in: matchedCats } });
+  const match = { status: "published", categoryId: { $in: valid }, $or: or };
+  if (language) match.language = language;
+
+  const titleHit = (needle, points) => ({ $cond: [{ $regexMatch: { input: { $ifNull: ["$searchTitle", ""] }, regex: escapeRegex(needle) } }, points, 0] });
+  const score = { $add: [titleHit(phrase || tokens.join(" "), 50), ...tokens.map((t) => titleHit(t, 10))] };
+
+  const collection = await getArticlesCollection(config);
+  const rows = await collection
+    .aggregate([
+      { $match: match },
+      { $addFields: { score } },
+      { $project: { ...LIST_PROJECTION } },
+      SORT_AT,
+      { $sort: { score: -1, sortAt: -1, _id: -1 } },
+      { $skip: paging.skip },
+      { $limit: paging.limit + 1 },
+    ])
+    .toArray();
+
+  return { articles: rows.slice(0, paging.limit).map(toListArticle), hasMore: rows.length > paging.limit, page: paging.page, limit: paging.limit };
+}
+
+/**
+ * Fills searchTitle/searchText for published articles saved before those fields existed. Bounded per call so a
+ * single request never does unbounded work; run scripts/backfill-search.mjs once to finish everything.
+ */
+export async function backfillSearchFields(config, { limit = 25 } = {}) {
+  const collection = await getArticlesCollection(config);
+  const rows = await collection.find({ searchText: { $exists: false } }).limit(Math.min(Math.max(limit, 1), 500)).toArray();
+  if (!rows.length) return 0;
+  const refDocs = await loadReferenceDocs(config, rows.flatMap((a) => a.references || []));
+  const refById = new Map(refDocs.map((r) => [String(r._id), r]));
+  await collection.bulkWrite(
+    rows.map((a) => ({
+      updateOne: { filter: { _id: a._id }, update: { $set: buildArticleSearchFields(a, (a.references || []).map((r) => refById.get(String(r))).filter(Boolean)) } },
+    })),
+    { ordered: false }
+  );
+  return rows.length;
+}
+
+const MAX_HIGHLIGHT_EDITS = 200;
+
+/**
+ * Applies highlight edits to existing blocks, addressed by block id (never by text or position).
+ * edits: [{ blockId, lang, ranges: [[start, end], ...] }]  - `ranges` REPLACES that block+version's ranges ([] removes them).
+ * Only `hl` changes; text, order and every other block are untouched. Compare-and-swap on updatedAt means a
+ * stale page can never overwrite a newer save: it gets a 409 instead.
+ */
+export async function updateBlockHighlights(config, id, { baseUpdatedAt, edits }) {
+  const base = parseBaseUpdatedAt(baseUpdatedAt);
+  if (!base) {
+    const err = new Error("baseUpdatedAt is required.");
+    err.status = 400;
+    err.code = "INVALID_INPUT";
+    throw err;
+  }
+  if (!Array.isArray(edits) || edits.length === 0 || edits.length > MAX_HIGHLIGHT_EDITS) {
+    const err = new Error(`edits must be an array of 1-${MAX_HIGHLIGHT_EDITS} items.`);
+    err.status = 400;
+    err.code = "INVALID_INPUT";
+    throw err;
+  }
+
+  const existing = await findArticleById(config, id);
+  if (!existing) throwNotFound();
+  if (new Date(existing.updatedAt).getTime() !== base.getTime()) throwConflict();
+
+  const bad = (message, code = "INVALID_BLOCK") => {
+    const err = new Error(message);
+    err.status = 400;
+    err.code = code;
+    throw err;
+  };
+  const wellFormed = (r) => Array.isArray(r) && r.length === 2 && Number.isInteger(r[0]) && Number.isInteger(r[1]) && r[0] >= 0 && r[1] > r[0];
+
+  const blocks = (existing.blocks || []).map((b) => ({ ...b, ...(b.hl ? { hl: { ...b.hl } } : {}) }));
+  for (const edit of edits) {
+    if (!edit || typeof edit.blockId !== "string" || !HL_LANGS.includes(edit.lang) || !Array.isArray(edit.ranges)) bad("Each edit needs blockId, lang and ranges.", "INVALID_INPUT");
+    if (!edit.ranges.every(wellFormed)) bad("Highlight ranges must be [start, end] integer pairs with start < end.");
+    const block = blocks.find((b) => b.id === edit.blockId);
+    if (!block) bad("A highlighted block no longer exists. Reload the article.");
+    if (!isHighlightable(block)) bad("That block cannot be highlighted.");
+
+    const length = versionText(block, edit.lang, existing.language).length;
+    const ranges = normalizeRanges(edit.ranges); // sorts and merges overlaps
+    if (ranges.some(([, e]) => e > length)) bad("A highlight is outside the text. Reload the article.");
+    if (ranges.length > 500) bad("Too many highlights in one block.");
+
+    const hl = { ...(block.hl || {}) };
+    if (ranges.length) hl[edit.lang] = ranges;
+    else delete hl[edit.lang];
+    if (Object.keys(hl).length) block.hl = hl;
+    else delete block.hl;
+  }
+
+  const collection = await getArticlesCollection(config);
+  const res = await collection.updateOne({ _id: existing._id, updatedAt: existing.updatedAt }, { $set: { blocks, updatedAt: nextUpdatedAt(existing.updatedAt) } });
+  if (res.matchedCount === 0) throwConflict();
+  return findArticleById(config, id);
 }
 
 export function toSafeArticle(article) {

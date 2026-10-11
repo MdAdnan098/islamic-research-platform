@@ -9,7 +9,7 @@ const NAV = [
   ["/admin", "Dashboard", "grid", true],
   ["/admin/articles", "Articles", "doc"],
   ["/admin/categories", "Categories", "folder"],
-  ["/admin/topics", "Topics", "tag"],
+  ["/admin/topics", "Folders", "tag"],
   ["/admin/live-sessions", "Live Sessions", "monitor"],
   ["/admin/courses", "Courses", "cap"],
   ["/admin/enrollments", "Enrollments", "check"],

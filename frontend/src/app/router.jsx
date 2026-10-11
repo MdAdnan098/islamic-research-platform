@@ -7,6 +7,8 @@ import TopicPage from "../pages/public/TopicPage.jsx";
 import ArticlePage from "../pages/public/ArticlePage.jsx";
 import NotFound from "../pages/public/NotFound.jsx";
 import LatestPage from "../pages/public/LatestPage.jsx";
+import FoldersPage from "../pages/public/FoldersPage.jsx";
+import SearchPage from "../pages/public/SearchPage.jsx";
 import About from "../pages/public/About.jsx";
 import LegalPage from "../pages/public/LegalPage.jsx";
 import LivePage from "../pages/public/LivePage.jsx";
@@ -26,6 +28,8 @@ export function AppRouter() {
         <Route path="masail" element={<SectionPage section="masail" />} />
         <Route path="masail/:topicSlug" element={<TopicPage section="masail" />} />
         <Route path="latest" element={<LatestPage />} />
+        <Route path="folders" element={<FoldersPage />} />
+        <Route path="search" element={<SearchPage />} />
         <Route path="live" element={<LivePage />} />
         <Route path="courses" element={<CoursesPage />} />
         <Route path="courses/:slug" element={<CoursePage />} />

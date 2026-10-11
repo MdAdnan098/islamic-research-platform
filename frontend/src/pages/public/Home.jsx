@@ -8,6 +8,7 @@ import { Text } from "../../components/ui/Text.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
 import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../../components/ui/feedback.jsx";
 import { ArticleCard, CategoryCard } from "../../components/public/Cards.jsx";
+import { FoldersCard } from "../../components/public/FoldersCard.jsx";
 import { LiveSessionsSection } from "../../components/public/LiveSessions.jsx";
 import { CoursesSection } from "../../components/public/CourseCards.jsx";
 
@@ -21,6 +22,9 @@ function HeroCalligraphy() {
     </div>
   );
 }
+
+/** Homepage "Latest Posts" card count - unchanged from the original site. */
+const HOME_LATEST_LIMIT = 5;
 
 function QuoteCard({ label, item }) {
   return (
@@ -38,11 +42,11 @@ export default function Home() {
   useMeta({});
   const { data, error, loading, reload } = useAsync(
     async (signal) => {
-      const [categories, articles] = await Promise.all([
+      const [categories, latest] = await Promise.all([
         publicApi.categories(signal),
-        publicApi.articles({ limit: 5 }, signal),
+        publicApi.latest({ limit: HOME_LATEST_LIMIT }, signal),
       ]);
-      return { categories, articles };
+      return { categories, articles: latest.articles };
     },
     []
   );
@@ -85,6 +89,8 @@ export default function Home() {
         </div>
       </section>
 
+      <FoldersCard />
+
       <section className="container-page py-16 sm:py-20">
         <div className="flex items-end justify-between gap-4">
           <SectionHeading title={t.home.latest} />
@@ -97,7 +103,7 @@ export default function Home() {
             <EmptyState>{t.home.noPosts}</EmptyState>
           ) : (
             <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {data.articles.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} showCategory />)}
+              {data.articles.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} showPath />)}
             </div>
           )}
         </div>

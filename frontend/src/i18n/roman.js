@@ -13,6 +13,14 @@ export default {
     masailDesc: "Pesh aane wale masail ka mustanad, hawale-daar jaiza.",
     viewAll: "View all posts", 
     latest: "Latest Posts", noPosts: "Is zubaan mein abhi koi post maujood nahi.",
+    folders: "Folders", viewAllFolders: "View All Folders", noFolders: "Abhi koi folder maujood nahi.",
+    allFolders: "Saare Folders", generalArticles: "General Articles", subfolders: "Subfolders", loadMore: "Aur dikhayein",
+    emptyFolder: "Is folder mein abhi koi mazmoon ya subfolder nahi.",
+  },
+  search: {
+    title: "Search", placeholder: "Mazameen ya folder talash karein…", button: "Search", open: "Search kholein",
+    empty: "Talash ke liye kuch likhein.", short: "Kam az kam 2 harf likhein.", noResults: "Koi nateeja nahi mila.",
+    error: "Search nahi ho paya. Dobara koshish karein.", folders: "Folders", articles: "Mazameen", results: "Nateeje",
   },
   topic: {
     tahreer: "Tahreer", topics: "Topics", intro: "Mukhtasar Taaruf", dalail: "Hamare Dalail", radd: "Dalail Ka Jaiza / Radd",

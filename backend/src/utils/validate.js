@@ -9,6 +9,7 @@
 
 import { ObjectId } from "mongodb";
 import { isValidSlugFormat } from "./slug.js";
+import { validateBlockHighlights } from "./highlights.js";
 import {
   CATEGORY_TYPES,
   CATEGORY_STATUSES,
@@ -89,7 +90,7 @@ function err(message, code = "INVALID_INPUT") {
  * keys. Per-type field schemas are intentionally not enforced yet (see
  * contentEnums.js) — this module is the data foundation, not a full CMS.
  */
-export function validateBlocks(blocks) {
+export function validateBlocks(blocks, language) {
   const errors = [];
 
   if (!Array.isArray(blocks)) {
@@ -114,7 +115,10 @@ export function validateBlocks(blocks) {
     }
     if (!isValidEnumValue(block.type, BLOCK_TYPES)) {
       errors.push(err(`blocks[${index}].type must be one of: ${BLOCK_TYPES.join(", ")}.`, "INVALID_BLOCK"));
+      return;
     }
+    const hlError = validateBlockHighlights(block, language);
+    if (hlError) errors.push(err(`blocks[${index}]: ${hlError}`, "INVALID_BLOCK"));
   });
 
   return errors;
@@ -158,6 +162,9 @@ export function validateTopicInput(data, { partial = false } = {}) {
 
   if (!partial || data.categoryId !== undefined) {
     if (!isValidObjectIdString(data.categoryId)) errors.push(err("categoryId must be a valid id."));
+  }
+  if (data.parentId !== undefined && data.parentId !== null && data.parentId !== "") {
+    if (!isValidObjectIdString(data.parentId)) errors.push(err("parentId must be a valid id when provided."));
   }
   if (!partial || data.title !== undefined) {
     if (!isNonEmptyString(data.title, 300)) errors.push(err("title is required (max 300 characters)."));
@@ -214,7 +221,7 @@ export function validateArticleInput(data, { partial = false } = {}) {
     if (!isValidObjectIdString(data.authorId)) errors.push(err("authorId must be a valid id."));
   }
   if (!partial || data.blocks !== undefined) {
-    errors.push(...validateBlocks(data.blocks));
+    errors.push(...validateBlocks(data.blocks, data.language));
   }
   if (data.references !== undefined) {
     if (!Array.isArray(data.references) || data.references.some((r) => !isValidObjectIdString(r))) {

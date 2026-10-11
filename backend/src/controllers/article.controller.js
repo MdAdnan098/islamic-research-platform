@@ -10,6 +10,7 @@ import {
   archiveArticle,
   deleteArticle,
   deleteAllArticles,
+  updateBlockHighlights,
   toSafeArticle,
 } from "../services/db/article.service.js";
 import { findReferencesByIds } from "../services/db/reference.service.js";
@@ -165,4 +166,21 @@ export async function removeAll(request, env) {
   await requireAdmin(request, env);
   const count = await deleteAllArticles(config);
   return jsonSuccess({ deleted: count }, { allowedOrigin: config.allowedOrigin });
+}
+
+/**
+ * PATCH /api/admin/articles/:id/highlights
+ * Body: { baseUpdatedAt, edits: [{ blockId, lang, ranges: [[start, end], ...] }] }
+ * Used by the public-site "View site" editing mode. Changes ONLY the highlight marks of the named blocks;
+ * 409 if the article changed since `baseUpdatedAt`.
+ */
+export async function highlights(request, env, ctx, params) {
+  const config = loadConfig(env);
+  await requireAdmin(request, env);
+
+  const body = await safeParseJson(request);
+  if (!body || typeof body !== "object") throwInvalidInput("Request body must be valid JSON.");
+
+  const article = await updateBlockHighlights(config, params.id, { baseUpdatedAt: body.baseUpdatedAt, edits: body.edits });
+  return jsonSuccess({ article: toSafeArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }

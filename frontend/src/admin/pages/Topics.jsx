@@ -1,79 +1,89 @@
 import { useState } from "react";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
-import { slugify } from "../../lib/format.js";
-import { Empty, ErrorBox, Field, IconBtn, Modal, PageHeader, Spinner, StatusBadge, moveItem, toOrdering, useConfirm, useToast } from "../components/ui.jsx";
-import { MediaUploader } from "../components/MediaUploader.jsx";
+import { flattenTree } from "../../lib/folders.js";
+import { Empty, ErrorBox, IconBtn, Modal, PageHeader, Spinner, moveItem, toOrdering, useConfirm, useToast } from "../components/ui.jsx";
+import { FolderForm } from "../components/FolderForm.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
 
-function TopicForm({ initial, categoryId, count, onDone, onCancel }) {
-  const toast = useToast();
-  const [f, setF] = useState({ title: "", slug: "", intro: "", coverKey: "", status: "active", ...initial });
-  const [touched, setTouched] = useState(!!initial);
-  const [busy, setBusy] = useState(false);
-
-  async function submit(e) {
-    e.preventDefault(); setBusy(true);
-    const body = { title: f.title.trim(), slug: f.slug, intro: f.intro?.trim() || null, coverKey: f.coverKey || null, status: f.status };
-    try {
-      initial ? await adminApi.topics.update(initial.id, body) : await adminApi.topics.create({ ...body, categoryId, ordering: count });
-      toast("Topic saved"); onDone();
-    } catch (err) { toast(err.message, "error"); setBusy(false); }
-  }
-  return (
-    <form onSubmit={submit} className="space-y-3">
-      <Field label="Title *"><input className="a-input" dir="auto" required value={f.title} onChange={(e) => setF({ ...f, title: e.target.value, slug: touched ? f.slug : slugify(e.target.value) })} /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Slug *"><input className="a-input" required value={f.slug} onChange={(e) => { setTouched(true); setF({ ...f, slug: e.target.value }); }} /></Field>
-        <Field label="Status"><select className="a-input" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}><option value="active">Active</option><option value="archived">Archived</option></select></Field>
-      </div>
-      <Field label="Short introduction"><textarea className="a-input min-h-28" dir="auto" value={f.intro || ""} onChange={(e) => setF({ ...f, intro: e.target.value })} /></Field>
-      <div><span className="a-label">Cover image</span><MediaUploader value={f.coverKey} onChange={(coverKey) => setF({ ...f, coverKey })} label="Upload cover" /></div>
-      <div className="flex justify-end gap-2 pt-2"><button type="button" className="a-btn" onClick={onCancel}>Cancel</button><button className="a-btn-primary" disabled={busy}>{busy ? "Saving…" : "Save"}</button></div>
-    </form>
-  );
+/** Explains, in plain words, exactly what deleting will do. Nothing but the folder itself is removed. */
+function deleteMessage(impact) {
+  const where = impact.movesTo ? `“${impact.movesTo.title}” folder mein` : "category ke top level par (subfolders root folders ban jayenge, articles General Articles mein aa jayenge)";
+  const lines = [`“${impact.folder.title}” folder delete hoga. Is mein ke articles ya subfolders delete NAHI honge.`];
+  lines.push(impact.childFolders ? `• ${impact.childFolders} subfolder(s) ${where} move ho jayenge.` : "• Is mein koi subfolder nahi hai.");
+  lines.push(impact.articles ? `• ${impact.articles} article(s) ${where} move ho jayenge.` : "• Is mein koi article nahi hai.");
+  return lines.join("\n");
 }
 
 export default function Topics() {
   const toast = useToast();
   const [confirm, dialog] = useConfirm();
-  const [catId, setCatId] = useState("");
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState(null); // { initial?, categoryId?, parentId? }
   const cats = useAsync((s) => adminApi.categories.list({}, s), []);
-  const activeCat = catId || cats.data?.[0]?.id || "";
-  const { data, error, loading, reload, setData } = useAsync(async (s) => (activeCat ? (await adminApi.topics.list({ categoryId: activeCat }, s)).sort((a, b) => a.ordering - b.ordering) : []), [activeCat]);
+  const { data, error, loading, reload, setData } = useAsync(async (s) => {
+    const list = cats.data || [];
+    const rows = await Promise.all(list.map(async (c) => ({ category: c, topics: flattenTree(await adminApi.topics.list({ categoryId: c.id }, s)) })));
+    return rows;
+  }, [cats.data]);
 
-  async function move(i, to) {
-    const next = moveItem(data, i, to); setData(next);
-    try { await adminApi.topics.reorder(activeCat, toOrdering(next)); } catch (e) { toast(e.message, "error"); reload(); }
-  }
-  async function archive(t) {
-    if (!(await confirm({ title: "Archive topic", message: `“${t.title}” will be hidden from the public site.`, confirm: "Archive", danger: true }))) return;
-    try { await adminApi.topics.archive(t.id); toast("Archived"); reload(); } catch (e) { toast(e.message, "error"); }
+  async function move(catId, topics, index, to) {
+    const t = topics[index];
+    const siblings = topics.filter((x) => (x.parentId || "") === (t.parentId || ""));
+    const from = siblings.findIndex((x) => x.id === t.id);
+    const next = moveItem(siblings, from, to);
+    if (next === siblings) return;
+    try { await adminApi.topics.reorder(catId, toOrdering(next)); reload(); } catch (e) { toast(e.message, "error"); }
   }
 
+  async function remove(t) {
+    let impact;
+    try { impact = await adminApi.topics.impact(t.id); } catch (e) { return toast(e.message, "error"); }
+    if (!(await confirm({ title: "Folder delete karein?", message: <span className="whitespace-pre-line">{deleteMessage(impact)}</span>, confirm: "Delete folder", danger: true }))) return;
+    try {
+      const r = await adminApi.topics.remove(t.id);
+      toast(`Folder delete ho gaya (${r.movedFolders} subfolder, ${r.movedArticles} article safe move hue)`);
+      reload();
+    } catch (e) { toast(e.message, "error"); }
+  }
+
+  const activeCats = (cats.data || []).filter((c) => c.status === "active");
   return (
     <>
-      <PageHeader title="Topics" desc="Topics live inside a category.">
-        <select className="a-input !w-auto" value={activeCat} onChange={(e) => setCatId(e.target.value)} aria-label="Category">
-          {(cats.data || []).map((c) => <option key={c.id} value={c.id}>{c.name} ({c.type === "aqeedah" ? "Aqaid" : "Masail"})</option>)}
-        </select>
-        <button className="a-btn-primary" disabled={!activeCat} onClick={() => setEditing("new")}><Icon name="plus" size={15} />New topic</button>
+      <PageHeader title="Folders" desc="Section → folder → subfolders → articles. Folders articles se alag banaye ja sakte hain.">
+        <button className="a-btn-primary" disabled={!activeCats.length} onClick={() => setEditing({})}><Icon name="plus" size={15} />New folder</button>
       </PageHeader>
-      {cats.loading && !cats.data ? <Spinner /> : !cats.data?.length ? <Empty>Create a category first.</Empty> : loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : data.length === 0 ? <Empty>No topics in this category.</Empty> : (
-        <ul className="a-card divide-y divide-ad-rule">
-          {data.map((t, i) => (
-            <li key={t.id} className="flex min-h-[60px] flex-wrap items-center gap-3 px-3 py-2.5">
-              <div className="flex"><IconBtn icon="up" label="Move up" disabled={i === 0} onClick={() => move(i, i - 1)} /><IconBtn icon="down" label="Move down" disabled={i === data.length - 1} onClick={() => move(i, i + 1)} /></div>
-              <div className="min-w-0 flex-1"><p dir="auto" className="truncate text-sm font-medium">{t.title}</p><p className="text-xs text-ad-mute">/{t.slug}</p></div>
-              <StatusBadge status={t.status} />
-              <IconBtn icon="edit" label="Edit" onClick={() => setEditing(t)} />
-              {t.status !== "archived" && <IconBtn icon="trash" label="Archive" danger onClick={() => archive(t)} />}
-            </li>
+
+      {cats.loading && !cats.data ? <Spinner /> : !cats.data?.length ? <Empty>Create a category first.</Empty> : loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : (
+        <div className="space-y-6">
+          {(data || []).map(({ category: c, topics }) => (
+            <section key={c.id}>
+              <h2 className="mb-2 text-sm font-semibold text-ad-mute">{c.name} · {c.type === "aqeedah" ? "Aqaid" : "Masail"}</h2>
+              {topics.length === 0 ? <Empty>Is category mein abhi koi folder nahi.</Empty> : (
+                <ul className="a-card divide-y divide-ad-rule">
+                  {topics.map((t, i) => (
+                    <li key={t.id} className="flex min-h-[56px] flex-wrap items-center gap-2 px-3 py-2" style={{ paddingInlineStart: `${12 + t.depth * 22}px` }}>
+                      <div className="flex"><IconBtn icon="up" label="Move up" onClick={() => move(c.id, topics, i, -1)} /><IconBtn icon="down" label="Move down" onClick={() => move(c.id, topics, i, +1)} /></div>
+                      <Icon name="folder" size={16} className="shrink-0 text-ad-mute" />
+                      <div className="min-w-0 flex-1">
+                        <p dir="auto" className="truncate text-sm font-medium">{t.title}</p>
+                        <p className="truncate text-xs text-ad-mute">{t.path.join(" › ")}{t.status === "archived" ? " · hidden (purana archived — Delete karein ya Edit se wapas laayein)" : ""}</p>
+                      </div>
+                      <IconBtn icon="plus" label="Add subfolder" onClick={() => setEditing({ categoryId: c.id, parentId: t.id })} />
+                      <IconBtn icon="edit" label="Edit" onClick={() => setEditing({ initial: t })} />
+                      <IconBtn icon="trash" label="Delete" danger onClick={() => remove(t)} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           ))}
-        </ul>
+        </div>
       )}
-      {editing && <Modal wide title={editing === "new" ? "New topic" : "Edit topic"} onClose={() => setEditing(null)}><TopicForm initial={editing === "new" ? null : editing} categoryId={activeCat} count={data?.length || 0} onCancel={() => setEditing(null)} onDone={() => { setEditing(null); reload(); }} /></Modal>}
+      {editing && (
+        <Modal wide title={editing.initial ? "Edit folder" : editing.parentId ? "New subfolder" : "New folder"} onClose={() => setEditing(null)}>
+          <FolderForm initial={editing.initial} categories={activeCats} defaultCategoryId={editing.categoryId} defaultParentId={editing.parentId} onCancel={() => setEditing(null)} onDone={() => { setEditing(null); reload(); }} />
+        </Modal>
+      )}
       {dialog}
     </>
   );

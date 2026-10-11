@@ -7,7 +7,8 @@ import {
   listTopicsByCategory,
   findTopicById,
   updateTopic,
-  archiveTopic,
+  deleteTopic,
+  describeTopicDeletion,
   reorderTopics,
   toSafeTopic,
 } from "../services/db/topic.service.js";
@@ -37,7 +38,7 @@ export async function create(request, env) {
   return jsonSuccess({ topic: toSafeTopic(topic) }, { status: 201, allowedOrigin: config.allowedOrigin });
 }
 
-/** Requires ?categoryId=... — a topic listing only ever makes sense within a category. */
+/** Requires ?categoryId=... — a topic listing only ever makes sense within a category. Optional ?parentId=root|<id>. */
 export async function list(request, env) {
   const config = loadConfig(env);
   await requireAdmin(request, env);
@@ -49,7 +50,9 @@ export async function list(request, env) {
   }
 
   const status = url.searchParams.get("status") || undefined;
-  const topics = await listTopicsByCategory(config, categoryId, { status });
+  const parentId = url.searchParams.get("parentId") || undefined;
+  if (parentId && parentId !== "root" && !isValidObjectIdString(parentId)) throwInvalidInput("parentId must be \"root\" or a valid id.");
+  const topics = await listTopicsByCategory(config, categoryId, { status, parentId });
   return jsonSuccess({ topics: topics.map(toSafeTopic) }, { allowedOrigin: config.allowedOrigin });
 }
 
@@ -74,12 +77,26 @@ export async function update(request, env, ctx, params) {
   return jsonSuccess({ topic: toSafeTopic(topic) }, { allowedOrigin: config.allowedOrigin });
 }
 
-export async function archive(request, env, ctx, params) {
+/** GET /api/admin/topics/:id/impact — what a delete would do (shown in the confirmation dialog). */
+export async function impact(request, env, ctx, params) {
   const config = loadConfig(env);
   await requireAdmin(request, env);
 
-  const topic = await archiveTopic(config, params.id);
-  return jsonSuccess({ topic: toSafeTopic(topic) }, { allowedOrigin: config.allowedOrigin });
+  const result = await describeTopicDeletion(config, params.id);
+  return jsonSuccess({ impact: result }, { allowedOrigin: config.allowedOrigin });
+}
+
+/**
+ * DELETE /api/admin/topics/:id
+ * Removes only the folder record. Its subfolders and articles are moved up to its parent folder
+ * (or the category's top level) first - see deleteTopic().
+ */
+export async function remove(request, env, ctx, params) {
+  const config = loadConfig(env);
+  await requireAdmin(request, env);
+
+  const result = await deleteTopic(config, params.id);
+  return jsonSuccess(result, { allowedOrigin: config.allowedOrigin });
 }
 
 /** Body: { categoryId, items: [{ id, ordering }] } — scoped to one category. */

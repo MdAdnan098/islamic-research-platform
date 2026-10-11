@@ -25,13 +25,15 @@ export const adminApi = {
   },
   topics: {
     ...crud("/api/admin/topics", "topics", "topic"),
-    archive: (id) => request(`/api/admin/topics/${id}/archive`, json("POST", {})).then((d) => d.topic),
+    impact: (id, signal) => request(`/api/admin/topics/${id}/impact`, { signal }).then((d) => d.impact),
+    remove: (id) => request(`/api/admin/topics/${id}`, { method: "DELETE" }),
     reorder: (categoryId, items) => request("/api/admin/topics/reorder", json("POST", { categoryId, items })),
   },
   articles: {
     ...crud("/api/admin/articles", "articles", "article"),
     remove: (id) => request(`/api/admin/articles/${id}`, { method: "DELETE" }),
     removeAll: () => request("/api/admin/articles", { method: "DELETE" }),
+    highlights: (id, body) => request(`/api/admin/articles/${id}/highlights`, json("PATCH", body)).then((d) => d.article),
     action: (id, name) => request(`/api/admin/articles/${id}/${name}`, json("POST", {})).then((d) => d.article), // publish | unpublish | archive
   },
   references: {

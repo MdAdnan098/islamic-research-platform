@@ -3,12 +3,22 @@ import { useI18n } from "../../i18n/index.jsx";
 import { mediaUrl } from "../../lib/media.js";
 import { scriptOf } from "../../lib/script.js";
 import { pickVersion } from "../../lib/versions.js";
-import { Text } from "../ui/Text.jsx";
+import { Text, cleanText } from "../ui/Text.jsx";
+import { rangesOf, shownLang, sliceRanges, splitByRanges, splitParagraphs } from "../../lib/highlights.js";
 import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
 
-function Quote({ b, text }) {
+/** Text with its saved highlights as <mark> elements (plain string when there are none). Offsets are relative to `text`. */
+function marked(text, ranges) {
+  if (!ranges?.length) return text;
+  return splitByRanges(text, ranges).map((p, i) => (p.marked ? <mark key={i} className="hl-mark">{p.text}</mark> : p.text));
+}
+
+/** Only in highlight-editing mode: lets the admin toolbar map a selection back to (block, version, offset). */
+const hlAttrs = (on, b, lang, start = 0) => (on && b.id ? { "data-hl-block": b.id, "data-hl-lang": lang, "data-hl-start": start } : {});
+
+function Quote({ b, text, ranges, attrs }) {
   const { t } = useI18n();
   const sacred = b.kind === "ayat" || b.kind === "hadith";
   const s = scriptOf(b.text);
@@ -21,7 +31,7 @@ function Quote({ b, text }) {
       <span aria-hidden="true" className={`${mark} left-4 top-1 sm:left-6`}>&ldquo;</span>
       <span aria-hidden="true" className={`${mark} bottom-[-1.9rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
       {sacred && <p className="eyebrow relative mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
-      <Text as="blockquote" force={big ? s : undefined} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.1rem] sm:text-[1.4rem]" : "sacred-arabic text-[1.55rem] sm:text-[2rem]") : `font-display text-[0.85rem] leading-[1.8] sm:text-base lg:text-lg ${slant}`}`}>{text}</Text>
+      <Text as="blockquote" src={text} force={big ? s : undefined} {...attrs} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.1rem] sm:text-[1.4rem]" : "sacred-arabic text-[1.55rem] sm:text-[2rem]") : `font-display text-[0.85rem] leading-[1.8] sm:text-base lg:text-lg ${slant}`}`}>{marked(cleanText(text), ranges)}</Text>
       {b.source && <Text as="figcaption" className="relative mt-3 text-xs text-bronze sm:text-sm">— {b.source}</Text>}
     </figure>
   );
@@ -70,7 +80,7 @@ function Pdf({ b }) {
   );
 }
 
-export function BlockRenderer({ blocks = [], references = [], baseLang = "ur" }) {
+export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", hlEdit = false }) {
   const { contentLang } = useI18n();
   const txt = (b) => (b.kind === "ayat" || b.kind === "hadith" ? b.text : pickVersion(b.text, b.tr, baseLang, contentLang));
   const refMap = Object.fromEntries(references.map((r) => [r.id, r]));
@@ -78,19 +88,28 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur" })
     <div className="reading">
       {blocks.map((b, i) => {
         const key = b.id || i;
+        const lang = shownLang(b, baseLang, contentLang); // which script version is on screen = which highlight set applies
+        const ranges = rangesOf(b, lang);
         switch (b.type) {
-          case "heading":
+          case "heading": {
+            const text = cleanText(txt(b));
+            const attrs = hlAttrs(hlEdit, b, lang);
             return b.level === 3
-              ? <Text key={key} as="h3" className="mb-3 mt-10 font-display text-xl font-semibold sm:text-2xl">{txt(b)}</Text>
-              : <Text key={key} as="h2" className="mb-4 mt-14 border-t border-rule pt-8 font-display text-2xl font-semibold sm:text-3xl">{txt(b)}</Text>;
+              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-10 font-display text-xl font-semibold sm:text-2xl">{marked(text, ranges)}</Text>
+              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-8 font-display text-2xl font-semibold sm:text-3xl">{marked(text, ranges)}</Text>;
+          }
           case "text":
             return (
               <div key={key} className="my-5">
-                {String(txt(b) || "").split(/\n{2,}/).filter(Boolean).map((p, j) => <Text key={j} as="p" className="whitespace-pre-line">{p}</Text>)}
+                {splitParagraphs(cleanText(txt(b))).map((seg, j) => (
+                  <Text key={j} as="p" src={seg.text} {...hlAttrs(hlEdit, b, lang, seg.start)} className="whitespace-pre-line">
+                    {marked(seg.text, sliceRanges(ranges, seg.start, seg.start + seg.text.length))}
+                  </Text>
+                ))}
               </div>
             );
           case "quote":
-            return <Quote key={key} b={b} text={txt(b)} />;
+            return <Quote key={key} b={b} text={txt(b)} ranges={ranges} attrs={hlAttrs(hlEdit, b, lang)} />;
           case "reference":
             return refMap[b.referenceId] ? <ReferenceCard key={key} reference={refMap[b.referenceId]} /> : null;
           case "image":

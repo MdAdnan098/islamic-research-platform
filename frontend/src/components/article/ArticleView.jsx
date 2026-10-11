@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
 import { formatDate } from "../../lib/format.js";
@@ -7,6 +7,9 @@ import { useMeta } from "../../lib/useMeta.js";
 import { Text } from "../ui/Text.jsx";
 import { BlockRenderer } from "./BlockRenderer.jsx";
 import { pickVersion } from "../../lib/versions.js";
+
+// Admin-only: loaded on demand, so public visitors never download the highlight toolbar.
+const HighlightToolbar = lazy(() => import("../../admin/components/HighlightToolbar.jsx"));
 
 function ReadingProgress() {
   const [p, setP] = useState(0);
@@ -23,7 +26,8 @@ function ReadingProgress() {
 }
 
 /** Shared by the public article page and the admin preview. */
-export function ArticleView({ article, references, crumbs = [], banner, sectionBase }) {
+export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor }) {
+  const bodyRef = useRef(null);
   const { t, contentLang } = useI18n();
   const title = pickVersion(article.title, article.titleTr, article.language, contentLang);
   const cover = mediaUrl(article.coverKey);
@@ -51,7 +55,14 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
         {article.excerpt && <Text as="p" className="mt-5 text-lg text-mute">{article.excerpt}</Text>}
       </header>
       {cover && <div className="container-page max-w-4xl"><img src={cover} alt="" className="w-full rounded-xl border border-rule" /></div>}
-      <div className="container-article pb-6 pt-4"><BlockRenderer blocks={article.blocks} references={references} baseLang={article.language} /></div>
+      <div ref={bodyRef} className={`container-article pb-6 pt-4 ${editor?.enabled ? "hl-editing" : ""}`}>
+        <BlockRenderer blocks={article.blocks} references={references} baseLang={article.language} hlEdit={!!editor?.enabled} />
+      </div>
+      {editor?.enabled && (
+        <Suspense fallback={null}>
+          <HighlightToolbar containerRef={bodyRef} blocks={article.blocks} onApply={editor.onApply} />
+        </Suspense>
+      )}
     </article>
   );
 }

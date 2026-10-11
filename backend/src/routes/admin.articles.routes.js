@@ -5,6 +5,7 @@ export const routes = [
   ["POST", "/api/admin/articles", articleController.create],
   ["GET", "/api/admin/articles/:id", articleController.getOne],
   ["PATCH", "/api/admin/articles/:id", articleController.update],
+  ["PATCH", "/api/admin/articles/:id/highlights", articleController.highlights],
   ["DELETE", "/api/admin/articles/:id", articleController.remove],
   ["DELETE", "/api/admin/articles", articleController.removeAll],
   ["POST", "/api/admin/articles/:id/archive", articleController.archive],

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BLOCK_META, newBlock } from "../../lib/blocks.js";
+import { withTextEdit } from "../../lib/highlights.js";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { Icon } from "../../components/ui/icons.jsx";
@@ -148,8 +149,14 @@ function AddMenu({ onAdd, label = "Add block" }) {
   );
 }
 
-export function BlockEditor({ blocks, onChange }) {
-  const patch = (i, p) => onChange(blocks.map((b, j) => (j === i ? { ...b, ...p } : b)));
+export function BlockEditor({ blocks, onChange, baseLang }) {
+  // Editing a block's text keeps its highlights attached to the same words (see lib/highlights.js remapRanges).
+  const patch = (i, p) => onChange(blocks.map((b, j) => {
+    if (j !== i) return b;
+    const { text, ...rest } = p;
+    const next = text !== undefined ? withTextEdit(b, baseLang, text) : b;
+    return { ...next, ...rest };
+  }));
   const insert = (at, type) => onChange([...blocks.slice(0, at), newBlock(type), ...blocks.slice(at)]);
 
   return (

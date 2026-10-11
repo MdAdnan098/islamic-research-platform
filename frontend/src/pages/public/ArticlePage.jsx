@@ -2,25 +2,24 @@ import { useParams } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
 import { SECTION_PATH, publicApi } from "../../services/public.js";
 import { useAsync } from "../../lib/useAsync.js";
+import { useState } from "react";
+import { saveHighlights, useIsAdmin } from "../../lib/adminHint.js";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { Skeleton, ErrorState, NotFoundState } from "../../components/ui/feedback.jsx";
 
 export default function ArticlePage() {
   const { slug } = useParams();
+  const isAdmin = useIsAdmin();
+  const [editing, setEditing] = useState(false);
   const { t } = useI18n();
-  const { data, error, loading, reload } = useAsync(async (signal) => {
-    const { article, references } = await publicApi.article(slug, signal);
-    const [cats, topics] = await Promise.all([
-      publicApi.categories(signal).catch(() => []),
-      article.topicId ? publicApi.topics(article.categoryId, signal).catch(() => []) : [],
-    ]);
-    const category = cats.find((c) => c.id === article.categoryId);
-    const topic = topics.find((x) => x.id === article.topicId);
-    const base = category ? `/${SECTION_PATH[category.type] || "aqaid"}` : null;
+  const { data, error, loading, reload, setData } = useAsync(async (signal) => {
+    const { article, references, trail } = await publicApi.article(slug, signal);
+    const section = trail?.section ? SECTION_PATH[trail.section] || "aqaid" : null;
+    const base = section ? `/${section}` : null;
     const crumbs = [
       { label: t.nav.home, to: "/" },
-      category && { label: category.type === "aqeedah" ? t.nav.aqaid : t.nav.masail, to: base },
-      topic && base && { label: topic.title, to: `${base}/${topic.slug}` },
+      base && { label: section === "aqaid" ? t.nav.aqaid : t.nav.masail, to: base },
+      ...((base && trail?.folders) || []).map((f) => ({ label: f.title, to: `${base}/${f.slug}` })),
     ].filter(Boolean);
     return { article, references, crumbs, sectionBase: base ? base.slice(1) : null };
   }, [slug]);
@@ -31,5 +30,26 @@ export default function ArticlePage() {
   if (error && !data) {
     return error.status === 404 ? <NotFoundState message={t.article.notFound} /> : <div className="container-read py-16"><ErrorState error={error} onRetry={reload} /></div>;
   }
-  return <ArticleView {...data} />;
+  const editor = isAdmin && editing ? {
+    enabled: true,
+    onApply: async (edits) => {
+      const saved = await saveHighlights(data.article, edits);
+      setData((d) => ({ ...d, article: { ...d.article, blocks: saved.blocks, updatedAt: saved.updatedAt } }));
+    },
+  } : undefined;
+  const missingIds = (data.article.blocks || []).some((b) => ["heading", "text", "quote"].includes(b.type) && !b.id);
+  return (
+    <>
+      <ArticleView {...data} editor={editor} />
+      {isAdmin && (
+        <div dir="ltr" className="fixed bottom-4 start-4 z-[60] flex max-w-[80vw] flex-col gap-1 rounded-xl border border-rule bg-paper px-3 py-2 text-xs text-ink shadow-elev">
+          <button type="button" aria-pressed={editing} onClick={() => setEditing((v) => !v)} className="font-semibold">
+            Admin · Highlight mode: {editing ? "ON" : "OFF"}
+          </button>
+          {editing && missingIds && <span className="text-mute">Is article ko ek baar editor mein kholkar Save karein, tab highlight chalega.</span>}
+          {editing && !missingIds && <span className="text-mute">Text select karein, phir Highlight dabayein.</span>}
+        </div>
+      )}
+    </>
+  );
 }
