@@ -30,14 +30,17 @@ export default function Login() {
     );
   }
 
-  const enter = (e) => { if (e.key === "Enter" && e.isTrusted && !e.nativeEvent.isComposing) submit(e); };
+  const lastInput = useRef(0);
+  const typed = (key) => (e) => { lastInput.current = Date.now(); setF((s) => ({ ...s, [key]: e.target.value })); };
 
-  // Signs in ONLY on a real user action: a trusted click on "Sign in", or a trusted Enter key press in a field.
+  // Signs in ONLY when the admin presses the "Sign in" button (no Enter-key or form submit).
   // Browser autofill / password-manager "auto sign-in" submit the form or click the button programmatically
   // (untrusted events) - those are ignored, so autofill fills the fields but never logs in by itself.
   async function submit(e) {
     e.preventDefault();
     if (!e.isTrusted) return;
+    // A click right after the fields changed is the browser's autofill auto-submitting, not the admin.
+    if (Date.now() - lastInput.current < 800) return toast("Details bhar gayi hain. Ab Sign in button dabayein.");
     if (inFlight.current) return; // one request at a time, even on a double click / double Enter
     inFlight.current = true;
     setBusy(true);
@@ -50,11 +53,11 @@ export default function Login() {
     <AdminShell><HomeLink /><div className="grid min-h-screen place-items-center p-4">
       <form onSubmit={(e) => e.preventDefault()} className="a-card w-full max-w-sm space-y-4 p-7">
         <div className="flex flex-col items-center gap-2 pb-2"><LogoMark size={46} /><h1 className="text-xl font-bold">Admin sign in</h1><p className="text-xs text-ad-mute">AthariTV content management</p></div>
-        <div><label className="a-label" htmlFor="un">Username</label><input id="un" type="text" autoComplete="username" autoCapitalize="none" required className="a-input" value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} onKeyDown={enter} /></div>
+        <div><label className="a-label" htmlFor="un">Username</label><input id="un" type="text" autoComplete="username" autoCapitalize="none" required className="a-input" value={f.username} onChange={typed("username")} /></div>
         <div>
           <label className="a-label" htmlFor="pw">Password</label>
           <div className="relative">
-            <input id="pw" type={showPw ? "text" : "password"} autoComplete="current-password" required className="a-input !pr-10" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} onKeyDown={enter} />
+            <input id="pw" type={showPw ? "text" : "password"} autoComplete="current-password" required className="a-input !pr-10" value={f.password} onChange={typed("password")} />
             <button type="button" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? "Hide password" : "Show password"} aria-pressed={showPw} title={showPw ? "Hide" : "Show"} className="absolute inset-y-0 right-0 grid w-10 place-items-center text-ad-mute hover:text-ad-ink"><Icon name={showPw ? "eyeOff" : "eye"} size={16} /></button>
           </div>
         </div>
