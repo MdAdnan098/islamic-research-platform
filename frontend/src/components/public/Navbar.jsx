@@ -45,14 +45,14 @@ export function Navbar() {
 
   return (
     <header ref={header} className="sticky top-0 z-40 border-b border-rule bg-paper">
-      <div className="container-page flex h-16 items-center justify-between gap-2">
-        <Link to="/" aria-label="AthariTV" className="min-w-0"><Logo size={38} /></Link>
+      <div className="container-page flex h-16 items-center justify-between gap-3">
+        <Link to="/" aria-label="AthariTV" className="min-w-0 flex-1 overflow-hidden pe-3 md:flex-none"><Logo size={38} /></Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
           {links.map((l) => <NavLink key={l.to} {...l} className={linkCls}>{l.label}</NavLink>)}
         </nav>
 
-        <div className="-me-1.5 flex shrink-0 items-center gap-1.5">
+        <div className="-me-1.5 flex shrink-0 items-center gap-2.5">
           <Link to="/search" aria-label={t.search.open} title={t.search.title} className="grid h-10 w-10 place-items-center rounded-full text-ink transition-colors hover:bg-tint"><Icon name="search" size={21} /></Link>
           <ThemeSwitcher compact />
           <LanguageDropdown />
