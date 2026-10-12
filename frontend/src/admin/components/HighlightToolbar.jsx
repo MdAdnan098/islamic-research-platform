@@ -75,7 +75,9 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     return { anyMarked: acc.anyMarked || own.some((x) => overlaps(r, x)), allMarked: acc.allMarked && own.every((x) => covered(r, x)) };
   }, { anyMarked: false, allMarked: true });
   // Some block of the selection has versions whose line count differs: highlight then stays in this script only.
-  const unsynced = sel.pieces.some((p) => unitMap(blocksRef.current.find((x) => x.id === p.blockId), baseLang)?.aligned === false);
+  const unsyncedMap = sel.pieces.map((p) => unitMap(blocksRef.current.find((x) => x.id === p.blockId), baseLang)).find((m) => m?.aligned === false);
+  const NAMES = { en: "Roman", hi: "Hindi", ur: "Urdu" };
+  const unsynced = unsyncedMap ? Object.entries(unsyncedMap.counts).map(([l, n]) => `${NAMES[l]} ${n}`).join(", ") : "";
 
   async function run(mode) {
     const edits = new Map();
@@ -114,7 +116,7 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
         {state.anyMarked && <button type="button" disabled={busy} onClick={() => run("remove")} className={`${btn} border border-rule bg-card`}>Remove highlight</button>}
         <button type="button" aria-label="Close" onClick={() => { window.getSelection()?.removeAllRanges(); setSel(null); }} className="grid h-9 w-9 place-items-center rounded-full text-mute hover:bg-tint">✕</button>
       </div>
-      {unsynced && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">Is hisse ki lines teeno zabaan mein barabar nahi, isliye highlight sirf isi zabaan mein lagega.</p>}
+      {unsynced && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">Lines teeno zabaan mein barabar nahi ({unsynced}), isliye highlight sirf isi zabaan mein lagega.</p>}
       {error && <p role="alert" className="max-w-xs px-2 pb-1 text-center text-xs text-red-600">{error}</p>}
     </div>
   );

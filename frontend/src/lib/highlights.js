@@ -186,11 +186,12 @@ export function cleanBlocksHl(blocks, baseLang) {
 export const SYNC_LANGS = ["en", "hi", "ur"];
 const UNIT_RE = /[^\n.!?।۔؟]*[.!?।۔؟]+["'”’)»\]]*|[^\n.!?।۔؟]+/g;
 
-/** [[start, end], ...] of every sentence/line of `str` (whitespace trimmed, empty pieces skipped). */
-export function splitUnits(str) {
+/** [[start, end], ...] of every piece of `str`: level "sentence" (default), "line" (one per line break) or "para" (one per blank-line paragraph). */
+export function splitUnits(str, level = "sentence") {
   const text = String(str || "");
   const out = [];
-  for (const m of text.matchAll(UNIT_RE)) {
+  const re = level === "sentence" ? UNIT_RE : level === "line" ? /[^\n]+/g : /[^\n](?:[^\n]|\n(?!\n))*/g;
+  for (const m of text.matchAll(re)) {
     const r = trimRange(text, m.index, m.index + m[0].length);
     if (r && /[\p{L}\p{N}]/u.test(text.slice(r[0], r[1]))) out.push(r);
   }
@@ -198,19 +199,34 @@ export function splitUnits(str) {
 }
 
 const versionString = (b, baseLang, lang) => (lang === baseLang ? b.text : b.tr?.[lang]) || "";
+const LEVELS = ["sentence", "line", "para"];
 
-/** { aligned, versions: { en?: units, hi?: units, ur?: units } } - or null when there is nothing to sync (sacred text, < 2 versions). */
+/**
+ * { aligned, level, versions: { en?: units, ... }, counts: { en?: n, ... } } - or null when there is nothing to sync
+ * (sacred text, < 2 versions). Versions are compared by sentence first; if their sentence counts differ (a converter
+ * adds or drops a full stop) by line, then by paragraph - the finest level at which ALL versions have the same count.
+ * When none fits, `aligned` is false and `counts` are the line counts (shown to the admin).
+ */
 export function unitMap(b, baseLang) {
   if (!isHighlightable(b) || isSacred(b) || !baseLang) return null;
-  const versions = {};
+  const texts = {};
   for (const lang of SYNC_LANGS) {
     const s = versionString(b, baseLang, lang);
-    if (typeof s === "string" && s.trim()) versions[lang] = splitUnits(s);
+    if (typeof s === "string" && s.trim()) texts[lang] = s;
   }
-  const langs = Object.keys(versions);
+  const langs = Object.keys(texts);
   if (langs.length < 2) return null;
-  const n = versions[langs[0]].length;
-  return { aligned: n > 0 && langs.every((l) => versions[l].length === n), versions };
+  const at = (level) => Object.fromEntries(langs.map((l) => [l, splitUnits(texts[l], level)]));
+  for (const level of LEVELS) {
+    const versions = at(level);
+    const n = versions[langs[0]].length;
+    // a lone line / paragraph would highlight the whole block, which is never what "same line" means - so those levels need 2+
+    if (n > (level === "sentence" ? 0 : 1) && langs.every((l) => versions[l].length === n)) {
+      return { aligned: true, level, versions, counts: Object.fromEntries(langs.map((l) => [l, n])) };
+    }
+  }
+  const lines = at("line");
+  return { aligned: false, level: "line", versions: lines, counts: Object.fromEntries(langs.map((l) => [l, lines[l].length])) };
 }
 
 /**

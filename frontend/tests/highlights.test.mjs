@@ -45,3 +45,15 @@ test("same-line sync across scripts", () => {
   const marked = { ...b, tr: { ur: b.tr.ur }, hl: { en: [[0, 11]] } };
   assert.deepEqual(h.inheritMarks(marked, "en", "ur").hl.ur, [[0, 9]]);
 });
+
+test("sync falls back to lines when sentence counts differ", () => {
+  // Roman has no full stops, Hindi converter added them: sentence counts differ (1 vs 2) but lines match.
+  const b = { id: "x", type: "text", text: "Pehli line\nDoosri line", tr: { hi: "पहली लाइन। दूसरी\nलाइन।\nतीसरी" } };
+  assert.equal(h.unitMap(b, "en").aligned, false);
+  const c = { id: "x", type: "text", text: "Pehli line\nDoosri line", tr: { hi: "पहली लाइन। दूसरी\nलाइन" } };
+  const m = h.unitMap(c, "en");
+  assert.equal(m.aligned, true);
+  assert.equal(m.level, "line");
+  const sp = h.syncSpans(c, "en", "en", [0, 4]);
+  assert.deepEqual(sp.find((x) => x.lang === "hi").range, [0, 16]);
+});
