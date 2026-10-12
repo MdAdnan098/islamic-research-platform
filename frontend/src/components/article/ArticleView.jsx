@@ -7,7 +7,6 @@ import { useMeta } from "../../lib/useMeta.js";
 import { Text } from "../ui/Text.jsx";
 import { BlockRenderer } from "./BlockRenderer.jsx";
 import { pickVersion } from "../../lib/versions.js";
-import { isRtl, scriptOf } from "../../lib/script.js";
 import { ArticleLanguage } from "../public/Controls.jsx";
 
 // Admin-only: loaded on demand, so public visitors never download the highlight toolbar.
@@ -53,8 +52,8 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
           ) : <span />}
           <span className="ms-auto shrink-0">{formatDate(article.publishedAt || article.createdAt)}</span>
         </div>
-        {/* dir follows the heading's script, so the picker sits right above where the heading starts (left for Roman/Hindi, right for Urdu). */}
-        <div dir={isRtl(scriptOf(title)) ? "rtl" : "ltr"} className="mb-3"><ArticleLanguage /></div>
+        {/* Always pinned to the left, above the heading, whatever the script of the post is. */}
+        <div dir="ltr" className="mb-3 flex justify-start"><ArticleLanguage /></div>
         <Text as="h1" className="font-display text-3xl font-semibold leading-[1.25] sm:text-5xl">{title}</Text>
         {article.excerpt && <Text as="p" className="mt-5 text-lg text-mute">{article.excerpt}</Text>}
       </header>

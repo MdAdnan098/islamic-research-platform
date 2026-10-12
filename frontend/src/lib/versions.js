@@ -40,6 +40,7 @@ export function buildCopyText(lang, title, blocks) {
     "3. Jitni lines aur jitne jumle original mein hain, convert karne ke baad bhi utne hi hon. Do jumlon ko milana nahi hai aur ek jumle ko todna nahi hai.",
     "4. Line breaks aur khali lines bilkul waise hi rakho jaise original mein hain.",
     "5. Har jumle ke aakhir mein usi zabaan ka full stop lagao (Roman mein . / Hindi mein । / Urdu mein ۔), jahan original mein hai.",
+    "6. Ye TARJUMA nahi, sirf SCRIPT badalni hai: jo lafz original mein likha hai wahi lafz doosri script mein likho. Shuddh (Sanskrit wali) Hindi ya mushkil lafz bilkul istemal mat karo, kyunki padhne wale Musalman hain. Misal: original mein \"alfaaz\" ho to Hindi mein \"अल्फ़ाज़\" aur Urdu mein \"الفاظ\" likho, \"शब्द\" nahi. Isi tarah \"natija\" ko \"परिणाम\", \"dua\" ko \"प्रार्थना\", \"waseela\" ko \"माध्यम\" ya \"ashirwad\" jaise lafzon se mat badlo. Aam bol-chaal ke Urdu lafz hi rakho.",
     "",
   ];
   if (title.trim()) parts.push("[0]", title.trim(), "");
