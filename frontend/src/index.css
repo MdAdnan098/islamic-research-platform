@@ -197,6 +197,14 @@
     .script-arabic.home-arabic, .script-arabic.sacred-arabic { line-height: 2.4 !important; }
   }
 
+  /* Home Ayat / Hadith cards: compact premium sizing (tighter line-height than the generic sacred text) */
+  .home-quote .script-arabic.home-arabic { line-height: 1.95 !important; word-spacing: .06em; }
+  .home-quote .script-urdu.home-urdu { line-height: 2.05 !important; }
+  .script-urdu.quote-source { line-height: 1.9 !important; }
+  /* Aqaid / Masail card Arabic title */
+  .cat-arabic { font-size: 2rem; line-height: 1.5; }
+  @media (min-width: 640px) { .cat-arabic { font-size: 2.6rem; } }
+
   /* Phones: smaller, cleaner body text (Arabic / Urdu runs stay a little larger so they remain readable) */
   .reading { font-size: .9rem; }
   .reading .script-latin { line-height: 1.85; }

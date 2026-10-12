@@ -25,11 +25,13 @@ function HeroCalligraphy() {
 
 function QuoteCard({ label, item }) {
   return (
-    <figure className="home-quote card-lift flex h-full flex-col items-center rounded-2xl border border-rule bg-soft px-6 py-9 text-center sm:px-8 sm:py-10">
-      <figcaption className="quote-pill rounded-full bg-card px-4 py-1 text-sm font-semibold text-accent">{label}</figcaption>
-      <Text as="blockquote" force="arabic" className="home-arabic mt-6 text-[1.75rem] sm:text-[2.15rem]">{item.text}</Text>
-      <Text as="p" className="home-urdu mt-4 max-w-3xl text-[1.2rem] text-ink sm:text-xl">{item.translation}</Text>
-      <Text as="p" className="quote-pill-gold home-urdu mt-auto rounded-full bg-card px-4 py-1.5 text-base font-medium text-accent [margin-top:1.5rem]">{item.source}</Text>
+    <figure className="home-quote card-lift flex h-full flex-col items-center rounded-2xl border border-rule bg-soft px-3 py-5 text-center sm:px-8 sm:py-9">
+      <figcaption className="quote-pill rounded-full bg-card px-3.5 py-0.5 text-xs font-semibold text-accent sm:px-4 sm:py-1 sm:text-sm">{label}</figcaption>
+      <Text as="blockquote" force="arabic" className="home-arabic mt-3 text-[1.6rem] sm:mt-5 sm:text-[2.1rem]">{item.text}</Text>
+      <Text as="p" className="home-urdu mt-2 max-w-3xl text-[0.92rem] text-mute sm:mt-3 sm:text-[1.05rem]">{item.translation}</Text>
+      <div className="mt-auto pt-4 sm:pt-5">
+        <Text as="p" className="quote-pill-gold quote-source rounded-full bg-card px-3.5 py-0.5 text-[0.8rem] font-medium text-accent sm:px-4 sm:py-1 sm:text-sm">{item.source}</Text>
+      </div>
     </figure>
   );
 }
@@ -67,20 +69,23 @@ export default function Home() {
       </section>
 
       <section className="border-b border-rule">
-       <div className="container-page py-14 sm:py-20">
-        <Text as="p" force="arabic" className="home-arabic mb-8 text-center text-[2rem] text-ink sm:text-[2.6rem]">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
-        <div className="mx-auto grid max-w-5xl items-stretch gap-5 lg:grid-cols-2">
+       <div className="mx-auto w-full max-w-6xl px-2 py-10 sm:px-8 sm:py-20">
+        <Text as="p" force="arabic" className="home-arabic mb-6 text-center text-[2rem] text-ink sm:mb-8 sm:text-[2.6rem]">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
+        <div className="mx-auto grid max-w-5xl items-stretch gap-4 sm:gap-5 lg:grid-cols-2">
           <QuoteCard label={t.home.ayat} item={FEATURED.ayat} />
           <QuoteCard label={t.home.hadith} item={FEATURED.hadith} />
         </div>
       </div>
       </section>
 
-      <section className="container-page pb-4 pt-14 sm:pt-20">
-        <SectionHeading eyebrow={t.home.sections} title={`${t.nav.aqaid} & ${t.nav.masail}`} />
-        <div className="mt-8 grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-2">
-          <CategoryCard to="/aqaid" title="Aqeedah & Manhaj" subtitle="عقیدہ و منہج" />
-          <CategoryCard to="/masail" title="Fiqhi Masail" subtitle="فقہی مسائل" />
+      <section className="pb-4 pt-14 sm:pt-20">
+        <div className="container-page">
+          <SectionHeading eyebrow={t.home.sections} title={`${t.nav.aqaid} & ${t.nav.masail}`} />
+        </div>
+        {/* Always two cards side by side (Aqaid first, then Masail) — phone gap ~8px at the sides, ~16px between */}
+        <div className="mx-auto mt-6 grid w-full max-w-[36rem] grid-cols-2 gap-4 px-2 sm:mt-8 sm:px-0">
+          <CategoryCard to="/aqaid" arabic="عقائد" title="Aqaid" color="#F5B000" />
+          <CategoryCard to="/masail" arabic="مسائل" title="Masail" color="#C0492F" />
         </div>
       </section>
 

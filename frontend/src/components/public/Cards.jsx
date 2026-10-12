@@ -65,13 +65,30 @@ export function FolderTile({ folder, to }) {
   );
 }
 
-/** Home page category card (Aqeedah & Manhaj / Fiqhi Masail): English title, small Urdu line beneath. */
-export function CategoryCard({ to, title, subtitle }) {
+/** One corner flourish. Drawn for the top-left corner; the other three corners mirror it with CSS flips. */
+function CornerOrnament({ className = "" }) {
   return (
-    <Link to={to} className="cat-card card-lift group flex min-h-[7.5rem] flex-col items-center justify-center rounded-2xl border border-rule bg-card px-6 py-6 text-center sm:min-h-[9.5rem] sm:px-8 sm:py-8">
-      <h3 className="font-display text-[1.1rem] font-bold leading-tight text-accent sm:text-[1.75rem]">{title}</h3>
-      <span aria-hidden="true" className="mt-2 h-0.5 w-8 rounded-full bg-accent/40 transition-all duration-300 group-hover:w-14 sm:mt-3 sm:w-10" />
-      {subtitle && <Text as="p" force="urdu" className="mt-2 text-sm text-mute sm:mt-3 sm:text-base">{subtitle}</Text>}
+    <svg aria-hidden="true" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" className={`pointer-events-none absolute h-[13%] w-auto min-h-5 text-[#9b9b9b] ${className}`} style={{ aspectRatio: "1 / 1" }}>
+      <path d="M3 45V19M3 3h26" />
+      <path d="M3 3c0 8 6 13 13 13 6 0 10-4 10-8.5S22 3 18.5 5.5 14.5 12 19 12.5" />
+      <path d="M9 24c0 6 4 9 8 9" />
+      <path d="M24 9c5 0 8 3 8 7" />
+      <circle cx="9" cy="9" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/** Home page card for Aqaid / Masail: coloured Arabic title on top, English title below, flourish in all four corners.
+ *  Same proportions, shadow and corner design as the reference app cards; two fit side by side on a phone. */
+export function CategoryCard({ to, arabic, title, color }) {
+  return (
+    <Link to={to} className="cat-card card-lift group relative flex aspect-[494/366] min-w-0 flex-col items-center justify-center rounded-md border border-rule bg-card px-3 text-center shadow-[0_2px_8px_rgb(0_0_0/0.16)]">
+      <CornerOrnament className="start-1.5 top-1.5" />
+      <CornerOrnament className="end-1.5 top-1.5 -scale-x-100" />
+      <CornerOrnament className="bottom-1.5 start-1.5 -scale-y-100" />
+      <CornerOrnament className="bottom-1.5 end-1.5 -scale-100" />
+      <span dir="rtl" lang="ar" className="cat-arabic font-bold" style={{ color, fontFamily: "'Aref Ruqaa', 'FS Urdu', 'FS Arabic', serif" }}>{arabic}</span>
+      <span className="mt-1 font-sans text-[1.05rem] font-medium leading-tight text-ink sm:mt-2 sm:text-xl">{title}</span>
     </Link>
   );
 }
