@@ -251,6 +251,23 @@
   .a-card { @apply rounded-2xl border border-ad-rule bg-ad-card shadow-soft; }
 }
 
+/* Sanad hero: green panel, gold links that light up one after another (Rasool SAW -> us), then repeat. */
+.sanad-hero { background: radial-gradient(120% 80% at 50% 0%, rgb(255 255 255 / .09), transparent 60%), linear-gradient(165deg, #0f6a47 0%, #0b4a33 55%, #08382a 100%); }
+.sanad-node { background: #0e4f38; border-color: rgb(232 200 115 / .4); animation: sanad-node 10s ease-in-out infinite; animation-delay: calc(var(--i) * 1.1s); }
+.sanad-link { position: relative; background: rgb(232 200 115 / .22); border-radius: 2px; overflow: hidden; }
+.sanad-link::after { content: ""; position: absolute; inset: 0; background: #e8c873; transform-origin: right center; transform: scaleX(0); animation: sanad-link 10s ease-in-out infinite; animation-delay: calc(var(--i) * 1.1s + .5s); }
+@keyframes sanad-node {
+  0%, 2% { background: #0e4f38; border-color: rgb(232 200 115 / .4); box-shadow: none; transform: scale(1); }
+  7% { background: #f6dd96; border-color: #fff0c2; box-shadow: 0 0 16px 4px rgb(240 213 138 / .7); transform: scale(1.14); }
+  12%, 80% { background: #e8c873; border-color: #f6e2a6; box-shadow: 0 0 8px 1px rgb(240 213 138 / .4); transform: scale(1); }
+  92%, 100% { background: #0e4f38; border-color: rgb(232 200 115 / .4); box-shadow: none; transform: scale(1); }
+}
+@keyframes sanad-link { 0%, 2% { transform: scaleX(0); } 8%, 80% { transform: scaleX(1); } 92%, 100% { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .sanad-node { animation: none; background: #e8c873; border-color: #f6e2a6; }
+  .sanad-link::after { animation: none; transform: scaleX(1); }
+}
+
 /* Banner stars: very gentle twinkle (disabled by the reduced-motion rule above). */
 @keyframes sky-twinkle { 0%, 100% { opacity: var(--tw-hi, .9); } 50% { opacity: .35; } }
 .sky-star { animation: sky-twinkle 3.2s ease-in-out infinite; }

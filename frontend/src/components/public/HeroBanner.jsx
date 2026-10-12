@@ -29,7 +29,7 @@ function MicIcon({ size = 22 }) {
 }
 
 /** Search pill that sits under the banner: search icon, text field, mic (only where the browser supports voice input). */
-function HeroSearch() {
+export function HeroSearch() {
   const navigate = useNavigate();
   const { contentLang } = useI18n();
   const [text, setText] = useState("");
