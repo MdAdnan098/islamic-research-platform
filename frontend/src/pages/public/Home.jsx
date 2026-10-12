@@ -27,7 +27,7 @@ function QuoteCard({ label, item }) {
   return (
     <figure className="home-quote card-lift flex h-full flex-col items-center rounded-2xl border border-rule bg-soft px-3 py-5 text-center sm:px-8 sm:py-9">
       <figcaption className="quote-pill rounded-full bg-card px-3.5 py-0.5 text-xs font-semibold text-accent sm:px-4 sm:py-1 sm:text-sm">{label}</figcaption>
-      <Text as="blockquote" force="arabic" className="home-arabic mt-3 text-[1.6rem] sm:mt-5 sm:text-[2.1rem]">{item.text}</Text>
+      <Text as="blockquote" force="arabic" className="home-arabic mt-3 sm:mt-5">{item.text}</Text>
       <Text as="p" className="home-urdu mt-2 max-w-3xl text-[0.92rem] text-mute sm:mt-3 sm:text-[1.05rem]">{item.translation}</Text>
       <div className="mt-auto pt-4 sm:pt-5">
         <Text as="p" className="quote-pill-gold quote-source rounded-full bg-card px-3.5 py-0.5 text-[0.8rem] font-medium text-accent sm:px-4 sm:py-1 sm:text-sm">{item.source}</Text>

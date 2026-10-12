@@ -198,7 +198,10 @@
   }
 
   /* Home Ayat / Hadith cards: compact premium sizing (tighter line-height than the generic sacred text) */
-  .home-quote .script-arabic.home-arabic { line-height: 1.95 !important; word-spacing: .06em; }
+  /* Arabic in the Ayat/Hadith cards: Quranic Naskh (Amiri Quran). Size measured from the reference screenshot:
+     one full line of the verse fills 86.3% of the screen width -> 4.85vw for this font. Capped on big screens.
+     To make it bigger/smaller change only the 4.85vw / 1.9rem numbers. */
+  .home-quote .script-arabic.home-arabic { font-family: "FS Quran", "FS Arabic", "Amiri", serif !important; font-size: min(4.85vw, 1.9rem) !important; line-height: 2.4 !important; word-spacing: .05em; }
   .home-quote .script-urdu.home-urdu { line-height: 2.05 !important; }
   .script-urdu.quote-source { line-height: 1.9 !important; }
   /* Aqaid / Masail card Arabic title */
