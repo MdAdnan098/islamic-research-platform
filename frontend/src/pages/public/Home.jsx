@@ -95,9 +95,11 @@ export default function Home() {
           <SectionHeading eyebrow={t.home.sections} title={`${t.nav.aqaid} & ${t.nav.masail}`} />
         </div>
         {/* Always two cards side by side (Aqaid first, then Masail) — phone gap ~8px at the sides, ~16px between */}
-        <div className="mx-auto mt-6 grid w-full max-w-[36rem] grid-cols-2 gap-4 px-2 sm:mt-8 sm:px-0">
+        <div className="mx-auto mt-6 w-full max-w-6xl px-2 sm:mt-8 sm:px-8">
+         <div className="grid w-full max-w-[36rem] grid-cols-2 gap-4">
           <CategoryCard to="/aqaid" arabic="عقائد" title="Aqaid" color="#F5B000" />
           <CategoryCard to="/masail" arabic="مسائل" title="Masail" color="#C0492F" />
+         </div>
         </div>
       </section>
 

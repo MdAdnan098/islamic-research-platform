@@ -71,7 +71,7 @@ export function Navbar() {
       </div>
 
       {open && (
-        <div className="animate-fade border-t border-rule bg-paper md:absolute md:end-8 md:top-full md:mt-2 md:w-72 md:overflow-hidden md:rounded-xl md:border md:shadow-soft">
+        <div className="bar-menu animate-fade border-t border-rule bg-paper md:absolute md:end-8 md:top-full md:mt-2 md:w-72 md:overflow-hidden md:rounded-xl md:border md:shadow-soft">
           <nav className="flex flex-col px-5 py-2 sm:px-8 md:px-4" aria-label="Menu">
             <form onSubmit={submitSearch} role="search" className="flex gap-2 border-b border-rule py-3">
               <input type="search" value={q} onChange={(e) => setQ(e.target.value)} maxLength={100} dir="auto" placeholder={HERO_SEARCH_PLACEHOLDER} aria-label={HERO_SEARCH_PLACEHOLDER}

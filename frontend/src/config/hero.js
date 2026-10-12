@@ -10,4 +10,4 @@ export const HERO_VARIANT = "image";
 export const HERO_TEXT = "قرآن، سنت اور مستند حوالوں کی بنیاد پر اسلامی عقائد، مسائل اور تحقیقی مضامین";
 
 /** Search bar text. */
-export const HERO_SEARCH_PLACEHOLDER = "Search mazameen aur folder";
+export const HERO_SEARCH_PLACEHOLDER = "Search mazameen or folder";
