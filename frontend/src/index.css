@@ -64,7 +64,7 @@
     --shadow-soft: 0 2px 14px rgb(0 0 0 / .07), 0 0 0 6px rgb(0 0 0 / .012);
 
     /* Admin palette — same system as the public site */
-    --ad-bg: 244 245 247; --ad-card: 255 255 255; --ad-ink: 38 38 38; --ad-mute: 101 101 101;
+    --ad-bg: 243 240 231; --ad-card: 247 246 241; --ad-ink: 38 38 38; --ad-mute: 101 101 101;   /* cream page + off-white cards, same as the public site */
     --ad-rule: 234 238 241; --ad-brand: 43 164 172;
     --ad-danger: 192 57 43; --ad-ok: 55 121 75; --ad-warn: 176 112 16;
 
@@ -267,13 +267,17 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72' fill='none' stroke='%23ffffff' stroke-opacity='.05' stroke-width='1'%3E%3Crect x='20' y='20' width='32' height='32'/%3E%3Crect x='20' y='20' width='32' height='32' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='7'/%3E%3C/svg%3E");
   color: #000;
   --ink: 0 0 0; --mute: 0 0 0; --rule: 150 192 192; --tint: 99 146 147;
+  --ad-ink: 0 0 0; --ad-mute: 0 0 0; --ad-rule: 150 192 192; --ad-bg: 99 146 147; --ad-brand: 255 255 255; --on-accent: 0 0 0;   /* admin sidebar / top bar */
   --accent: 0 0 0; --bronze: 255 243 207;   /* all bar text black; only the 'Quran • Sunnah • Ahle Hadees' tagline keeps its own light colour */
 }
 :root:not(.dark):not([data-theme]) .bar-teal [role="listbox"],
 :root:not(.dark):not([data-theme]) .bar-teal .bar-menu {
   color: #262626;
-  --ink: 38 38 38; --mute: 101 101 101; --rule: 234 238 241; --tint: 244 245 247; --accent: 43 164 172;
+  --ink: 38 38 38; --mute: 101 101 101; --rule: 234 238 241; --tint: 244 245 247; --accent: 43 164 172; --on-accent: 255 255 255;
 }
+
+/* Admin pages (login, dashboard, editor): same faint pattern as the public page. */
+.admin-root, .paper-pattern { background-image: var(--paper-pattern); background-repeat: repeat; }
 
 /* Menu drawer slides in from the right. */
 @keyframes drawer-in { from { transform: translateX(100%); } to { transform: none; } }

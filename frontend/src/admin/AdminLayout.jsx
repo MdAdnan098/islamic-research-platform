@@ -29,7 +29,7 @@ export function AdminLayout() {
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 px-4 py-5 text-ad-ink">
-        <LogoMark size={30} /><div className="leading-tight"><p className="text-sm font-semibold"><BrandName /></p><p className="text-[11px] text-ad-mute">Admin</p></div>
+        <LogoMark size={26} className="rounded-xl bg-white p-1 dark:bg-transparent dark:p-0" /><div className="leading-tight"><p className="text-sm font-semibold"><BrandName /></p><p className="text-[11px] text-ad-mute">Admin</p></div>
       </div>
       <nav className="flex-1 space-y-1 px-3" onClick={() => setOpen(false)}>
         {NAV.map(([to, label, icon, end]) => <NavLink key={to} to={to} end={end} className={link}><Icon name={icon} size={17} />{label}</NavLink>)}
@@ -46,15 +46,15 @@ export function AdminLayout() {
   return (
     <AdminShell>
     <div className="lg:grid lg:grid-cols-[232px_1fr]">
-      <aside className="sticky top-0 hidden h-screen border-e border-ad-rule bg-ad-card lg:block">{sidebar}</aside>
-      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-ad-rule bg-ad-card px-4 py-3 lg:hidden">
+      <aside className="bar-teal sticky top-0 hidden h-screen border-e border-ad-rule bg-ad-card lg:block">{sidebar}</aside>
+      <div className="bar-teal sticky top-0 z-40 flex items-center justify-between border-b border-ad-rule bg-ad-card px-4 py-3 lg:hidden">
         <span className="text-sm font-semibold"><BrandName /> · Admin</span>
         <div className="flex items-center gap-2"><ThemeSwitcher compact /><button onClick={() => setOpen(true)} aria-label="Menu" className="a-btn !px-2"><Icon name="menu" size={18} /></button></div>
       </div>
       {open && (
         <div className="fixed inset-0 z-[120] lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <aside className="animate-fade absolute inset-y-0 start-0 w-64 bg-ad-card">{sidebar}</aside>
+          <aside className="bar-teal animate-fade absolute inset-y-0 start-0 w-64 bg-ad-card">{sidebar}</aside>
         </div>
       )}
       <main className="min-w-0 p-4 sm:p-6 lg:p-8"><Outlet /></main>

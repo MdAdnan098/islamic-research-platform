@@ -187,7 +187,7 @@ export default function ArticleEditor() {
         </Modal>
       )}
       {preview && createPortal(
-        <div className="fixed inset-0 z-[70] overflow-y-auto bg-paper font-sans text-ink">
+        <div className="paper-pattern fixed inset-0 z-[70] overflow-y-auto bg-paper font-sans text-ink">
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-rule bg-card/95 px-4 py-2.5 backdrop-blur">
             <span className="text-sm font-medium">Preview — abhi tak ka likha hua (save nahi hua)</span>
             <div className="flex items-center gap-2">
