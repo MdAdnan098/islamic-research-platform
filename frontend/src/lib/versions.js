@@ -31,16 +31,15 @@ export function detectLang(title, blocks) {
 
 /** Numbered text for the admin to give to ChatGPT etc. [0] = title, [n] = block n. */
 export function buildCopyText(lang, title, blocks) {
+  // Same instructions for every target language; only the first line names the script to convert into.
   const parts = [
     `Neeche diye gaye har hisse ko ${NAMES[lang]} mein convert karo. Koi explanation mat likho. Arabic text ko mat badlo.`,
     "",
-    "SAKHT HIDAYAT (inko bilkul follow karna):",
-    "1. Har [number] marker bilkul waise hi aur usi tarteeb mein rakho. Koi number na chhodo, na badlo, na naya jodo. Sirf marker ke neeche ka text convert karo.",
-    "2. Har hisse ki lines aur jumle bilkul usi tarteeb mein rahein. Koi line ya jumla aage-peeche nahi hona chahiye.",
-    "3. Jitni lines aur jitne jumle original mein hain, convert karne ke baad bhi utne hi hon. Do jumlon ko milana nahi hai aur ek jumle ko todna nahi hai.",
-    "4. Line breaks aur khali lines bilkul waise hi rakho jaise original mein hain.",
-    "5. Har jumle ke aakhir mein usi zabaan ka full stop lagao (Roman mein . / Hindi mein । / Urdu mein ۔), jahan original mein hai.",
-    "6. Ye TARJUMA nahi, sirf SCRIPT badalni hai: jo lafz original mein likha hai wahi lafz doosri script mein likho. Shuddh (Sanskrit wali) Hindi ya mushkil lafz bilkul istemal mat karo, kyunki padhne wale Musalman hain. Misal: original mein \"alfaaz\" ho to Hindi mein \"अल्फ़ाज़\" aur Urdu mein \"الفاظ\" likho, \"शब्द\" nahi. Isi tarah \"natija\" ko \"परिणाम\", \"dua\" ko \"प्रार्थना\", \"waseela\" ko \"माध्यम\" ya \"ashirwad\" jaise lafzon se mat badlo. Aam bol-chaal ke Urdu lafz hi rakho.",
+    "Hidayat:",
+    "1. Har [number] marker bilkul waise hi aur usi tarteeb mein rakho, sirf uske neeche ka text convert karo.",
+    "2. Ye tarjuma nahi, sirf script badalni hai. Jo lafz original mein likha hai wahi lafz doosri script mein likho. Jaise Roman mein \"alfaaz\" likha hai to Hindi mein \"अल्फ़ाज़\" aur Urdu mein \"الفاظ\" likho, \"शब्द\" nahi. Shuddh (Sanskrit wali) Hindi bilkul istemal mat karo, padhne wale Musalman hain, unhe aam Urdu wale lafz samajh aate hain.",
+    "3. Agar original mein kahin spelling ki ghalti ho to use sahi karke likho. Ghalti ko waise ki waisi mat copy karo.",
+    "4. Lines usi tarteeb mein rakho (aage-peeche nahi).",
     "",
   ];
   if (title.trim()) parts.push("[0]", title.trim(), "");
