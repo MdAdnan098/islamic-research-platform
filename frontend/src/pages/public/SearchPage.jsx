@@ -16,7 +16,7 @@ export default function SearchPage() {
   const q = (params.get("q") || "").trim();
   const [text, setText] = useState(q);
   useEffect(() => setText(q), [q]);
-  useMeta({ title: q ? `${t.search.title}: ${q}` : t.search.title });
+  useMeta({ title: q ? `${t.search.title}: ${q}` : t.search.title, description: "AthariTV ke mazameen aur folders mein talash karein.", noindex: !!q });
 
   const [folders, setFolders] = useState([]);
   const list = usePaged(async (page, signal) => {

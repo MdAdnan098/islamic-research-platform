@@ -47,7 +47,7 @@ export function Footer() {
     <footer className="mt-20 border-t border-rule bg-footer">
       <div className="container-page grid gap-10 py-14 md:grid-cols-[1.2fr_1fr_1fr_1.2fr] lg:grid-cols-[1.4fr_.8fr_.8fr_1.2fr_.95fr]">
         <div>
-          <Logo size={42} />
+          <Link to="/" aria-label={BRAND.name} className="inline-block"><Logo size={42} /></Link>
           <p className="mt-5 max-w-sm text-base text-mute">{t.footer.about}</p>
         </div>
         {/* Links + Information sit side by side (on phones too); from md they become separate columns */}
@@ -72,21 +72,23 @@ export function Footer() {
         {/* Two separate groups: Contact (phone + email) and Follow us on (social icons).
             Phones: side by side in one row (shorter than before). md: stacked in the 4th column. lg+: two own columns. */}
         <div className="flex items-start justify-between gap-x-5 md:block md:space-y-5 lg:contents lg:space-y-0">
+          {(CONTACT.phone || CONTACT.email) && (
           <div className="min-w-0">
             <p className="text-lg font-bold">{t.footer.contact}</p>
             <ul className="mt-3 space-y-2 text-sm lg:mt-4 lg:space-y-2.5 lg:text-base">
-              <li>
+              {CONTACT.phone && <li>
                 <a href={`tel:${CONTACT.phone.replace(/[^+\d]/g, "")}`} dir="ltr" className="inline-flex items-center gap-2 text-mute transition-colors hover:text-ink">
                   <PhoneIcon />{CONTACT.phone}
                 </a>
-              </li>
-              <li>
+              </li>}
+              {CONTACT.email && <li>
                 <a href={`mailto:${CONTACT.email}`} dir="ltr" className="inline-flex items-center gap-2 break-all text-mute transition-colors hover:text-ink">
                   <MailIcon />{CONTACT.email}
                 </a>
-              </li>
+              </li>}
             </ul>
           </div>
+          )}
           <div className="shrink-0">
             <p className="text-lg font-bold">{t.footer.follow}</p>
             <div className="mt-3 flex gap-2 lg:mt-4 lg:gap-3">

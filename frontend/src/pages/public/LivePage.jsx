@@ -8,7 +8,7 @@ import { LiveEmpty, LiveSessionGrid } from "../../components/public/LiveSessions
 
 /** /live — every published live session and recording. */
 export default function LivePage() {
-  useMeta({ title: "Live Sessions" });
+  useMeta({ title: "Live Sessions", description: "AthariTV ke live YouTube sessions ka schedule aur links." });
   const { data, error, loading, reload } = useAsync((signal) => publicApi.liveSessions({ limit: 48 }, signal), []);
   const now = useNow((data || []).some((s) => s.status === "scheduled"));
 

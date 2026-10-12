@@ -8,7 +8,7 @@ import { ArticleCard } from "../../components/public/Cards.jsx";
 /** /latest - ONE combined newest-first feed of every published article (all sections, all folder depths), server-paged. */
 export default function LatestPage() {
   const { t } = useI18n();
-  useMeta({ title: t.home.latest });
+  useMeta({ title: t.home.latest, description: "AthariTV ke sabse naye mazameen - Aqaid aur Masail, tarteeb se naye pehle." });
   const list = usePaged(async (page, signal) => {
     const r = await publicApi.latest({ page, limit: 12 }, signal);
     return { items: r.articles, hasMore: r.hasMore };

@@ -8,7 +8,7 @@ import { useCourseListClock } from "../../lib/useServerClock.js";
 
 /** /courses — all published courses. */
 export default function CoursesPage() {
-  useMeta({ title: "Our Courses" });
+  useMeta({ title: "Our Courses", description: "AthariTV ke online courses aur live classes - enrollment aur tafseel." });
   const { data, error, loading, reload } = useAsync((signal) => publicApi.courses(signal), []);
   useCourseListClock(data, reload); // cards follow the server's schedule without a manual refresh
 

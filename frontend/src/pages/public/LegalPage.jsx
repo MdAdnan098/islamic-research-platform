@@ -6,7 +6,7 @@ import { LEGAL, TAGLINE } from "../../config/legal.js";
 export default function LegalPage({ kind }) {
   const { t } = useI18n();
   const doc = LEGAL[kind];
-  useMeta({ title: t.nav[kind] });
+  useMeta({ title: t.nav[kind], description: `AthariTV - ${t.nav[kind]}` });
   return (
     <div className="container-read py-12 sm:py-16">
       <h1 className="text-3xl font-bold sm:text-4xl">{doc.title}</h1>

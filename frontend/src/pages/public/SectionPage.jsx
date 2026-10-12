@@ -11,7 +11,7 @@ export default function SectionPage({ section }) {
   const { t } = useI18n();
   const type = PATH_TYPE[section];
   const title = section === "aqaid" ? t.nav.aqaid : t.nav.masail;
-  useMeta({ title });
+  useMeta({ title, description: `${title}: AthariTV ke folders aur mazameen, Quran, Sunnat aur salaf ke fahm ki roshni mein.` });
 
   const folders = useAsync(async (signal) => {
     const all = [];

@@ -11,7 +11,7 @@ const SECTIONS = [["aqeedah", "aqaid"], ["masail", "masail"]];
 /** /folders - every ROOT folder, grouped by section (Aqaid, Masail). Subfolders live inside their folder. */
 export default function FoldersPage() {
   const { t } = useI18n();
-  useMeta({ title: t.home.allFolders });
+  useMeta({ title: t.home.allFolders, description: "AthariTV ke saare folders: Aqaid aur Masail ke mazameen mauzu ke mutabiq." });
   const list = usePaged(async (page, signal) => {
     const r = await publicApi.folders({ page, limit: 24 }, signal);
     return { items: r.folders, hasMore: r.hasMore };
