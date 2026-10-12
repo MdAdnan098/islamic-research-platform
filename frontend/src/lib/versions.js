@@ -1,4 +1,4 @@
-import { withoutVersionMarks } from "./highlights.js";
+import { inheritMarks, withoutVersionMarks } from "./highlights.js";
 
 /**
  * Multi-script versions. An article keeps ONE structure (blocks). Text blocks
@@ -32,7 +32,14 @@ export function detectLang(title, blocks) {
 /** Numbered text for the admin to give to ChatGPT etc. [0] = title, [n] = block n. */
 export function buildCopyText(lang, title, blocks) {
   const parts = [
-    `Neeche diye gaye har hisse ko ${NAMES[lang]} mein convert karo. Har [number] marker bilkul waise hi rakho, sirf uske neeche ka text convert karo. Arabic text ko mat badlo. Koi explanation mat likho.`,
+    `Neeche diye gaye har hisse ko ${NAMES[lang]} mein convert karo. Koi explanation mat likho. Arabic text ko mat badlo.`,
+    "",
+    "SAKHT HIDAYAT (inko bilkul follow karna):",
+    "1. Har [number] marker bilkul waise hi aur usi tarteeb mein rakho. Koi number na chhodo, na badlo, na naya jodo. Sirf marker ke neeche ka text convert karo.",
+    "2. Har hisse ki lines aur jumle bilkul usi tarteeb mein rahein. Koi line ya jumla aage-peeche nahi hona chahiye.",
+    "3. Jitni lines aur jitne jumle original mein hain, convert karne ke baad bhi utne hi hon. Do jumlon ko milana nahi hai aur ek jumle ko todna nahi hai.",
+    "4. Line breaks aur khali lines bilkul waise hi rakho jaise original mein hain.",
+    "5. Har jumle ke aakhir mein usi zabaan ka full stop lagao (Roman mein . / Hindi mein । / Urdu mein ۔), jahan original mein hai.",
     "",
   ];
   if (title.trim()) parts.push("[0]", title.trim(), "");
@@ -63,14 +70,15 @@ export function parsePaste(text, max = Infinity) {
   return out;
 }
 
-export function applyPaste(lang, parsed, titleTr, blocks) {
+export function applyPaste(lang, parsed, titleTr, blocks, baseLang) {
   let count = 0;
   const next = blocks.map((b, i) => {
     const v = parsed[i + 1];
     if (!v || !isConvertible(b)) return b;
     count++;
     // A pasted translation replaces that version's text, so highlights that belonged to the old text are dropped.
-    return withoutVersionMarks({ ...b, tr: { ...(b.tr || {}), [lang]: v } }, lang);
+    // If the other versions are already highlighted, the same lines get highlighted in the pasted one too.
+    return inheritMarks(withoutVersionMarks({ ...b, tr: { ...(b.tr || {}), [lang]: v } }, lang), baseLang, lang);
   });
   let tt = titleTr || {};
   if (parsed[0]) { tt = { ...tt, [lang]: parsed[0] }; count++; }

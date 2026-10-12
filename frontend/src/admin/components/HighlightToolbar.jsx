@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { addRange, covered, overlaps, rangesOf, removeRange, trimRange } from "../../lib/highlights.js";
+import { addRange, covered, overlaps, rangesOf, removeRange, syncSpans, trimRange, unitMap } from "../../lib/highlights.js";
 
 /**
  * Admin-only floating toolbar: Highlight / Remove highlight for the current text selection.
@@ -36,12 +36,18 @@ function readSelection(container) {
   return { pieces, rect: range.getBoundingClientRect() };
 }
 
-export default function HighlightToolbar({ containerRef, blocks, onApply }) {
+export default function HighlightToolbar({ containerRef, blocks, baseLang, onApply }) {
   const [sel, setSel] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const blocksRef = useRef(blocks);
   blocksRef.current = blocks;
+
+  /** Spans a selection piece stands for: the same line in every script (when the block is aligned), else just the piece. */
+  const spansOf = useCallback((p) => {
+    const b = blocksRef.current.find((x) => x.id === p.blockId);
+    return (b && syncSpans(b, baseLang, p.lang, [p.start, p.end])) || [{ lang: p.lang, range: [p.start, p.end] }];
+  }, [baseLang]);
 
   const currentRanges = useCallback((blockId, lang) => rangesOf(blocksRef.current.find((b) => b.id === blockId), lang), []);
 
@@ -65,15 +71,20 @@ export default function HighlightToolbar({ containerRef, blocks, onApply }) {
 
   const state = sel.pieces.reduce((acc, p) => {
     const r = currentRanges(p.blockId, p.lang);
-    return { anyMarked: acc.anyMarked || overlaps(r, [p.start, p.end]), allMarked: acc.allMarked && covered(r, [p.start, p.end]) };
+    const own = spansOf(p).filter((x) => x.lang === p.lang).map((x) => x.range);
+    return { anyMarked: acc.anyMarked || own.some((x) => overlaps(r, x)), allMarked: acc.allMarked && own.every((x) => covered(r, x)) };
   }, { anyMarked: false, allMarked: true });
+  // Some block of the selection has versions whose line count differs: highlight then stays in this script only.
+  const unsynced = sel.pieces.some((p) => unitMap(blocksRef.current.find((x) => x.id === p.blockId), baseLang)?.aligned === false);
 
   async function run(mode) {
     const edits = new Map();
     for (const p of sel.pieces) {
-      const key = `${p.blockId}|${p.lang}`;
-      const base = edits.get(key)?.ranges ?? currentRanges(p.blockId, p.lang);
-      edits.set(key, { blockId: p.blockId, lang: p.lang, ranges: mode === "add" ? addRange(base, [p.start, p.end]) : removeRange(base, [p.start, p.end]) });
+      for (const { lang, range } of spansOf(p)) {
+        const key = `${p.blockId}|${lang}`;
+        const base = edits.get(key)?.ranges ?? currentRanges(p.blockId, lang);
+        edits.set(key, { blockId: p.blockId, lang, ranges: mode === "add" ? addRange(base, range) : removeRange(base, range) });
+      }
     }
     setBusy(true); setError("");
     try {
@@ -103,6 +114,7 @@ export default function HighlightToolbar({ containerRef, blocks, onApply }) {
         {state.anyMarked && <button type="button" disabled={busy} onClick={() => run("remove")} className={`${btn} border border-rule bg-card`}>Remove highlight</button>}
         <button type="button" aria-label="Close" onClick={() => { window.getSelection()?.removeAllRanges(); setSel(null); }} className="grid h-9 w-9 place-items-center rounded-full text-mute hover:bg-tint">✕</button>
       </div>
+      {unsynced && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">Is hisse ki lines teeno zabaan mein barabar nahi, isliye highlight sirf isi zabaan mein lagega.</p>}
       {error && <p role="alert" className="max-w-xs px-2 pb-1 text-center text-xs text-red-600">{error}</p>}
     </div>
   );

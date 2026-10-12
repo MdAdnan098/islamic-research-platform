@@ -31,3 +31,17 @@ assert.deepEqual(w.hl,{en:[[9,15]]});
 
 
 });
+
+test("same-line sync across scripts", () => {
+  assert.deepEqual(h.splitUnits("Pehli baat. Doosri baat?\nTeesri"), [[0,11],[12,24],[25,31]]);
+  const b = { id: "x", type: "text", text: "Pehli baat. Doosri baat.", tr: { ur: "پہلی بات۔ دوسری بات۔", hi: "पहली बात। दूसरी बात।" } };
+  const sp = h.syncSpans(b, "en", "ur", [0, 3]);
+  assert.deepEqual(sp.map((x) => x.lang).sort(), ["en", "hi", "ur"]);
+  assert.deepEqual(sp.find((x) => x.lang === "en").range, [0, 11]);
+  // different line counts -> no sync
+  assert.equal(h.syncSpans({ ...b, tr: { ur: "ایک۔" } }, "en", "en", [0, 3]), null);
+  assert.deepEqual(h.alignmentIssues([{ ...b, tr: { ur: "ایک۔" } }], "en"), [1]);
+  // pasted translation inherits marks
+  const marked = { ...b, tr: { ur: b.tr.ur }, hl: { en: [[0, 11]] } };
+  assert.deepEqual(h.inheritMarks(marked, "en", "ur").hl.ur, [[0, 9]]);
+});

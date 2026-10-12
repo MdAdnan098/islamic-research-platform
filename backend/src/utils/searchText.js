@@ -126,12 +126,29 @@ export function phoneticWords(text) {
 /** Query-side: skeletons (length >= 2) of the query words. Particles like "e", "ul", "ud" fall away on their own. */
 export const phoneticQueryTokens = (normalizedQuery) => phoneticWords(normalizedQuery).slice(0, MAX_QUERY_TOKENS);
 
-/** Does `name` (a folder / category title) phonetically start-match any query token? Used for folder discovery. */
+/**
+ * Sounds-alike rule shared by article search and folder search. A query word's skeleton `k` matches a word skeleton
+ * `w` of the content only when k has at least 3 consonants and w starts with it. Two-consonant skeletons are far too
+ * common ("hello" -> "hl" would match "ahl", "hal", "hil" ...), so short words only match as literal text.
+ */
+export const MIN_PHONETIC_LEN = 3;
+export const skeletonMatches = (w, k) => k.length >= MIN_PHONETIC_LEN && w.startsWith(k);
+
+/**
+ * Does `name` (a folder / category title) sound like the query? EVERY phonetic query word must match a word of the
+ * name, or every word of the name must be found in the query ("wasila ke masail" -> folder "Wasila"). One lucky word
+ * is no longer enough.
+ */
 export function phoneticNameMatch(name, tokens) {
-  if (!tokens?.length) return false;
+  const keys = (tokens || []).filter((k) => k.length >= MIN_PHONETIC_LEN);
+  if (!keys.length) return false;
   const words = phoneticWords(name);
-  return tokens.some((t) => words.some((w) => w.startsWith(t.slice(0, 2))));
+  if (!words.length) return false;
+  return keys.every((k) => words.some((w) => skeletonMatches(w, k))) || words.every((w) => keys.some((k) => skeletonMatches(w, k)));
 }
+
+/** Mongo regex (on the stored space-joined skeleton field) for one query skeleton; null when it is too short to be fuzzy. */
+export const phoneticFieldRegex = (k) => (k.length >= MIN_PHONETIC_LEN ? `(^| )${escapeRegex(k)}` : null);
 
 const MAX_SEARCH_TEXT = 200_000;
 

@@ -83,6 +83,50 @@ export function LanguageDropdown({ className = "", align = "end" }) {
   );
 }
 
+/** In-article language picker: sits above the post heading, on the side the heading starts from. */
+export function ArticleLanguage({ className = "" }) {
+  const { lang, setLang, t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const box = useRef(null);
+  useDismiss(open, setOpen, box);
+
+  return (
+    <div ref={box} className={`relative inline-block ${className}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="inline-flex items-center gap-2 rounded-full border border-rule bg-field px-3.5 py-1.5 text-sm text-ink transition-colors hover:border-accent/50"
+      >
+        <Icon name="globe" size={16} className="shrink-0 text-accent/80" />
+        <span className="text-mute">{t.article.changeLang}</span>
+        <span className="font-semibold text-accent">{CONTENT_LANGS[lang].label}</span>
+        <Icon name="down" size={14} className="shrink-0 text-mute" />
+      </button>
+      {open && (
+        <ul role="listbox" aria-label={t.nav.language} className="absolute start-0 top-full z-40 mt-2 w-44 animate-fade overflow-hidden rounded-lg border border-rule bg-card p-1 shadow-soft">
+          {Object.entries(CONTENT_LANGS).map(([key, d]) => {
+            const on = lang === key;
+            return (
+              <li key={key} role="option" aria-selected={on}>
+                <button
+                  type="button"
+                  onClick={() => { setLang(key); setOpen(false); }}
+                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-start text-base transition-colors ${on ? "bg-tint font-semibold text-accent" : "text-ink hover:bg-tint"}`}
+                >
+                  <span className="flex-1">{d.label}</span>
+                  {on && <Icon name="check" size={17} />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const THEME_META = {
   auto: { label: "Default", icon: "monitor" },
   light: { label: "Light", icon: "sun" },

@@ -33,7 +33,7 @@ export default {
     volume: "Jild", page: "Safha", text: "Ibarat", scan: "Scan page", openScan: "Scan dekhein", pdf: "PDF Document",
     openPdf: "PDF kholein", download: "Download", preview: "Preview", notFound: "Ye mazmoon maujood nahi.",
     backTo: "Wapas", minRead: "min padhne ka waqt", previewBanner: "Preview — ye mazmoon abhi public nahi hai",
-    ayat: "Ayat", hadith: "Hadith",
+    ayat: "Ayat", hadith: "Hadith", changeLang: "Zubaan tabdeel karein:",
   },
   viewer: { zoomIn: "Bada karein", zoomOut: "Chhota karein", reset: "Reset", prev: "Pichla", next: "Agla", close: "Band karein", pageOf: "Page {n} / {total}" },
   common: { loading: "Load ho raha hai…", error: "Kuch ghalat ho gaya.", retry: "Dobara koshish karein", empty: "Kuch nahi mila.", home: "Home par jayein", notFound: "Safha nahi mila" },

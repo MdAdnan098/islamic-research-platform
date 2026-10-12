@@ -4,7 +4,7 @@ import { findCategoryById } from "./category.service.js";
 import { findTopicById } from "./topic.service.js";
 import { normalizeSlug, slugify } from "../../utils/slug.js";
 import { validateArticleInput } from "../../utils/validate.js";
-import { buildArticleSearchFields, escapeRegex } from "../../utils/searchText.js";
+import { buildArticleSearchFields, escapeRegex, phoneticFieldRegex, skeletonOf } from "../../utils/searchText.js";
 import { HL_LANGS, isHighlightable, normalizeRanges, versionText } from "../../utils/highlights.js";
 
 /**
@@ -389,12 +389,16 @@ export async function searchPublicArticles(config, { tokens, phrase, phonetic = 
   const valid = (categoryIds || []).filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   if (!valid.length || (!tokens?.length && !phonetic.length)) return { articles: [], hasMore: false, page: paging.page, limit: paging.limit };
 
-  // 1) exact: every query word appears in the normalised text.
-  const textMatch = { $and: tokens.map((t) => ({ searchText: { $regex: escapeRegex(t) } })) };
-  // 2) sounds-alike: ANY query word whose consonant skeleton starts like a word of the article (see skeletonOf).
-  const startsLike = (key) => `(^| )${escapeRegex(key.slice(0, 2))}`;
-  const or = [textMatch];
-  if (phonetic.length) or.push({ $or: phonetic.map((k) => ({ searchPhonetic: { $regex: startsLike(k) } })) });
+  // EVERY query word must be found. A word is found when it appears literally in the normalised text, or - for words
+  // with 3+ consonants - when a word of the article has the same consonant skeleton (Roman / Hindi / Urdu spellings
+  // of one word meet). Words that match nothing (random speech, "hello babu sahab") therefore return no article.
+  const skeletons = tokens.map((t) => skeletonOf(t));
+  const tokenClause = (t, i) => {
+    const exact = { searchText: { $regex: escapeRegex(t) } };
+    const fuzzy = phoneticFieldRegex(skeletons[i]);
+    return fuzzy ? { $or: [exact, { searchPhonetic: { $regex: fuzzy } }] } : exact;
+  };
+  const or = [{ $and: tokens.map(tokenClause) }];
   const folderObjectIds = folderIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   const matchedCats = matchedCategoryIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   if (folderObjectIds.length) or.push({ topicId: { $in: folderObjectIds } });
@@ -403,18 +407,13 @@ export async function searchPublicArticles(config, { tokens, phrase, phonetic = 
   if (language) match.language = language;
 
   const has = (field, regex, points) => ({ $cond: [{ $regexMatch: { input: { $ifNull: [`$${field}`, ""] }, regex } }, points, 0] });
-  // Ranking: exact title > exact body > sounds-alike title > sounds-alike body; longer shared skeleton beats shorter.
+  // Ranking: exact title > exact body > sounds-alike title > sounds-alike body.
+  const fuzzyKeys = skeletons.map(phoneticFieldRegex).filter(Boolean);
   const score = { $add: [
     has("searchTitle", escapeRegex(phrase || tokens.join(" ")), 200),
     ...tokens.map((t) => has("searchTitle", escapeRegex(t), 20)),
     ...tokens.map((t) => has("searchText", escapeRegex(t), 10)),
-    ...phonetic.flatMap((k) => [
-      has("searchPhoneticTitle", startsLike(k), 6),
-      has("searchPhoneticTitle", startsLike(k.slice(0, 3)), 4),
-      has("searchPhonetic", startsLike(k), 2),
-      has("searchPhonetic", startsLike(k.slice(0, 3)), 2),
-      has("searchPhonetic", escapeRegex(k), 2),
-    ]),
+    ...fuzzyKeys.flatMap((re) => [has("searchPhoneticTitle", re, 6), has("searchPhonetic", re, 2)]),
   ] };
 
   const collection = await getArticlesCollection(config);

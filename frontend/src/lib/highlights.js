@@ -173,3 +173,73 @@ export function cleanBlocksHl(blocks, baseLang) {
     return Object.keys(hl).length ? { ...rest, hl } : rest;
   });
 }
+
+/* ------------------------------------------------------------------------------------------------ */
+/* Same-line highlights across Roman / Hindi / Urdu                                                  */
+/* ------------------------------------------------------------------------------------------------ */
+/**
+ * A block's text is cut into "units": one sentence (ends with . ! ? । ۔ ؟) or one line (ends at a line break).
+ * When every written version of a block has the SAME number of units, unit N of one version is the same line as
+ * unit N of the others, so highlighting a unit in one script highlights the same unit in all of them.
+ * If the counts differ the block is "not aligned": highlights stay precise and per-script, as before.
+ */
+export const SYNC_LANGS = ["en", "hi", "ur"];
+const UNIT_RE = /[^\n.!?।۔؟]*[.!?।۔؟]+["'”’)»\]]*|[^\n.!?।۔؟]+/g;
+
+/** [[start, end], ...] of every sentence/line of `str` (whitespace trimmed, empty pieces skipped). */
+export function splitUnits(str) {
+  const text = String(str || "");
+  const out = [];
+  for (const m of text.matchAll(UNIT_RE)) {
+    const r = trimRange(text, m.index, m.index + m[0].length);
+    if (r && /[\p{L}\p{N}]/u.test(text.slice(r[0], r[1]))) out.push(r);
+  }
+  return out;
+}
+
+const versionString = (b, baseLang, lang) => (lang === baseLang ? b.text : b.tr?.[lang]) || "";
+
+/** { aligned, versions: { en?: units, hi?: units, ur?: units } } - or null when there is nothing to sync (sacred text, < 2 versions). */
+export function unitMap(b, baseLang) {
+  if (!isHighlightable(b) || isSacred(b) || !baseLang) return null;
+  const versions = {};
+  for (const lang of SYNC_LANGS) {
+    const s = versionString(b, baseLang, lang);
+    if (typeof s === "string" && s.trim()) versions[lang] = splitUnits(s);
+  }
+  const langs = Object.keys(versions);
+  if (langs.length < 2) return null;
+  const n = versions[langs[0]].length;
+  return { aligned: n > 0 && langs.every((l) => versions[l].length === n), versions };
+}
+
+/**
+ * The spans [{ lang, range }] that a selection [s, e) of version `lang` stands for: every sentence/line it touches,
+ * in EVERY version. Returns null when the block is not aligned (caller then uses the plain selection).
+ */
+export function syncSpans(b, baseLang, lang, [s, e]) {
+  const map = unitMap(b, baseLang);
+  if (!map?.aligned || !map.versions[lang]) return null;
+  const idx = [];
+  map.versions[lang].forEach(([a, z], i) => { if (a < e && z > s) idx.push(i); });
+  if (!idx.length) return null;
+  return Object.entries(map.versions).flatMap(([l, units]) => idx.map((i) => ({ lang: l, range: units[i] })));
+}
+
+/** Block numbers (1-based, same as the [n] markers) whose versions have a different number of lines/sentences. */
+export function alignmentIssues(blocks, baseLang) {
+  const bad = [];
+  blocks.forEach((b, i) => { if (unitMap(b, baseLang)?.aligned === false) bad.push(i + 1); });
+  return bad;
+}
+
+/** After a translation is pasted: marks of the other versions are carried over to it, line for line (when aligned). */
+export function inheritMarks(block, baseLang, lang) {
+  const map = unitMap(block, baseLang);
+  if (!map?.aligned || !map.versions[lang] || !block.hl) return block;
+  const from = [baseLang, ...SYNC_LANGS].find((l) => l !== lang && map.versions[l] && rangesOf(block, l).length);
+  if (!from) return block;
+  const marked = map.versions[from].map((u, i) => (overlaps(rangesOf(block, from), u) ? i : -1)).filter((i) => i >= 0);
+  if (!marked.length) return block;
+  return { ...block, hl: { ...block.hl, [lang]: normalizeRanges(marked.map((i) => map.versions[lang][i])) } };
+}
