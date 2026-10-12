@@ -12,8 +12,7 @@ import { FoldersCard } from "../../components/public/FoldersCard.jsx";
 import { LiveSessionsSection } from "../../components/public/LiveSessions.jsx";
 import { CoursesSection } from "../../components/public/CourseCards.jsx";
 import { HeroBanner } from "../../components/public/HeroBanner.jsx";
-import { HeroPhoto } from "../../components/public/HeroPhoto.jsx";
-import { HeroSanad } from "../../components/public/HeroSanad.jsx";
+import { HeroImage } from "../../components/public/HeroImage.jsx";
 import { HERO_VARIANT } from "../../config/hero.js";
 
 /** Faint calligraphy behind the hero — Quranic phrases, set in a calligraphic face, very low contrast. */
@@ -79,7 +78,7 @@ export default function Home() {
 
   return (
     <>
-      {HERO_VARIANT === "classic" ? <ClassicHero t={t} heroA={heroA} heroB={heroB} /> : HERO_VARIANT === "banner" ? <HeroBanner /> : HERO_VARIANT === "sanad" ? <HeroSanad /> : <HeroPhoto />}
+      {HERO_VARIANT === "classic" ? <ClassicHero t={t} heroA={heroA} heroB={heroB} /> : HERO_VARIANT === "banner" ? <HeroBanner /> : <HeroImage />}
 
       <section className="border-b border-rule">
        <div className="mx-auto w-full max-w-6xl px-2 py-10 sm:px-8 sm:py-20">

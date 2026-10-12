@@ -1,14 +1,12 @@
 /**
  * Which hero the home page shows (change ONLY this value to switch / go back):
- *   "photo"   - NEW: photo of Masjid-e-Nabawi (green dome), Urdu line below, search bar                (keyword: nabawi-photo-hero)
- *   "sanad"   - green panel, chain of sanad lights up from Rasoolullah (SAW) to us      (keyword: sanad-chain-hero)
+ *   "image"   - NEW: photo banner (Gumbad-e-Khazra), Urdu line below it, search bar            (keyword: sunnah-style-hero)
  *   "banner"  - desert + mosque banner, sky follows the time of day                          (keyword: dynamic-hero-banner)
  *   "classic" - OLD: calligraphy band with title, description and the Aqaid / Masail buttons
- * All three include or replace each other; the search bar is under both "sanad" and "banner".
  */
-export const HERO_VARIANT = "photo";
+export const HERO_VARIANT = "image";
 
-/** Text inside the banner (Urdu). */
+/** Text under the banner (Urdu). */
 export const HERO_TEXT = "قرآن، سنت اور مستند حوالوں کی بنیاد پر اسلامی عقائد، مسائل اور تحقیقی مضامین";
 
 /** Search bar text. */

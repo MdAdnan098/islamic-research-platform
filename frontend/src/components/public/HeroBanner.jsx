@@ -29,7 +29,7 @@ function MicIcon({ size = 22 }) {
 }
 
 /** Search pill that sits under the banner: search icon, text field, mic (only where the browser supports voice input). */
-export function HeroSearch() {
+export function HeroSearch({ overlap = true }) {
   const navigate = useNavigate();
   const { contentLang } = useI18n();
   const [text, setText] = useState("");
@@ -62,7 +62,7 @@ export function HeroSearch() {
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); go(); }} role="search"
-      className="relative z-10 mx-auto -mt-7 flex w-[92%] max-w-2xl items-center gap-2 rounded-full border border-rule bg-field py-2 ps-4 pe-3 shadow-[0_4px_18px_rgb(0_0_0/0.14)] sm:-mt-8 sm:py-2.5 sm:ps-5">
+      className={`relative z-10 mx-auto flex w-[92%] max-w-2xl items-center gap-2 rounded-full border border-rule bg-field py-2 ps-4 pe-3 shadow-[0_4px_18px_rgb(0_0_0/0.14)] sm:py-2.5 sm:ps-5 ${overlap ? "-mt-7 sm:-mt-8" : "mt-1 sm:mt-2"}`}>
       <button type="submit" aria-label="Search" className="shrink-0 text-ink"><Icon name="search" size={24} /></button>
       <input type="search" value={text} onChange={(e) => setText(e.target.value)} maxLength={100} dir="auto" enterKeyHint="search"
         placeholder={HERO_SEARCH_PLACEHOLDER} aria-label={HERO_SEARCH_PLACEHOLDER}
