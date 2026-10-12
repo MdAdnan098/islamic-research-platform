@@ -91,7 +91,8 @@ const THEME_META = {
   islamic: { label: "Islamic", icon: "book" },
 };
 
-/** Theme dropdown: Default · Light · Sepia · Dark · Islamic. */
+/** Theme dropdown: Default · Light · Dark. Sepia and Islamic are hidden for now (code kept): remove them from HIDDEN_THEMES to bring the buttons back. */
+const HIDDEN_THEMES = ["sepia", "islamic"];
 export function ThemeSwitcher({ className = "", align = "end", compact = false, up = false, showLabel = false }) {
   const { mode, theme, setMode } = useTheme();
   const [open, setOpen] = useState(false);
@@ -121,7 +122,7 @@ export function ThemeSwitcher({ className = "", align = "end", compact = false, 
           aria-label="Theme"
           className={`absolute z-50 w-44 animate-fade overflow-hidden rounded-lg border border-rule bg-card p-1 shadow-soft ${up ? "bottom-full mb-2" : "top-full mt-2"} ${align === "end" ? "end-0" : "start-0"}`}
         >
-          {THEME_MODES.map((m) => {
+          {THEME_MODES.filter((m) => !HIDDEN_THEMES.includes(m)).map((m) => {
             const meta = THEME_META[m];
             const on = mode === m;
             return (

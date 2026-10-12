@@ -6,6 +6,7 @@ import { Logo } from "../brand/Logo.jsx";
 import { Icon } from "../ui/icons.jsx";
 import { LanguageDropdown, ThemeSwitcher } from "./Controls.jsx";
 import { SOCIALS } from "./Footer.jsx";
+import { HERO_SEARCH_PLACEHOLDER } from "../../config/hero.js";
 
 export function Navbar() {
   const { t } = useI18n();
@@ -44,16 +45,17 @@ export function Navbar() {
     `flex items-center gap-3 border-b border-rule py-3.5 text-lg font-semibold ${isActive ? "text-accent" : "text-ink"}`;
 
   return (
-    <header ref={header} className="sticky top-0 z-40 border-b border-rule bg-paper">
+    <header ref={header} className="bar-teal sticky top-0 z-40 border-b border-rule bg-paper">
       <div className="container-page flex h-16 items-center justify-between gap-2">
-        <Link to="/" aria-label="AthariTV" className="-ms-2 min-w-0"><Logo size={38} /></Link>
+        <Link to="/" aria-label="AthariTV" className="-ms-2 min-w-0"><Logo size={32} badge /></Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
           {links.map((l) => <NavLink key={l.to} {...l} className={linkCls}>{l.label}</NavLink>)}
         </nav>
 
         <div className="-me-1.5 flex shrink-0 items-center gap-0">
-          <Link to="/search" aria-label={t.search.open} title={t.search.title} className="grid h-10 w-10 place-items-center rounded-full text-ink transition-colors hover:bg-tint"><Icon name="search" size={21} /></Link>
+          {/* Search icon hidden for now (restore by un-commenting):
+          <Link to="/search" aria-label={t.search.open} title={t.search.title} className="grid h-10 w-10 place-items-center rounded-full text-ink transition-colors hover:bg-tint"><Icon name="search" size={21} /></Link> */}
           <ThemeSwitcher compact />
           <LanguageDropdown />
           <button
@@ -72,8 +74,8 @@ export function Navbar() {
         <div className="animate-fade border-t border-rule bg-paper md:absolute md:end-8 md:top-full md:mt-2 md:w-72 md:overflow-hidden md:rounded-xl md:border md:shadow-soft">
           <nav className="flex flex-col px-5 py-2 sm:px-8 md:px-4" aria-label="Menu">
             <form onSubmit={submitSearch} role="search" className="flex gap-2 border-b border-rule py-3">
-              <input type="search" value={q} onChange={(e) => setQ(e.target.value)} maxLength={100} dir="auto" placeholder={t.search.placeholder} aria-label={t.search.title}
-                className="min-w-0 flex-1 rounded-full border border-rule bg-field px-4 py-2 text-base text-ink placeholder:text-mute focus:border-accent focus:outline-none" />
+              <input type="search" value={q} onChange={(e) => setQ(e.target.value)} maxLength={100} dir="auto" placeholder={HERO_SEARCH_PLACEHOLDER} aria-label={HERO_SEARCH_PLACEHOLDER}
+                className="min-w-0 flex-1 rounded-full border border-rule bg-field px-4 py-2 text-base text-[#262626] placeholder:text-[#7a7a7a] focus:border-accent focus:outline-none dark:text-[#e9eaee] dark:placeholder:text-[#b7b8bc]" />
               <button type="submit" className="btn-primary !px-4 !py-2 text-sm">{t.search.button}</button>
             </form>
             {links.map((l) => (

@@ -44,10 +44,10 @@ export function Footer() {
   const links = [["/", t.nav.home], ["/aqaid", t.nav.aqaid], ["/masail", t.nav.masail]];
   const info = [["/about", t.nav.about], ["/disclaimer", t.nav.disclaimer], ["/privacy", t.nav.privacy]];
   return (
-    <footer className="mt-20 border-t border-rule bg-footer">
+    <footer className="bar-teal mt-20 border-t border-rule bg-footer">
       <div className="container-page grid gap-10 py-14 md:grid-cols-[1.2fr_1fr_1fr_1.2fr] lg:grid-cols-[1.4fr_.8fr_.8fr_1.2fr_.95fr]">
         <div>
-          <Link to="/" aria-label={BRAND.name} className="inline-block"><Logo size={42} /></Link>
+          <Link to="/" aria-label={BRAND.name} className="inline-block"><Logo size={36} badge /></Link>
           <p className="mt-5 max-w-sm text-base text-mute">{t.footer.about}</p>
         </div>
         {/* Links + Information sit side by side (on phones too); from md they become separate columns */}

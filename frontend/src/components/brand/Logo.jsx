@@ -20,10 +20,11 @@ export function BrandName({ className = "" }) {
   );
 }
 
-export function Logo({ size = 40, showText = true, className = "" }) {
+/** badge: in Light mode the logo sits on a white rounded tile (so it stays clear on the teal navbar / footer). */
+export function Logo({ size = 40, showText = true, className = "", badge = false }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <LogoMark size={size} />
+      <LogoMark size={size} className={badge ? "rounded-xl bg-white p-1 dark:bg-transparent dark:p-0" : ""} />
       {showText && (
         <span className="leading-tight">
           <span className="block text-[17px] font-bold tracking-tight"><BrandName /></span>

@@ -3,13 +3,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 /** Theme modes: "auto" follows the device; the rest are fixed. Same set as Quran.com. */
 export const THEME_MODES = ["auto", "light", "sepia", "dark", "islamic"];
 const STORAGE_KEY = "fs_theme";
-const BAR = { light: "#ffffff", sepia: "#fff7ea", islamic: "#ffffff", dark: "#202125" };
+const BAR = { light: "#77a9aa", sepia: "#fff7ea", islamic: "#ffffff", dark: "#202125" };
 const ThemeContext = createContext(null);
 
 const systemTheme = () => (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 const readMode = () => {
   // First visit (nothing saved yet) opens in Light; "auto" only when the reader picks Default.
-  try { const s = localStorage.getItem(STORAGE_KEY); return THEME_MODES.includes(s) ? s : "light"; } catch { return "light"; }
+  try { const s = localStorage.getItem(STORAGE_KEY); return THEME_MODES.includes(s) && s !== "sepia" && s !== "islamic" ? s : "light"; } catch { return "light"; }
 };
 
 function apply(theme) {

@@ -46,14 +46,14 @@
     --paper: 243 240 231;      /* page + navbar: soft cream, like sunnah.com  #F3F0E7 */
     --paper-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72' fill='none' stroke='%238a7a4a' stroke-opacity='.07' stroke-width='1'%3E%3Crect x='20' y='20' width='32' height='32'/%3E%3Crect x='20' y='20' width='32' height='32' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='7'/%3E%3C/svg%3E");   /* very faint geometric pattern on the page */
     --hero-ink: 116 160 159;   /* hero text (teal-grey, sunnah.com)  #74A09F */
-    --card: 255 255 255;       /* cards                    #FFFFFF */
+    --card: 247 246 241;       /* cards: soft off-white, like sunnah.com  #F7F6F1 */
     --ink: 38 38 38;           /* headings / body          #262626 */
     --mute: 101 101 101;       /* secondary text           #656565 */
     --rule: 234 238 241;       /* dividers / borders       #EAEEF1 */
     --accent: 43 164 172;      /* buttons, links           #2BA4AC */
     --on-accent: 255 255 255;
     --tint: 244 245 247;       /* chips / pills            #F4F5F7 */
-    --soft: 244 245 247;       /* highlighted panel        #F4F5F7 */
+    --soft: 247 246 241;       /* highlighted panel / Ayat+Hadith cards  #F7F6F1 */
     --hero: 232 236 239;       /* hero band                #E8ECEF */
     --calli: 226 231 235;      /* hero calligraphy         #E2E7EB */
     --field: 255 255 255;      /* search / inputs          #FFFFFF */
@@ -210,7 +210,7 @@
   /* Arabic in the Ayat/Hadith cards: Quranic Naskh (Amiri Quran). Size measured from the reference screenshot:
      one full line of the verse fills 86.3% of the screen width -> 4.85vw for this font. Capped on big screens.
      To make it bigger/smaller change only the 4.85vw / 1.9rem numbers. */
-  .home-quote .script-arabic.home-arabic { font-family: "FS Quran", "FS Arabic", "Amiri", serif !important; font-size: min(4.85vw, 1.9rem) !important; line-height: 2.4 !important; word-spacing: .05em; }
+  .home-quote .script-arabic.home-arabic { font-family: "FS Arabic", "FS Quran", "Amiri", serif !important; font-size: min(5.3vw, 2.1rem) !important; line-height: 2.35 !important; word-spacing: .06em; color: rgb(var(--hero-ink)); }
   .home-quote .script-urdu.home-urdu { line-height: 2.05 !important; }
   .script-urdu.quote-source { line-height: 1.9 !important; }
   /* Aqaid / Masail card Arabic title: Nastaleeq (same family as the reference calligraphy), clear letter shapes */
@@ -258,6 +258,20 @@
   .a-btn-primary { @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-ad-brand px-3.5 py-1.5 text-sm font-semibold text-on-accent transition hover:opacity-90 disabled:opacity-50; }
   .a-btn-danger { @apply a-btn border-ad-danger/40 text-ad-danger hover:bg-ad-danger/10; }
   .a-card { @apply rounded-2xl border border-ad-rule bg-ad-card shadow-soft; }
+}
+
+/* Navbar + footer (Light mode only): sunnah.com teal #77A9AA with the same faint pattern as the page.
+   Inside the bars the text variables flip to white-ish; dropdown lists keep normal dark-on-light text. */
+:root:not(.dark):not([data-theme]) .bar-teal {
+  background-color: #77a9aa;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72' fill='none' stroke='%23ffffff' stroke-opacity='.14' stroke-width='1'%3E%3Crect x='20' y='20' width='32' height='32'/%3E%3Crect x='20' y='20' width='32' height='32' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='7'/%3E%3C/svg%3E");
+  color: #fff;
+  --ink: 255 255 255; --mute: 240 247 247; --rule: 150 192 192; --tint: 99 146 147;
+  --accent: 255 243 207; --bronze: 255 243 207;
+}
+:root:not(.dark):not([data-theme]) .bar-teal [role="listbox"] {
+  color: #262626;
+  --ink: 38 38 38; --mute: 101 101 101; --rule: 234 238 241; --tint: 244 245 247; --accent: 43 164 172;
 }
 
 /* Banner stars: very gentle twinkle (disabled by the reduced-motion rule above). */
