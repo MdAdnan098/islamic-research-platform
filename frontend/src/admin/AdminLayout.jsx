@@ -29,7 +29,7 @@ export function AdminLayout() {
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 px-4 py-5 text-ad-ink">
-        <LogoMark size={26} className="rounded-xl bg-white p-1 dark:bg-transparent dark:p-0" /><div className="leading-tight"><p className="text-sm font-semibold"><BrandName /></p><p className="text-[11px] text-ad-mute">Admin</p></div>
+        <LogoMark size={26} badge /><div className="leading-tight"><p className="text-sm font-semibold"><BrandName /></p><p className="text-[11px] text-ad-mute">Admin</p></div>
       </div>
       <nav className="flex-1 space-y-1 px-3" onClick={() => setOpen(false)}>
         {NAV.map(([to, label, icon, end]) => <NavLink key={to} to={to} end={end} className={link}><Icon name={icon} size={17} />{label}</NavLink>)}
@@ -45,7 +45,7 @@ export function AdminLayout() {
 
   return (
     <AdminShell>
-    <div className="lg:grid lg:grid-cols-[232px_1fr]">
+    <div className="select-text lg:grid lg:grid-cols-[232px_1fr]">
       <aside className="bar-teal sticky top-0 hidden h-screen border-e border-ad-rule bg-ad-card lg:block">{sidebar}</aside>
       <div className="bar-teal sticky top-0 z-40 flex items-center justify-between border-b border-ad-rule bg-ad-card px-4 py-3 lg:hidden">
         <span className="text-sm font-semibold"><BrandName /> · Admin</span>

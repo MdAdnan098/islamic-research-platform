@@ -35,7 +35,7 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
   useMeta({ title: article.seoTitle || title, description: article.seoDescription || article.excerpt, image: cover });
 
   return (
-    <article>
+    <article className="select-text">
       <ReadingProgress />
       {banner && <div className="bg-accent/10 px-4 py-2 text-center text-sm font-medium text-accent">{banner}</div>}
       <header className="container-article pb-6 pt-10 sm:pt-14">
