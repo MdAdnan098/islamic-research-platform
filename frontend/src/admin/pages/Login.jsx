@@ -10,6 +10,7 @@ import { Icon } from "../../components/ui/icons.jsx";
 export default function Login() {
   const { status, login, logout } = useAuth();
   const inFlight = useRef(false);
+  const lastInput = useRef(0); // hooks must stay ABOVE the early return below (React error #300)
   const nav = useNavigate();
   const from = useLocation().state?.from || "/admin";
   const [f, setF] = useState({ username: "", password: "" });
@@ -30,7 +31,6 @@ export default function Login() {
     );
   }
 
-  const lastInput = useRef(0);
   const typed = (key) => (e) => { lastInput.current = Date.now(); setF((s) => ({ ...s, [key]: e.target.value })); };
 
   // Signs in ONLY when the admin presses the "Sign in" button (no Enter-key or form submit).
