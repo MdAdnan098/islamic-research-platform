@@ -66,13 +66,80 @@ export function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/* ------------------------------------------------------------------------------------------------ */
+/* Phonetic skeleton - lets Roman, Hindi and Urdu spellings of the same word meet                    */
+/* ------------------------------------------------------------------------------------------------ */
+/**
+ * Urdu/Arabic and Hindi are written without short vowels, and Roman spelling varies from writer to writer
+ * (ilm / ilme / ilm-e, ghaib / gaib / gayab, rafa / rafu ...). What stays steady is the CONSONANT skeleton:
+ * every script is turned into its consonants only, with look-alike sounds folded together
+ * (kh/k/q/c -> k, gh/g -> g, z/j/zh -> j, f/ph/p -> p, sh/s/th... -> s/t, w/v only at the start of a word,
+ * "h" only when it is a real letter, doubled letters collapsed). It is derived from ANY text: nothing is tied to
+ * particular words, titles or folder names.
+ *   ilm / ilme / ilm-e / علم / इल्म            -> "lm"
+ *   ghaib / gaib / gayab / غیب / ग़ैब            -> "gb"
+ *   rafa ul yadain / rafulyadain / رفع الیدین   -> words "rf" "l" "dn"
+ */
+const AR_MAP = {
+  "ب": "b", "پ": "p", "ت": "t", "ٹ": "t", "ث": "s", "ج": "j", "چ": "k", "خ": "k", "د": "d", "ڈ": "d", "ذ": "j",
+  "ر": "r", "ڑ": "r", "ز": "j", "ژ": "j", "س": "s", "ش": "s", "ص": "s", "ض": "j", "ط": "t", "ظ": "j", "غ": "g",
+  "ف": "p", "ق": "k", "ک": "k", "گ": "g", "ل": "l", "م": "m", "ن": "n", "ں": "n", "ح": "H", "ہ": "h",
+  "و": "w", "ؤ": "w",
+  // Devanagari consonants (nukta is already stripped by normalizeForSearch)
+  "क": "k", "ख": "k", "ग": "g", "घ": "g", "च": "k", "छ": "k", "ज": "j", "झ": "j", "ट": "t", "ठ": "t", "ड": "d", "ढ": "d",
+  "ण": "n", "त": "t", "थ": "t", "द": "d", "ध": "d", "न": "n", "प": "p", "फ": "p", "ब": "b", "भ": "b", "म": "m",
+  "र": "r", "ल": "l", "ळ": "l", "व": "w", "श": "s", "ष": "s", "स": "s", "ह": "h", "ं": "n", "ँ": "n",
+};
+const LATIN_MAP = { b: "b", c: "k", d: "d", f: "p", g: "g", h: "h", j: "j", k: "k", l: "l", m: "m", n: "n", p: "p", q: "k", r: "r", s: "s", t: "t", v: "w", w: "w", x: "k", z: "j" };
+
+/** Consonant skeleton of one (already normalised) word. Returns "" for words with no consonants. */
+export function skeletonOf(word) {
+  const chars = [...word];
+  let out = "";
+  let afterConsonant = false;
+  chars.forEach((ch, i) => {
+    const c = AR_MAP[ch] ?? LATIN_MAP[ch];
+    if (c === undefined) { afterConsonant = false; return; } // vowel, vowel sign, digit, anything else
+    if (c === "H") { out += "h"; afterConsonant = true; return; }           // pe-he is always a real consonant
+    if (c === "h") {
+      const initial = i === 0, last = i === chars.length - 1;
+      if (initial || (!afterConsonant && !last)) { out += "h"; afterConsonant = true; }
+      return;                                                                // aspirate (bh, kh ...) or final -ah/-a: not a consonant
+    }
+    if (c === "w") { if (i === 0) { out += "w"; afterConsonant = true; } else afterConsonant = false; return; } // inside a word w/v/و act as vowels
+    out += c;
+    afterConsonant = true;
+  });
+  return out.replace(/(.)\1+/g, "$1");
+}
+
+/** Skeletons (length >= 2) of every word in a text, de-duplicated and space-joined - the stored/queried phonetic field. */
+export function phoneticWords(text) {
+  const seen = new Set();
+  for (const w of normalizeForSearch(text || "").split(" ")) {
+    const k = skeletonOf(w);
+    if (k.length >= 2) seen.add(k);
+  }
+  return [...seen];
+}
+
+/** Query-side: skeletons (length >= 2) of the query words. Particles like "e", "ul", "ud" fall away on their own. */
+export const phoneticQueryTokens = (normalizedQuery) => phoneticWords(normalizedQuery).slice(0, MAX_QUERY_TOKENS);
+
+/** Does `name` (a folder / category title) phonetically start-match any query token? Used for folder discovery. */
+export function phoneticNameMatch(name, tokens) {
+  if (!tokens?.length) return false;
+  const words = phoneticWords(name);
+  return tokens.some((t) => words.some((w) => w.startsWith(t.slice(0, 2))));
+}
+
 const MAX_SEARCH_TEXT = 200_000;
 
 /**
  * Builds the normalised searchable copies of an article.
  * @param {object} article  { title, titleTr, excerpt, seoTitle, seoDescription, blocks }
  * @param {Array<{ book?: string, author?: string }>} references  resolved reference documents
- * @returns {{ searchTitle: string, searchText: string }}
+ * @returns {{ searchTitle: string, searchText: string, searchPhonetic: string, searchPhoneticTitle: string }}
  */
 export function buildArticleSearchFields(article, references = []) {
   const titles = [article.title, ...Object.values(article.titleTr || {})].filter((x) => typeof x === "string");
@@ -91,5 +158,7 @@ export function buildArticleSearchFields(article, references = []) {
 
   const searchTitle = normalizeForSearch(titles.join(" "));
   const searchText = normalizeForSearch(parts.filter((x) => typeof x === "string").join(" \n ")).slice(0, MAX_SEARCH_TEXT);
-  return { searchTitle, searchText };
+  const searchPhoneticTitle = phoneticWords(titles.join(" ")).join(" ");
+  const searchPhonetic = phoneticWords(searchText).join(" ").slice(0, MAX_SEARCH_TEXT);
+  return { searchTitle, searchText, searchPhonetic, searchPhoneticTitle };
 }

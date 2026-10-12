@@ -1,3 +1,4 @@
+import { invalidatePublicCache } from "../../utils/publicCache.js";
 import { ObjectId } from "mongodb";
 import { getDb } from "./mongo.service.js";
 import { normalizeSlug, slugify } from "../../utils/slug.js";
@@ -42,6 +43,7 @@ export async function ensureCategoryIndexes(config) {
 }
 
 export async function createCategory(config, input) {
+  invalidatePublicCache();
   const data = {
     ...input,
     slug: normalizeSlug(input.slug || slugify(input.name)),
@@ -100,6 +102,7 @@ export async function listCategories(config, filters = {}) {
 }
 
 export async function updateCategory(config, id, updates) {
+  invalidatePublicCache();
   const existing = await findCategoryById(config, id);
   if (!existing) throwNotFound("Category");
 
@@ -132,6 +135,7 @@ export async function updateCategory(config, id, updates) {
 
 /** Status-based archival — categories are never hard-deleted here. */
 export async function archiveCategory(config, id) {
+  invalidatePublicCache();
   const existing = await findCategoryById(config, id);
   if (!existing) throwNotFound("Category");
 
@@ -147,6 +151,7 @@ export async function archiveCategory(config, id) {
  * low-concurrency, admin-only operation, not a public write path.
  */
 export async function reorderCategories(config, items) {
+  invalidatePublicCache();
   const collection = await getCategoriesCollection(config);
   const now = new Date();
 

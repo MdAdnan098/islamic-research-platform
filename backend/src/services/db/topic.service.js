@@ -1,3 +1,4 @@
+import { invalidatePublicCache } from "../../utils/publicCache.js";
 import { ObjectId } from "mongodb";
 import { getDb } from "./mongo.service.js";
 import { findCategoryById } from "./category.service.js";
@@ -87,6 +88,7 @@ function throwRelation(check) {
 }
 
 export async function createTopic(config, input) {
+  invalidatePublicCache();
   const data = {
     ...input,
     slug: normalizeSlug(input.slug || slugify(input.title)),
@@ -162,6 +164,7 @@ export async function listTopicsByCategory(config, categoryId, filters = {}) {
 }
 
 export async function updateTopic(config, id, updates) {
+  invalidatePublicCache();
   const existing = await findTopicById(config, id);
   if (!existing) throwNotFound("Topic");
 
@@ -242,6 +245,7 @@ export async function describeTopicDeletion(config, id) {
  * folder that exists - nothing can be orphaned.
  */
 export async function deleteTopic(config, id) {
+  invalidatePublicCache();
   const existing = await findTopicById(config, id);
   if (!existing) throwNotFound("Topic");
 
@@ -277,6 +281,7 @@ export async function deleteTopic(config, id) {
  * ordering in another.
  */
 export async function reorderTopics(config, categoryId, items) {
+  invalidatePublicCache();
   const collection = await getTopicsCollection(config);
   const now = new Date();
   const categoryObjectId = new ObjectId(categoryId);

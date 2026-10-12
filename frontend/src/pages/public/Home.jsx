@@ -23,9 +23,6 @@ function HeroCalligraphy() {
   );
 }
 
-/** Homepage "Latest Posts" card count - unchanged from the original site. */
-const HOME_LATEST_LIMIT = 5;
-
 function QuoteCard({ label, item }) {
   return (
     <figure className="home-quote card-lift flex h-full flex-col items-center rounded-2xl border border-rule bg-soft px-6 py-9 text-center sm:px-8 sm:py-10">
@@ -41,12 +38,10 @@ export default function Home() {
   const { t } = useI18n();
   useMeta({});
   const { data, error, loading, reload } = useAsync(
+    // ONE request for the whole homepage: categories, latest posts (exactly HOME_LATEST_LIMIT, set server-side) and folders.
     async (signal) => {
-      const [categories, latest] = await Promise.all([
-        publicApi.categories(signal),
-        publicApi.latest({ limit: HOME_LATEST_LIMIT }, signal),
-      ]);
-      return { categories, articles: latest.articles };
+      const h = await publicApi.home(signal);
+      return { categories: h.categories, articles: h.recentArticles, folders: h.folders };
     },
     []
   );
@@ -89,7 +84,7 @@ export default function Home() {
         </div>
       </section>
 
-      <FoldersCard />
+      <FoldersCard folders={data?.folders} loading={loading} error={error} onRetry={reload} />
 
       <section className="container-page py-16 sm:py-20">
         <div className="flex items-end justify-between gap-4">

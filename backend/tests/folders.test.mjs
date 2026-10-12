@@ -47,7 +47,7 @@ MongoClient.prototype.db = () => ({ collection, command: async () => ({ ok: 1 })
 const { createTopic, updateTopic, deleteTopic, describeTopicDeletion } = await import("../src/services/db/topic.service.js");
 const { createArticle, updateArticle, updateBlockHighlights, findArticleById } = await import("../src/services/db/article.service.js");
 const { visibleFolderIds, checkParentChange, MAX_FOLDER_DEPTH } = await import("../src/utils/folderTree.js");
-const { normalizeForSearch, parseSearchQuery, escapeRegex, buildArticleSearchFields } = await import("../src/utils/searchText.js");
+const { normalizeForSearch, parseSearchQuery, escapeRegex, buildArticleSearchFields, skeletonOf, phoneticWords, phoneticQueryTokens, phoneticNameMatch } = await import("../src/utils/searchText.js");
 const { validateBlocks } = await import("../src/utils/validate.js");
 const { normalizeRanges } = await import("../src/utils/highlights.js");
 const { default: worker } = await import("../src/index.js");
@@ -275,4 +275,39 @@ test("admin folder/highlight endpoints reject anonymous callers", async () => {
     assert.equal((await call(m, p)).status, 401, `${m} ${p}`);
   }
   assert.equal((await call("POST", `/api/admin/topics/${id}/archive`)).status, 404); // the archive endpoint is gone
+});
+
+/* --------------------------------- phonetic (spelling-tolerant) search --------------------------------- */
+const sk = (w) => skeletonOf(normalizeForSearch(w));
+
+test("different spellings and scripts of the same word share one skeleton", () => {
+  for (const w of ["ilm", "ilme", "ilm-e", "علم", "इल्म"]) assert.equal(sk(w), "lm", w);
+  for (const w of ["ghaib", "gaib", "gayab", "غیب", "ग़ैब"]) assert.equal(sk(w), "gb", w);
+  assert.equal(sk("rafa"), sk("رفع"));
+  assert.equal(sk("wasila"), sk("وسیلہ"));
+  assert.equal(sk("allah"), sk("اللہ"));
+  assert.equal(sk("rahman"), sk("رحمن"));
+  assert.equal(sk("hadees"), sk("حدیث"));
+});
+
+test("a short query matches a longer title written differently (no word list involved)", () => {
+  const starts = (query, title) => {
+    const q = phoneticQueryTokens(normalizeForSearch(query));
+    return q.some((k) => phoneticWords(title).some((w) => w.startsWith(k.slice(0, 2))));
+  };
+  assert.ok(starts("ilm", "Ilme Ghaib ka masla"));
+  assert.ok(starts("ilm e gaib", "علم غیب"));
+  assert.ok(starts("rafayadain", "Rafa ul Yadain ka saboot"));
+  assert.ok(starts("rafulyadain", "رفع الیدین"));
+  assert.ok(starts("raf", "रफ़ा उल यदैन"));
+  assert.ok(starts("gayab", "Ilm-e-Ghaib"));
+  assert.equal(starts("ilm", "Namaz ka tariqa"), false); // unrelated title is not pulled in
+  assert.ok(phoneticNameMatch("Ilm e Ghaib", phoneticQueryTokens("ilm"))); // folder names use the same rule
+  assert.deepEqual(phoneticQueryTokens("e ul"), []);
+});
+
+test("article search copy carries phonetic fields", () => {
+  const f = buildArticleSearchFields({ title: "Ilme Ghaib", blocks: [{ type: "text", text: "Rafa ul yadain" }] });
+  assert.ok(f.searchPhoneticTitle.split(" ").includes("lm"));
+  assert.ok(f.searchPhonetic.split(" ").includes("rp"));
 });

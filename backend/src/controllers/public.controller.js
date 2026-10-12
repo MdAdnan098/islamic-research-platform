@@ -17,12 +17,16 @@ import {
 import { findReferencesByIds, toSafeReference } from "../services/db/reference.service.js";
 import { loadPublicContext, folderTrail, withTrail, visibleSubtreeIds, SECTION_SEARCH_LABEL } from "../services/db/publicContent.service.js";
 import { CATEGORY_TYPES } from "../utils/contentEnums.js";
-import { normalizeForSearch, parseSearchQuery } from "../utils/searchText.js";
+import { normalizeForSearch, parseSearchQuery, phoneticNameMatch, phoneticQueryTokens } from "../utils/searchText.js";
 import { enforceRateLimit } from "../middleware/rateLimit.js";
 import { isValidObjectIdString } from "../utils/validate.js";
 
 /** The homepage "Latest Posts" card count. Unchanged from the original site (5); the homepage asks for exactly this many. */
 const HOME_LATEST_LIMIT = 5;
+/** Folders shown on the homepage "Folders" card. */
+const HOME_FOLDERS_LIMIT = 4;
+/** Short browser cache for list endpoints that change rarely (admin edits show up within ~30 s). */
+const LIST_CACHE = { "Cache-Control": "public, max-age=30" };
 
 function intParam(url, name, fallback) {
   const raw = url.searchParams.get(name);
@@ -68,18 +72,16 @@ function toPublicArticle(article) {
 export async function home(request, env) {
   const config = loadConfig(env);
 
-  const categories = await listCategories(config, { status: "active" });
-  const { articles: recentArticles } = await listPublicArticles(config, {
-    categoryIds: categories.map((c) => String(c._id)),
-    limit: HOME_LATEST_LIMIT,
-  });
+  const ctx = await loadPublicContext(config);
+  const { articles } = await listPublicArticles(config, { categoryIds: ctx.categoryIds, limit: HOME_LATEST_LIMIT });
 
   return jsonSuccess(
     {
-      categories: categories.map(toSafeCategory),
-      recentArticles,
+      categories: ctx.categories.map(toSafeCategory),
+      recentArticles: articles.map((a) => withTrail(ctx, a)),
+      folders: rootFolders(ctx).slice(0, HOME_FOLDERS_LIMIT),
     },
-    { allowedOrigin: config.allowedOrigin }
+    { allowedOrigin: config.allowedOrigin, headers: LIST_CACHE }
   );
 }
 
@@ -116,7 +118,24 @@ export async function topics(request, env) {
   if (parentId === "root") list = list.filter((t) => !t.parentId);
   else if (parentId) list = list.filter((t) => String(t.parentId || "") === parentId);
 
-  return jsonSuccess({ topics: list.map(toSafeTopic) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ topics: list.map(toSafeTopic) }, { allowedOrigin: config.allowedOrigin, headers: LIST_CACHE });
+}
+
+/** Root (top-level) visible folders in the public order, with section label data. Used by the homepage and /folders. */
+function rootFolders(ctx) {
+  const catOrder = (t) => ctx.categoryById.get(String(t.categoryId))?.ordering ?? 0;
+  return ctx.topics
+    .filter((t) => !t.parentId && ctx.visible.has(String(t._id)))
+    .sort((a, b) =>
+      (a.ordering ?? 0) - (b.ordering ?? 0) ||
+      catOrder(a) - catOrder(b) ||
+      new Date(a.createdAt || 0) - new Date(b.createdAt || 0) ||
+      String(a._id).localeCompare(String(b._id))
+    )
+    .map((t) => {
+      const cat = ctx.categoryById.get(String(t.categoryId));
+      return { ...toSafeTopic(t), section: cat?.type || null, categoryName: cat?.name || null };
+    });
 }
 
 /**
@@ -134,21 +153,9 @@ export async function folders(request, env) {
   const page = Math.min(Math.max(intParam(url, "page", 1), 1), 10_000);
 
   const ctx = await loadPublicContext(config, { type });
-  const catOrder = (t) => ctx.categoryById.get(String(t.categoryId))?.ordering ?? 0;
-  const roots = ctx.topics
-    .filter((t) => !t.parentId && ctx.visible.has(String(t._id)))
-    .sort((a, b) =>
-      (a.ordering ?? 0) - (b.ordering ?? 0) ||
-      catOrder(a) - catOrder(b) ||
-      new Date(a.createdAt || 0) - new Date(b.createdAt || 0) ||
-      String(a._id).localeCompare(String(b._id))
-    );
-
-  const slice = roots.slice((page - 1) * limit, page * limit).map((t) => {
-    const cat = ctx.categoryById.get(String(t.categoryId));
-    return { ...toSafeTopic(t), section: cat?.type || null, categoryName: cat?.name || null };
-  });
-  return jsonSuccess({ folders: slice, total: roots.length, hasMore: page * limit < roots.length, page, limit }, { allowedOrigin: config.allowedOrigin });
+  const roots = rootFolders(ctx);
+  const slice = roots.slice((page - 1) * limit, page * limit);
+  return jsonSuccess({ folders: slice, total: roots.length, hasMore: page * limit < roots.length, page, limit }, { allowedOrigin: config.allowedOrigin, headers: LIST_CACHE });
 }
 
 /**
@@ -178,7 +185,7 @@ export async function folderBySlug(request, env) {
       ancestors: trail.slice(0, -1),
       children: children.map(toSafeTopic),
     },
-    { allowedOrigin: config.allowedOrigin }
+    { allowedOrigin: config.allowedOrigin, headers: LIST_CACHE }
   );
 }
 
@@ -248,7 +255,7 @@ export async function latest(request, env) {
 
   const ctx = await loadPublicContext(config);
   const result = await listPublicArticles(config, { categoryIds: ctx.categoryIds, language, page, limit });
-  return jsonSuccess({ ...result, articles: result.articles.map((a) => withTrail(ctx, a)) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ ...result, articles: result.articles.map((a) => withTrail(ctx, a)) }, { allowedOrigin: config.allowedOrigin, headers: LIST_CACHE });
 }
 
 /**
@@ -258,6 +265,8 @@ export async function latest(request, env) {
  * folder-name match returns that folder and the articles inside it). Query is length-limited, normalised and
  * only ever used as escaped literals.
  */
+let lastBackfillAt = 0;
+
 export async function search(request, env) {
   const config = loadConfig(env);
   enforceRateLimit(request, "public-search", { max: 90, windowMs: 60_000 });
@@ -273,26 +282,34 @@ export async function search(request, env) {
     return jsonSuccess({ query: "", reason: parsed.reason, articles: [], folders: [], hasMore: false, page, limit }, { allowedOrigin: config.allowedOrigin });
   }
 
-  // Articles saved before search existed get their search copy filled in a few at a time.
-  try { await backfillSearchFields(config, { limit: 25 }); } catch (err) { console.error("Search backfill failed:", err.message); }
+  // Articles saved before search existed get their search copy filled in a few at a time (at most once a minute per isolate).
+  if (Date.now() - lastBackfillAt > 60_000) {
+    lastBackfillAt = Date.now();
+    try { await backfillSearchFields(config, { limit: 25 }); } catch (err) { console.error("Search backfill failed:", err.message); }
+  }
 
   const ctx = await loadPublicContext(config);
   const { tokens, normalized } = parsed;
-  const nameHit = (name) => {
+  const phonetic = phoneticQueryTokens(normalized);
+  // A name matches when it contains the query exactly, or merely SOUNDS like it (any word starts like a query word).
+  const exactHit = (name) => {
     const n = normalizeForSearch(String(name || ""));
     return !!n && (n.includes(normalized) || tokens.every((t) => n.includes(t)));
   };
+  const nameHit = (name) => exactHit(name) || phoneticNameMatch(normalizeForSearch(String(name || "")), phonetic);
 
   const matchedFolders = ctx.topics.filter((t) => ctx.visible.has(String(t._id)) && nameHit(t.title));
   const folderIds = [...new Set(matchedFolders.flatMap((f) => visibleSubtreeIds(ctx, f._id)))].slice(0, 300);
   const matchedCategoryIds = normalized.length >= 3
-    ? ctx.categories.filter((c) => nameHit(c.name) || nameHit(c.slug) || normalizeForSearch(SECTION_SEARCH_LABEL[c.type] || "") === normalized).map((c) => String(c._id))
+    ? ctx.categories.filter((c) => exactHit(c.name) || exactHit(c.slug) || normalizeForSearch(SECTION_SEARCH_LABEL[c.type] || "") === normalized).map((c) => String(c._id))
     : [];
 
-  const result = await searchPublicArticles(config, { tokens, phrase: normalized, categoryIds: ctx.categoryIds, folderIds, matchedCategoryIds, language, page, limit });
+  const result = await searchPublicArticles(config, { tokens, phrase: normalized, phonetic, categoryIds: ctx.categoryIds, folderIds, matchedCategoryIds, language, page, limit });
 
+  // exact folder-name matches first, then the ones that merely sound alike
+  const ranked = [...matchedFolders].sort((a, b) => Number(exactHit(b.title)) - Number(exactHit(a.title)));
   const folderCards = page === 1
-    ? matchedFolders.slice(0, 6).map((f) => ({ ...toSafeTopic(f), section: ctx.categoryById.get(String(f.categoryId))?.type || null, folders: folderTrail(ctx, String(f._id)).slice(0, -1) }))
+    ? ranked.slice(0, 6).map((f) => ({ ...toSafeTopic(f), section: ctx.categoryById.get(String(f.categoryId))?.type || null, folders: folderTrail(ctx, String(f._id)).slice(0, -1) }))
     : [];
 
   return jsonSuccess(

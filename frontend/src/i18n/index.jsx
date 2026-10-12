@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import ui from "./roman.js";
 
 /**
@@ -12,7 +12,9 @@ export const CONTENT_LANGS = {
   hindi: { label: "हिन्दी", code: "hi" },
   urdu: { label: "اردو", code: "ur" },
 };
-const STORAGE_KEY = "fs_lang";
+// Only written when the visitor changes the language themselves, so everyone else opens in Urdu.
+const STORAGE_KEY = "fs_lang_choice";
+const DEFAULT_LANG = "urdu";
 const I18nContext = createContext(null);
 
 function initial() {
@@ -20,18 +22,18 @@ function initial() {
     const fromUrl = new URLSearchParams(window.location.search).get("lang");
     if (CONTENT_LANGS[fromUrl]) return fromUrl;
     const saved = localStorage.getItem(STORAGE_KEY);
-    return CONTENT_LANGS[saved] ? saved : "roman";
+    return CONTENT_LANGS[saved] ? saved : DEFAULT_LANG;
   } catch {
-    return "roman";
+    return DEFAULT_LANG;
   }
 }
 
 export function I18nProvider({ children }) {
-  const [lang, setLang] = useState(initial);
-
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, lang); } catch { /* ignore */ }
-  }, [lang]);
+  const [lang, setLangState] = useState(initial);
+  const setLang = (next) => {
+    setLangState(next);
+    try { localStorage.setItem(STORAGE_KEY, next); } catch { /* ignore */ }
+  };
 
   const value = useMemo(() => ({ t: ui, lang, setLang, contentLang: CONTENT_LANGS[lang].code }), [lang]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

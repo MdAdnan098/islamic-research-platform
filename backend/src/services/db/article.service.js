@@ -262,7 +262,7 @@ export async function updateArticle(config, id, updates) {
 
   // Keep the derived search copies in step with whatever changed.
   const touchesSearch = ["title", "titleTr", "blocks", "excerpt", "seoTitle", "seoDescription", "references"].some((k) => data[k] !== undefined);
-  if (touchesSearch || existing.searchText === undefined) {
+  if (touchesSearch || existing.searchPhonetic === undefined) {
     const merged = { ...existing, ...$set };
     const refIds = data.references !== undefined ? data.references : (existing.references || []);
     Object.assign($set, buildArticleSearchFields(merged, await loadReferenceDocs(config, refIds)));
@@ -344,7 +344,7 @@ export function toListArticle(article) {
   };
 }
 
-const LIST_PROJECTION = { blocks: 0, searchText: 0, searchTitle: 0, authorId: 0, references: 0, seoTitle: 0, seoDescription: 0 };
+const LIST_PROJECTION = { blocks: 0, searchText: 0, searchTitle: 0, searchPhonetic: 0, searchPhoneticTitle: 0, authorId: 0, references: 0, seoTitle: 0, seoDescription: 0 };
 // publishedAt is the publication timestamp; legacy articles without one fall back to createdAt.
 const SORT_AT = { $addFields: { sortAt: { $ifNull: ["$publishedAt", "$createdAt"] } } };
 
@@ -371,7 +371,8 @@ export async function listPublicArticles(config, { categoryIds, topicId, general
 
   const collection = await getArticlesCollection(config);
   const rows = await collection
-    .aggregate([{ $match: match }, { $project: LIST_PROJECTION }, SORT_AT, { $sort: { sortAt: -1, _id: -1 } }, { $skip: paging.skip }, { $limit: paging.limit + 1 }])
+    // Sort right after the match so MongoDB can walk the {status, publishedAt, _id} index; project afterwards.
+    .aggregate([{ $match: match }, { $sort: { publishedAt: -1, _id: -1 } }, { $skip: paging.skip }, { $limit: paging.limit + 1 }, { $project: LIST_PROJECTION }])
     .toArray();
 
   return { articles: rows.slice(0, paging.limit).map(toListArticle), hasMore: rows.length > paging.limit, page: paging.page, limit: paging.limit };
@@ -383,22 +384,38 @@ export async function listPublicArticles(config, { categoryIds, topicId, general
  * (folders whose name matched the query, descendants included). Tokens are regex-escaped literals.
  * Title matches rank first, then newest.
  */
-export async function searchPublicArticles(config, { tokens, phrase, categoryIds, folderIds = [], matchedCategoryIds = [], language, page, limit } = {}) {
+export async function searchPublicArticles(config, { tokens, phrase, phonetic = [], categoryIds, folderIds = [], matchedCategoryIds = [], language, page, limit } = {}) {
   const paging = clampPaging(page, limit, { defaultLimit: 12 });
   const valid = (categoryIds || []).filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-  if (!valid.length || !tokens?.length) return { articles: [], hasMore: false, page: paging.page, limit: paging.limit };
+  if (!valid.length || (!tokens?.length && !phonetic.length)) return { articles: [], hasMore: false, page: paging.page, limit: paging.limit };
 
+  // 1) exact: every query word appears in the normalised text.
   const textMatch = { $and: tokens.map((t) => ({ searchText: { $regex: escapeRegex(t) } })) };
+  // 2) sounds-alike: ANY query word whose consonant skeleton starts like a word of the article (see skeletonOf).
+  const startsLike = (key) => `(^| )${escapeRegex(key.slice(0, 2))}`;
+  const or = [textMatch];
+  if (phonetic.length) or.push({ $or: phonetic.map((k) => ({ searchPhonetic: { $regex: startsLike(k) } })) });
   const folderObjectIds = folderIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   const matchedCats = matchedCategoryIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-  const or = [textMatch];
   if (folderObjectIds.length) or.push({ topicId: { $in: folderObjectIds } });
   if (matchedCats.length) or.push({ categoryId: { $in: matchedCats } });
   const match = { status: "published", categoryId: { $in: valid }, $or: or };
   if (language) match.language = language;
 
-  const titleHit = (needle, points) => ({ $cond: [{ $regexMatch: { input: { $ifNull: ["$searchTitle", ""] }, regex: escapeRegex(needle) } }, points, 0] });
-  const score = { $add: [titleHit(phrase || tokens.join(" "), 50), ...tokens.map((t) => titleHit(t, 10))] };
+  const has = (field, regex, points) => ({ $cond: [{ $regexMatch: { input: { $ifNull: [`$${field}`, ""] }, regex } }, points, 0] });
+  // Ranking: exact title > exact body > sounds-alike title > sounds-alike body; longer shared skeleton beats shorter.
+  const score = { $add: [
+    has("searchTitle", escapeRegex(phrase || tokens.join(" ")), 200),
+    ...tokens.map((t) => has("searchTitle", escapeRegex(t), 20)),
+    ...tokens.map((t) => has("searchText", escapeRegex(t), 10)),
+    ...phonetic.flatMap((k) => [
+      has("searchPhoneticTitle", startsLike(k), 6),
+      has("searchPhoneticTitle", startsLike(k.slice(0, 3)), 4),
+      has("searchPhonetic", startsLike(k), 2),
+      has("searchPhonetic", startsLike(k.slice(0, 3)), 2),
+      has("searchPhonetic", escapeRegex(k), 2),
+    ]),
+  ] };
 
   const collection = await getArticlesCollection(config);
   const rows = await collection
@@ -422,7 +439,7 @@ export async function searchPublicArticles(config, { tokens, phrase, categoryIds
  */
 export async function backfillSearchFields(config, { limit = 25 } = {}) {
   const collection = await getArticlesCollection(config);
-  const rows = await collection.find({ searchText: { $exists: false } }).limit(Math.min(Math.max(limit, 1), 500)).toArray();
+  const rows = await collection.find({ searchPhonetic: { $exists: false } }).limit(Math.min(Math.max(limit, 1), 500)).toArray();
   if (!rows.length) return 0;
   const refDocs = await loadReferenceDocs(config, rows.flatMap((a) => a.references || []));
   const refById = new Map(refDocs.map((r) => [String(r._id), r]));

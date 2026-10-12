@@ -1,5 +1,6 @@
 import { listCategories } from "./category.service.js";
 import { listAllTopics } from "./topic.service.js";
+import { cached } from "../../utils/publicCache.js";
 import { indexFolders, ancestorsOf, descendantIds, visibleFolderIds } from "../../utils/folderTree.js";
 
 /**
@@ -15,7 +16,11 @@ export const SECTION_SEARCH_LABEL = { aqeedah: "aqaid", masail: "masail" };
  * Loads the public categories and every folder under them, plus which folders are visible
  * (active, with every ancestor active). One small read each; folder counts are modest.
  */
-export async function loadPublicContext(config, { type } = {}) {
+export function loadPublicContext(config, { type } = {}) {
+  return cached(`ctx:${config.mongodbDbName}:${type || "all"}`, () => buildPublicContext(config, { type }));
+}
+
+async function buildPublicContext(config, { type } = {}) {
   const all = await listCategories(config, { status: "active" });
   const categories = type ? all.filter((c) => c.type === type) : all;
   const categoryIds = categories.map((c) => String(c._id));

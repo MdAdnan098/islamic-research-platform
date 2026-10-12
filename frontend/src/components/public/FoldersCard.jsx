@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
-import { publicApi, SECTION_PATH } from "../../services/public.js";
-import { useAsync } from "../../lib/useAsync.js";
+import { SECTION_PATH } from "../../services/public.js";
 import { Icon } from "../ui/icons.jsx";
 import { Skeleton } from "../ui/feedback.jsx";
 import { FolderTile } from "./Cards.jsx";
@@ -11,11 +10,13 @@ const HOME_FOLDERS = 4;
 
 export const folderPath = (folder) => `/${SECTION_PATH[folder.section] || "aqaid"}/${folder.slug}`;
 
-/** The ONE homepage "Folders" card: title + "View All Folders" on top, up to four root-folder tiles in a 2x2 grid. */
-export function FoldersCard() {
+/** The ONE homepage "Folders" card: title + "View All Folders" on top, up to four root-folder tiles in a 2x2 grid.
+ *  Data comes from the homepage's single request (props), so the card adds no request of its own. */
+export function FoldersCard({ folders: list, loading, error, onRetry }) {
   const { t } = useI18n();
-  const { data, error, loading, reload } = useAsync((signal) => publicApi.folders({ limit: HOME_FOLDERS }, signal), []);
-  const folders = data?.folders || [];
+  const folders = (list || []).slice(0, HOME_FOLDERS);
+  const data = list;
+  const reload = onRetry;
 
   return (
     <section className="container-page pb-4 pt-6 sm:pt-10">
