@@ -204,9 +204,9 @@
   .home-quote .script-arabic.home-arabic { font-family: "FS Quran", "FS Arabic", "Amiri", serif !important; font-size: min(4.85vw, 1.9rem) !important; line-height: 2.4 !important; word-spacing: .05em; }
   .home-quote .script-urdu.home-urdu { line-height: 2.05 !important; }
   .script-urdu.quote-source { line-height: 1.9 !important; }
-  /* Aqaid / Masail card Arabic title */
-  .cat-arabic { font-size: 2rem; line-height: 1.5; }
-  @media (min-width: 640px) { .cat-arabic { font-size: 2.6rem; } }
+  /* Aqaid / Masail card Arabic title: Nastaleeq (same family as the reference calligraphy), clear letter shapes */
+  .cat-arabic { font-family: "FS Urdu", "Noto Nastaliq Urdu", serif; font-size: 2.35rem; line-height: 1.6; font-weight: 400; letter-spacing: 0; }
+  @media (min-width: 640px) { .cat-arabic { font-size: 3rem; } }
 
   /* Phones: smaller, cleaner body text (Arabic / Urdu runs stay a little larger so they remain readable) */
   .reading { font-size: .9rem; }
@@ -250,6 +250,10 @@
   .a-btn-danger { @apply a-btn border-ad-danger/40 text-ad-danger hover:bg-ad-danger/10; }
   .a-card { @apply rounded-2xl border border-ad-rule bg-ad-card shadow-soft; }
 }
+
+/* Banner stars: very gentle twinkle (disabled by the reduced-motion rule above). */
+@keyframes sky-twinkle { 0%, 100% { opacity: var(--tw-hi, .9); } 50% { opacity: .35; } }
+.sky-star { animation: sky-twinkle 3.2s ease-in-out infinite; }
 
 /* LIVE NOW badge: soft expanding ring + gently breathing dot (no hard blinking). */
 @keyframes live-ring { 0% { box-shadow: 0 0 0 0 rgb(220 38 38 / .4); } 70%, 100% { box-shadow: 0 0 0 7px rgb(220 38 38 / 0); } }

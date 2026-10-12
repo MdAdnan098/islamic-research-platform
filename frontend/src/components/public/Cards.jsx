@@ -4,10 +4,7 @@ import { mediaUrl } from "../../lib/media.js";
 import { pickVersion } from "../../lib/versions.js";
 import { Text } from "../ui/Text.jsx";
 import { Icon } from "../ui/icons.jsx";
-import ornTL from "../../assets/orn-tl.png";
-import ornTR from "../../assets/orn-tr.png";
-import ornBL from "../../assets/orn-bl.png";
-import ornBR from "../../assets/orn-br.png";
+import { ORNAMENTS } from "../../assets/cornerOrnaments.js";
 
 const sectionLabel = (t, type) => (type === "aqeedah" ? t.nav.aqaid : type === "masail" ? t.nav.masail : null);
 
@@ -69,12 +66,13 @@ export function FolderTile({ folder, to }) {
   );
 }
 
-/* Corner flourishes cut straight from the reference screenshot (positions/size are % of the card, as in the reference). */
+/* Corner flourishes cut straight from the reference screenshot. Size and position are % of the card, as measured in the reference.
+   Each corner is its own element with its own image, so every one of the four is always drawn. */
 const CORNERS = [
-  { src: ornTL, style: { left: "3.04%", top: "3.28%" } },
-  { src: ornTR, style: { right: "2.83%", top: "3.28%" } },
-  { src: ornBL, style: { left: "3.04%", bottom: "4.64%" } },
-  { src: ornBR, style: { right: "2.83%", bottom: "4.64%" } },
+  { key: "tl", pos: { left: "3.04%", top: "3.28%" } },
+  { key: "tr", pos: { right: "2.83%", top: "3.28%" } },
+  { key: "bl", pos: { left: "3.04%", bottom: "4.64%" } },
+  { key: "br", pos: { right: "2.83%", bottom: "4.64%" } },
 ];
 
 /** Home page card for Aqaid / Masail: coloured Arabic title on top, English title below, flourish in all four corners.
@@ -82,10 +80,11 @@ const CORNERS = [
 export function CategoryCard({ to, arabic, title, color }) {
   return (
     <Link to={to} className="cat-card card-lift group relative flex aspect-[494/366] min-w-0 flex-col items-center justify-center rounded-md border border-rule bg-card px-3 text-center shadow-[0_2px_8px_rgb(0_0_0/0.16)]">
-      {CORNERS.map((c, i) => (
-        <img key={i} src={c.src} alt="" aria-hidden="true" draggable="false" className="pointer-events-none absolute h-auto w-[13.56%] select-none" style={c.style} />
+      {CORNERS.map(({ key, pos }) => (
+        <span key={key} aria-hidden="true" className="pointer-events-none absolute block w-[13.56%]"
+          style={{ ...pos, aspectRatio: `${ORNAMENTS[key].w} / ${ORNAMENTS[key].h}`, backgroundImage: `url(${ORNAMENTS[key].src})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }} />
       ))}
-      <span dir="rtl" lang="ar" className="cat-arabic font-bold" style={{ color, fontFamily: "'Aref Ruqaa', 'FS Urdu', 'FS Arabic', serif" }}>{arabic}</span>
+      <span dir="rtl" lang="ar" className="cat-arabic" style={{ color }}>{arabic}</span>
       <span className="mt-1 font-sans text-[1.05rem] font-medium leading-tight text-ink sm:mt-2 sm:text-xl">{title}</span>
     </Link>
   );

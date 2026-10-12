@@ -11,6 +11,8 @@ import { ArticleCard, CategoryCard } from "../../components/public/Cards.jsx";
 import { FoldersCard } from "../../components/public/FoldersCard.jsx";
 import { LiveSessionsSection } from "../../components/public/LiveSessions.jsx";
 import { CoursesSection } from "../../components/public/CourseCards.jsx";
+import { HeroBanner } from "../../components/public/HeroBanner.jsx";
+import { HERO_VARIANT } from "../../config/hero.js";
 
 /** Faint calligraphy behind the hero — Quranic phrases, set in a calligraphic face, very low contrast. */
 function HeroCalligraphy() {
@@ -36,6 +38,27 @@ function QuoteCard({ label, item }) {
   );
 }
 
+/** OLD hero (kept so the design can be switched back: set HERO_VARIANT = "classic" in config/hero.js). */
+function ClassicHero({ t, heroA, heroB }) {
+  return (
+    <>
+      <section className="hero-band">
+        <HeroCalligraphy />
+        <div className="container-page py-16 text-center sm:py-24">
+          <h1 className="mx-auto max-w-3xl animate-fade-up text-4xl font-bold leading-[1.15] sm:text-6xl">
+            {heroA}{heroB && <>, <span className="text-accent">{heroB}</span></>}
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl animate-fade-up text-lg text-mute [animation-delay:100ms]">{t.hero.desc}</p>
+          <div className="mt-9 flex animate-fade-up flex-wrap justify-center gap-3 [animation-delay:180ms]">
+            <Link to="/aqaid" className="btn-primary">{t.hero.cta1}<Icon name="arrow" size={16} className="rtl:rotate-180" /></Link>
+            <Link to="/masail" className="btn-outline">{t.hero.cta2}</Link>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
 export default function Home() {
   const { t } = useI18n();
   useMeta({});
@@ -54,19 +77,7 @@ export default function Home() {
 
   return (
     <>
-      <section className="hero-band">
-        <HeroCalligraphy />
-        <div className="container-page py-16 text-center sm:py-24">
-          <h1 className="mx-auto max-w-3xl animate-fade-up text-4xl font-bold leading-[1.15] sm:text-6xl">
-            {heroA}{heroB && <>, <span className="text-accent">{heroB}</span></>}
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl animate-fade-up text-lg text-mute [animation-delay:100ms]">{t.hero.desc}</p>
-          <div className="mt-9 flex animate-fade-up flex-wrap justify-center gap-3 [animation-delay:180ms]">
-            <Link to="/aqaid" className="btn-primary">{t.hero.cta1}<Icon name="arrow" size={16} className="rtl:rotate-180" /></Link>
-            <Link to="/masail" className="btn-outline">{t.hero.cta2}</Link>
-          </div>
-        </div>
-      </section>
+      {HERO_VARIANT === "classic" ? <ClassicHero t={t} heroA={heroA} heroB={heroB} /> : <HeroBanner />}
 
       <section className="border-b border-rule">
        <div className="mx-auto w-full max-w-6xl px-2 py-10 sm:px-8 sm:py-20">
