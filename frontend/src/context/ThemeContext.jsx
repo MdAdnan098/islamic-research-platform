@@ -8,8 +8,8 @@ const ThemeContext = createContext(null);
 
 const systemTheme = () => (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 const readMode = () => {
-  // First visit (nothing saved yet) opens in Light; "auto" only when the reader picks Default.
-  try { const s = localStorage.getItem(STORAGE_KEY); return THEME_MODES.includes(s) && s !== "sepia" && s !== "islamic" ? s : "light"; } catch { return "light"; }
+  // Only Light / Dark are offered. First visit (or an old "Default" choice) opens in Light.
+  try { return localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "light"; } catch { return "light"; }
 };
 
 function apply(theme) {

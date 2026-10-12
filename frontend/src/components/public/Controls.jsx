@@ -1,6 +1,6 @@
 import { CONTENT_LANGS, useI18n } from "../../i18n/index.jsx";
 import { useEffect, useRef, useState } from "react";
-import { THEME_MODES, useTheme } from "../../context/ThemeContext.jsx";
+import { useTheme } from "../../context/ThemeContext.jsx";
 import { Icon } from "../ui/icons.jsx";
 
 /** Closes a dropdown on outside press or Escape (focus returns to its button). */
@@ -127,64 +127,22 @@ export function ArticleLanguage({ className = "" }) {
   );
 }
 
-const THEME_META = {
-  auto: { label: "Default", icon: "monitor" },
-  light: { label: "Light", icon: "sun" },
-  sepia: { label: "Sepia", icon: "sunrise" },
-  dark: { label: "Dark", icon: "moon" },
-  islamic: { label: "Islamic", icon: "book" },
-};
-
-/** Theme dropdown: Default · Light · Dark. Sepia and Islamic are hidden for now (code kept): remove them from HIDDEN_THEMES to bring the buttons back. */
-const HIDDEN_THEMES = ["sepia", "islamic"];
-export function ThemeSwitcher({ className = "", align = "end", compact = false, up = false, showLabel = false }) {
-  const { mode, theme, setMode } = useTheme();
-  const [open, setOpen] = useState(false);
-  const box = useRef(null);
-  const current = THEME_META[mode === "auto" ? theme : mode];
-  const shown = mode === "auto" ? THEME_META.auto : current;
-  useDismiss(open, setOpen, box);
-
-  const pick = (m) => { setMode(m); setOpen(false); };
-
+/** Theme toggle: one button. Light shows a sun, Dark shows a moon; each tap flips to the other (no dropdown). */
+export function ThemeSwitcher({ className = "", showLabel = false }) {
+  const { theme, setMode } = useTheme();
+  const dark = theme === "dark";
   return (
-    <div ref={box} className={`relative ${className}`}>
+    <div className={`relative ${className}`}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={`Theme: ${shown.label}`}
+        onClick={() => setMode(dark ? "light" : "dark")}
+        aria-label={dark ? "Dark mode on - switch to Light" : "Light mode on - switch to Dark"}
+        title={dark ? "Dark" : "Light"}
         className={showLabel ? `${ICON_BTN} !flex !w-auto items-center !rounded-md gap-2.5 px-3 text-sm font-medium` : ICON_BTN}
       >
-        <Icon name={shown.icon} size={22} />
-        {showLabel && <span>Theme</span>}
+        <Icon name={dark ? "moon" : "sun"} size={22} />
+        {showLabel && <span>{dark ? "Dark" : "Light"}</span>}
       </button>
-      {open && (
-        <ul
-          role="listbox"
-          aria-label="Theme"
-          className={`absolute z-50 w-44 animate-fade overflow-hidden rounded-lg border border-rule bg-card p-1 shadow-soft ${up ? "bottom-full mb-2" : "top-full mt-2"} ${align === "end" ? "end-0" : "start-0"}`}
-        >
-          {THEME_MODES.filter((m) => !HIDDEN_THEMES.includes(m)).map((m) => {
-            const meta = THEME_META[m];
-            const on = mode === m;
-            return (
-              <li key={m} role="option" aria-selected={on}>
-                <button
-                  type="button"
-                  onClick={() => pick(m)}
-                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-start text-base transition-colors ${on ? "bg-tint font-semibold text-accent" : "text-ink hover:bg-tint"}`}
-                >
-                  <Icon name={meta.icon} size={19} />
-                  <span className="flex-1">{meta.label}</span>
-                  {on && <Icon name="check" size={17} />}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </div>
   );
 }
