@@ -8,7 +8,9 @@
     "deploy": "wrangler deploy",
     "verify:db": "node scripts/verify-db-connection.mjs",
     "create:admin": "node scripts/create-admin.mjs",
-    "bootstrap:indexes": "node scripts/bootstrap-indexes.mjs"
+    "bootstrap:indexes": "node scripts/bootstrap-indexes.mjs",
+    "backfill:search": "node scripts/backfill-search.mjs",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "mongodb": "^6.9.0"
