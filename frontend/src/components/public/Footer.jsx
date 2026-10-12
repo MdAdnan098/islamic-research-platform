@@ -113,7 +113,7 @@ export function Footer() {
       <div className="border-t border-rule">
         <AdminTapZone className="container-page flex flex-col items-center justify-between gap-2 py-5 text-sm text-mute sm:flex-row">
           <span>© {new Date().getFullYear()} <span className="text-accent">{BRAND.name}</span>. {t.footer.rights}</span>
-          <span className="whitespace-nowrap">{BRAND.tagline}</span>
+          <span className="whitespace-nowrap text-bronze">{BRAND.tagline}</span>
         </AdminTapZone>
       </div>
     </footer>

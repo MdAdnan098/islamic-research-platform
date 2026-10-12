@@ -23,6 +23,14 @@ export function Navbar() {
   };
   useEffect(() => { setOpen(false); }, [pathname]);
 
+  // Page behind the drawer must not scroll while it is open.
+  useEffect(() => {
+    if (!open) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
   // Close the menu when tapping outside the header.
   useEffect(() => {
     if (!open) return undefined;
@@ -36,7 +44,13 @@ export function Navbar() {
     { to: "/aqaid", label: t.nav.aqaid },
     { to: "/masail", label: t.nav.masail },
   ];
-  const extra = [
+  // Drawer order: Home, Aqaid, Masail, Folders, Latest Posts, Live Sessions, Our Courses, About
+  const drawerLinks = [
+    ...links,
+    { to: "/folders", label: t.home.folders },
+    { to: "/latest", label: t.home.latest },
+    { to: "/live", label: "Live Sessions" },
+    { to: "/courses", label: "Our Courses" },
     { to: "/about", label: t.nav.about },
   ];
   const linkCls = ({ isActive }) =>
@@ -71,43 +85,50 @@ export function Navbar() {
       </div>
 
       {open && (
-        <div className="bar-menu animate-fade border-t border-rule bg-paper md:absolute md:end-8 md:top-full md:mt-2 md:w-72 md:overflow-hidden md:rounded-xl md:border md:shadow-soft">
-          <nav className="flex flex-col px-5 py-2 sm:px-8 md:px-4" aria-label="Menu">
-            <form onSubmit={submitSearch} role="search" className="flex gap-2 border-b border-rule py-3">
-              <input type="search" value={q} onChange={(e) => setQ(e.target.value)} maxLength={100} dir="auto" placeholder={HERO_SEARCH_PLACEHOLDER} aria-label={HERO_SEARCH_PLACEHOLDER}
-                className="min-w-0 flex-1 rounded-full border border-rule bg-field px-4 py-2 text-base text-[#262626] placeholder:text-[#7a7a7a] focus:border-accent focus:outline-none dark:text-[#e9eaee] dark:placeholder:text-[#b7b8bc]" />
-              <button type="submit" className="btn-primary !px-4 !py-2 text-sm">{t.search.button}</button>
-            </form>
-            {links.map((l) => (
-              <NavLink key={l.to} {...l} className={(s) => `${itemCls(s)} md:hidden`}>{l.label}</NavLink>
-            ))}
-            {extra.map((l) => (
-              <NavLink key={l.to} to={l.to} className={itemCls}>{l.label}</NavLink>
-            ))}
-
-            <div className="flex items-center gap-3 py-4">
-              {SOCIALS.map(({ key, label, Glyph, bg }) => (
-                <a
-                  key={key}
-                  href={SOCIAL[key]}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  title={label}
-                  style={{ background: bg }}
-                  className="grid h-10 w-10 place-items-center rounded-full shadow-soft transition duration-200 hover:opacity-90"
-                >
-                  <Glyph />
-                </a>
+        <>
+          {/* Dim backdrop; the small gap on the left shows this is a drawer, tapping it closes the menu */}
+          <div className="animate-fade fixed inset-0 z-40 bg-black/45" onClick={() => setOpen(false)} aria-hidden="true" />
+          <aside role="dialog" aria-modal="true" aria-label={t.nav.menu}
+            className="bar-menu drawer-in fixed inset-y-0 right-0 z-50 flex w-[calc(100%-3rem)] max-w-sm flex-col overflow-y-auto bg-paper shadow-elev">
+            <div className="flex h-16 shrink-0 items-center justify-end px-3">
+              <button type="button" onClick={() => setOpen(false)} aria-label={t.nav.close} className="grid h-10 w-10 place-items-center rounded-full text-ink transition-colors hover:bg-tint">
+                <Icon name="x" size={22} />
+              </button>
+            </div>
+            <nav className="flex flex-1 flex-col px-5 pb-8" aria-label="Menu">
+              <form onSubmit={submitSearch} role="search" className="flex gap-2 border-b border-rule pb-4">
+                <input type="search" value={q} onChange={(e) => setQ(e.target.value)} maxLength={100} dir="auto" placeholder={HERO_SEARCH_PLACEHOLDER} aria-label={HERO_SEARCH_PLACEHOLDER}
+                  className="min-w-0 flex-1 rounded-full border border-rule bg-field px-4 py-2 text-base text-[#262626] placeholder:text-[#7a7a7a] focus:border-accent focus:outline-none dark:text-[#e9eaee] dark:placeholder:text-[#b7b8bc]" />
+                <button type="submit" className="btn-primary !px-4 !py-2 text-sm">{t.search.button}</button>
+              </form>
+              {drawerLinks.map((l) => (
+                <NavLink key={l.to} to={l.to} end={l.end} className={itemCls}>{l.label}</NavLink>
               ))}
-            </div>
 
-            <div className="flex gap-5 pb-3 text-sm text-mute">
-              <Link to="/disclaimer" className="hover:text-ink">{t.nav.disclaimer}</Link>
-              <Link to="/privacy" className="hover:text-ink">{t.nav.privacy}</Link>
-            </div>
-          </nav>
-        </div>
+              <div className="flex gap-5 pt-4 text-sm text-mute">
+                <Link to="/disclaimer" className="hover:text-ink">{t.nav.disclaimer}</Link>
+                <Link to="/privacy" className="hover:text-ink">{t.nav.privacy}</Link>
+              </div>
+
+              <div className="flex items-center gap-3 pt-5">
+                {SOCIALS.map(({ key, label, Glyph, bg }) => (
+                  <a
+                    key={key}
+                    href={SOCIAL[key]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    title={label}
+                    style={{ background: bg }}
+                    className="grid h-10 w-10 place-items-center rounded-full shadow-soft transition duration-200 hover:opacity-90"
+                  >
+                    <Glyph />
+                  </a>
+                ))}
+              </div>
+            </nav>
+          </aside>
+        </>
       )}
     </header>
   );
