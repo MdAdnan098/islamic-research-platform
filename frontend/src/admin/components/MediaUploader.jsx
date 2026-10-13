@@ -4,6 +4,21 @@ import { mediaUrl, isPdfKey } from "../../lib/media.js";
 import { Icon } from "../../components/ui/icons.jsx";
 import { useToast } from "./ui.jsx";
 
+// The same picked file is uploaded ONCE: if the phone's file picker reports the pick twice (some Android pickers fire the
+// "change" event two times), or the same file is picked again within a few seconds, the first upload's key is reused.
+// Without this every such pick left a second, unused copy behind in the R2 bucket.
+const recent = new Map(); // "name|size|lastModified" -> { promise, at }
+const REUSE_MS = 20000;
+function uploadOnce(file) {
+  const sig = `${file.name}|${file.size}|${file.lastModified}`;
+  const hit = recent.get(sig);
+  if (hit && Date.now() - hit.at < REUSE_MS) return hit.promise;
+  const promise = adminApi.upload(file);
+  recent.set(sig, { promise, at: Date.now() });
+  promise.catch(() => recent.delete(sig)); // a failed upload may be tried again at once
+  return promise;
+}
+
 /** Uploads to R2 via POST /api/admin/media; stores only the returned key. */
 export function MediaUploader({ value, onChange, accept = "image/*", label = "Upload file", compact }) {
   const toast = useToast();
@@ -16,7 +31,7 @@ export function MediaUploader({ value, onChange, accept = "image/*", label = "Up
     if (!file) return;
     setBusy(true);
     try {
-      const { key } = await adminApi.upload(file);
+      const { key } = await uploadOnce(file);
       onChange(key);
     } catch (err) {
       toast(err.message, "error");
