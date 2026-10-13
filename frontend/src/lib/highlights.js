@@ -13,7 +13,10 @@ const isSacred = (b) => b.type === "quote" && (b.kind === "ayat" || b.kind === "
 
 /** The version key whose text is actually on screen: the reader's language if that translation exists, else the base text. */
 export function shownLang(b, baseLang, want) {
-  if (isSacred(b) || want === baseLang || !b.tr?.[want]?.trim()) return baseLang;
+  // `tr[want]` is a string for text blocks but an object ({ book, author, ... }) for reference blocks,
+  // so it must be checked as a string before .trim() (calling .trim() on that object crashed the page).
+  const v = b.tr?.[want];
+  if (isSacred(b) || want === baseLang || typeof v !== "string" || !v.trim()) return baseLang;
   return want;
 }
 

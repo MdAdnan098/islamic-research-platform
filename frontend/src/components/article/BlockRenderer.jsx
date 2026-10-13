@@ -11,6 +11,8 @@ import { ScanViewer } from "./ScanViewer.jsx";
 
 // Admin-only inline "add block" control: loaded on demand, so public visitors never download it.
 const InlineAdd = lazy(() => import("../../admin/components/InlineAdd.jsx"));
+// Admin-only inline "edit block" form (pencil under every block): also loaded on demand.
+const InlineEdit = lazy(() => import("../../admin/components/InlineEdit.jsx"));
 
 const AR = "\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF";
 const RTL_RUN = new RegExp(`[${AR}]+(?:[\\s\\u200c\\u200d.,:;!?()'"\\u201C\\u201D\\u00AB\\u00BB\\-\\u2013\\u2014]+[${AR}]+)*`, "g");
@@ -109,8 +111,9 @@ function Pdf({ b }) {
   );
 }
 
-export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", hlEdit = false, inline }) {
+export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", hlEdit = false, inline, edit }) {
   const { contentLang } = useI18n();
+  const [editingKey, setEditingKey] = useState(null); // the block whose inline editor is open (admin only)
   const txt = (b) => (b.kind === "ayat" || b.kind === "hadith" ? b.text : pickVersion(b.text, b.tr, baseLang, contentLang));
   const refMap = Object.fromEntries(references.map((r) => [r.id, r]));
   function renderBlock(b, i) {
@@ -163,12 +166,25 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
   return (
     <div className="reading">
       {inline && blocks.length === 0 && <Suspense fallback={null}><InlineAdd onInsert={(block) => inline.onInsert(-1, block, null)} /></Suspense>}
-      {blocks.map((b, i) => (
-        <Fragment key={b.id || i}>
-          {renderBlock(b, i)}
+      {blocks.map((b, i) => {
+        const key = b.id || i;
+        const editing = !!edit && editingKey === key;
+        // Reference blocks keep their converted fields per reader language, other blocks per shown script version.
+        const editLang = b.type === "reference" ? contentLang : shownLang(b, baseLang, contentLang);
+        return (
+        <Fragment key={key}>
+          {editing
+            ? <Suspense fallback={null}><InlineEdit block={b} baseLang={baseLang} lang={editLang} onCancel={() => setEditingKey(null)} onSave={async (nb) => { await edit.onSave(i, nb); setEditingKey(null); }} /></Suspense>
+            : renderBlock(b, i)}
+          {edit && !editing && b.type !== "divider" && (
+            <div dir="ltr" className="my-1 font-sans">
+              <button type="button" onClick={() => setEditingKey(key)} aria-label="Edit this block" className="inline-flex items-center gap-1 rounded-full border border-rule px-2.5 py-0.5 text-[11px] font-semibold text-mute opacity-70 transition hover:border-accent/60 hover:text-ink hover:opacity-100"><Icon name="edit" size={12} />Edit</button>
+            </div>
+          )}
           {inline && <Suspense fallback={null}><InlineAdd onInsert={(block) => inline.onInsert(i, block, b.id || null)} /></Suspense>}
         </Fragment>
-      ))}
+        );
+      })}
     </div>
   );
 }

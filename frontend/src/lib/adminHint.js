@@ -48,3 +48,25 @@ export async function insertBlockInto(article, references, index, afterId, block
   const extra = (await Promise.all(missing.map((id) => adminApi.references.get(id).catch(() => null)))).filter(Boolean);
   return { article: { ...article, blocks: saved.blocks, updatedAt: saved.updatedAt }, references: [...(references || []), ...extra] };
 }
+
+/**
+ * Replaces ONE block of a stored article with its edited version and saves the whole post (admin only), then makes sure
+ * the post is published (a draft is published; a live post is simply updated). Works on a fresh copy fetched from the
+ * server, so a stale page cannot overwrite newer edits. Returns what the page needs to refresh itself.
+ */
+export async function saveBlockEdit(article, references, index, block) {
+  const [{ adminApi }, { withIds, referenceIdsOf }, { cleanBlocksHl }] = await Promise.all([import("../services/admin.js"), import("./blocks.js"), import("./highlights.js")]);
+  const fresh = await adminApi.articles.get(article.id);
+  const current = withIds(fresh.blocks || []);
+  let at = block.id ? current.findIndex((b) => b.id === block.id) : -1;
+  if (at < 0) at = index;
+  if (at < 0 || at >= current.length) throw new Error("Ye hissa post mein nahi mila. Page refresh karke dobara koshish karein.");
+  const next = current.map((b, i) => (i === at ? { ...block, id: b.id } : b));
+  const blocks = cleanBlocksHl(next, fresh.language || article.language || "en");
+  let saved = await adminApi.articles.update(article.id, { blocks, references: referenceIdsOf(blocks), baseUpdatedAt: fresh.updatedAt });
+  if (saved.status === "draft") saved = await adminApi.articles.action(article.id, "publish");
+  // References are re-read so a book name that was just edited (or a newly chosen reference) is drawn straight away.
+  const known = new Map((references || []).map((r) => [r.id, r]));
+  const refs = (await Promise.all(referenceIdsOf(saved.blocks).map((id) => adminApi.references.get(id).catch(() => known.get(id) || null)))).filter(Boolean);
+  return { article: { ...article, blocks: saved.blocks, updatedAt: saved.updatedAt, status: saved.status }, references: refs };
+}

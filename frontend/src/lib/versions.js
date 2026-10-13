@@ -9,7 +9,11 @@ import { inheritMarks, withoutVersionMarks } from "./highlights.js";
 export const VERSION_LANGS = [["en", "Roman"], ["hi", "Hindi"], ["ur", "Urdu"]];
 export const targetLangs = (base) => VERSION_LANGS.filter(([c]) => c !== base);
 /** Text to show for `want`; falls back to the base text when that version is missing. */
-export const pickVersion = (base, tr, baseLang, want) => (want === baseLang ? base : (tr?.[want]?.trim() ? tr[want] : base));
+export const pickVersion = (base, tr, baseLang, want) => {
+  if (want === baseLang) return base;
+  const v = tr?.[want];
+  return typeof v === "string" && v.trim() ? v : base;
+};
 
 /** The fields of a reference (book / author / volume / page / text) that are converted along with the post. */
 const REF_FIELDS = [["book", "Book"], ["author", "Author"], ["volume", "Volume"], ["page", "Page"], ["referenceText", "Text"]];
@@ -112,11 +116,11 @@ export function buildCopyText(lang, title, blocks, baseLang, refs = {}) {
     `Output (${to.short}): ${to.sample}`,
     "",
     "RULES:",
-    "1. This is NOT a translation. Only the script changes. Keep every word exactly as the author wrote it (Urdu-style words stay Urdu-style). Example: if the source says \"alfaaz\", Hindi output is \"अल्फ़ाज़\" and Urdu output is \"الفاظ\", never \"शब्द\". Never use pure (Sanskrit) Hindi words and never swap words for synonyms: the readers are Muslims.",
+    "1. This is NOT a translation. Only the script changes. Keep every word exactly as the author wrote it (Urdu-style words stay Urdu-style), except for the clear typing mistakes described in rule 5. Example: if the source says \"alfaaz\", Hindi output is \"अल्फ़ाज़\" and Urdu output is \"الفاظ\", never \"शब्द\". Never use pure (Sanskrit) Hindi words and never swap words for synonyms: the readers are Muslims.",
     "2. Keep every [number] marker exactly as it is, written with English digits like [5] (even in Urdu or Hindi), in the same order. Output block [5] must be the conversion of input block [5] and nothing else. Never move text from one marker to another.",
     "3. Inside each block keep exactly the same number of lines and sentences: line 1 stays line 1, line 2 stays line 2. Keep the same line breaks and blank lines. Do not merge, split, add or drop any line or sentence.",
     "4. Keep Arabic text (Quran, hadith, Arabic phrases) unchanged.",
-    "5. If the source has an obvious spelling mistake, write the corrected spelling. Do not copy the mistake.",
+    "5. FIX THE AUTHOR'S TYPING MISTAKES (use your own judgement). The author typed this post by hand and sometimes made a slip: a wrong letter or matra, so that a word turns into a different word that makes no sense in its sentence. Do not copy such a slip. Read each sentence, understand what it is about (Quran, hadith, aqeedah, fiqh, names of the Prophet, Sahaba, scholars, books), and where you are SURE the author meant another word, write the word the author MEANT, spelled correctly, in the target script. Example: the Hindi source says \"अहले बैल\" (bail = an ox) in a sentence about the family of the Prophet; the author meant \"अहले बैत\" (Ahl-e-Bayt), so the Roman output is \"Ahle Bait\" and the Urdu output is \"اہلِ بیت\". Apply the same care to Islamic terms, Arabic words, names of people and places and book names. Correct ONLY slips you are sure about. If you are not sure, keep the author's word exactly as it is. Apart from such slips, never rewrite, rephrase, shorten, add to or improve the text, and never change the author's style or grammar. Do not mention, mark or explain any correction you make.",
     "6. A block that has lines starting with Book:, Author:, Volume:, Page:, Text: is a book reference. Keep those five labels in English, each on its own line, and convert only what comes after each label. Numbers stay as they are.",
     "7. Reply with ONLY the converted blocks. No introduction, no explanation, no notes, no code block, no bold or other markdown.",
     `8. The whole answer must be in ${to.name}. Start your answer directly with [${first}].`,

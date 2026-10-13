@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { insertBlockInto, saveHighlights } from "../../lib/adminHint.js";
+import { insertBlockInto, saveBlockEdit, saveHighlights } from "../../lib/adminHint.js";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
@@ -11,6 +11,7 @@ import { ErrorState, Skeleton } from "../../components/ui/feedback.jsx";
 export default function Preview() {
   const { id } = useParams();
   const [hlOn, setHlOn] = useState(false);
+  const [editOn, setEditOn] = useState(false);
   const { data, error, loading, reload, setData } = useAsync(async (s) => {
     const article = await adminApi.articles.get(id, s);
     const ids = [...new Set((article.blocks || []).filter((b) => b.type === "reference" && b.referenceId).map((b) => b.referenceId))];
@@ -24,9 +25,12 @@ export default function Preview() {
         : error && !data ? <div className="container-read py-16"><ErrorState error={error} onRetry={reload} /></div>
         : (
           <>
-            <ArticleView {...data} inline={{ onInsert: async (index, block, afterId) => { const next = await insertBlockInto(data.article, data.references, index, afterId, block); setData((d) => ({ ...d, ...next })); } }} banner={data.article.status !== "published" ? `Preview — status: ${data.article.status}. Not visible to the public.` : "Preview — this article is live."}
+            <ArticleView {...data} edit={editOn ? { onSave: async (index, block) => { const next = await saveBlockEdit(data.article, data.references, index, block); setData((d) => ({ ...d, ...next })); } } : undefined} inline={{ onInsert: async (index, block, afterId) => { const next = await insertBlockInto(data.article, data.references, index, afterId, block); setData((d) => ({ ...d, ...next })); } }} banner={data.article.status !== "published" ? `Preview — status: ${data.article.status}. Not visible to the public.` : "Preview — this article is live."}
               editor={hlOn ? { enabled: true, onApply: async (edits) => { const saved = await saveHighlights(data.article, edits); setData((d) => ({ ...d, article: { ...d.article, blocks: saved.blocks, updatedAt: saved.updatedAt } })); } } : undefined} />
-            <button type="button" dir="ltr" aria-pressed={hlOn} onClick={() => setHlOn((v) => !v)} className="fixed bottom-4 start-4 z-[60] rounded-xl border border-rule bg-paper px-3 py-2 text-xs font-semibold text-ink shadow-elev">Highlight mode: {hlOn ? "ON" : "OFF"}</button>
+            <div dir="ltr" className="fixed bottom-4 start-4 z-[60] flex flex-col gap-1 rounded-xl border border-rule bg-paper px-3 py-2 text-xs text-ink shadow-elev">
+              <button type="button" aria-pressed={hlOn} onClick={() => setHlOn((v) => !v)} className="text-start font-semibold">Highlight mode: {hlOn ? "ON" : "OFF"}</button>
+              <button type="button" aria-pressed={editOn} onClick={() => setEditOn((v) => !v)} className="text-start font-semibold">Edit buttons: {editOn ? "ON" : "OFF"}</button>
+            </div>
           </>
         )}
     </PublicLayout>

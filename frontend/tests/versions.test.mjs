@@ -43,3 +43,20 @@ test("without any markers the parts are taken in order when the counts match", (
   assert.deepEqual(parseByOrder("T\n\nx\n\ny", bl, true), { 0: "T", 1: "x", 3: "y" });
   assert.equal(parseByOrder("x", bl, true), null);
 });
+
+// Regression: a reference block keeps its converted fields as an OBJECT in tr[lang]; the renderer asks shownLang()/pickVersion()
+// about every block, and calling .trim() on that object crashed Urdu/Roman pages ("l.trim is not a function").
+import { shownLang } from "../src/lib/highlights.js";
+import { pickVersion } from "../src/lib/versions.js";
+test("reference blocks with object translations do not crash shownLang / pickVersion", () => {
+  const ref = { id: "r", type: "reference", referenceId: "x", tr: { ur: { book: "کتاب" }, en: { book: "Kitab" } } };
+  assert.equal(shownLang(ref, "hi", "ur"), "hi");
+  assert.equal(shownLang(ref, "hi", "en"), "hi");
+  assert.equal(shownLang({ type: "text", text: "a", tr: { ur: "ب" } }, "hi", "ur"), "ur");
+  assert.equal(pickVersion("base", { ur: { book: "x" } }, "hi", "ur"), "base");
+  assert.equal(pickVersion("base", { ur: "ب" }, "hi", "ur"), "ب");
+});
+test("copy prompt asks the converter to fix obvious typing mistakes", () => {
+  const out = buildCopyText("ur", "t", [{ type: "text", text: "अहले बैल" }], "hi", {});
+  assert.match(out, /FIX THE AUTHOR'S TYPING MISTAKES/);
+});
