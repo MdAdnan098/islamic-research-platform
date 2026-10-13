@@ -13,6 +13,8 @@ import { ScanViewer } from "./ScanViewer.jsx";
 const InlineAdd = lazy(() => import("../../admin/components/InlineAdd.jsx"));
 // Admin-only inline "edit block" form (pencil under every block): also loaded on demand.
 const InlineEdit = lazy(() => import("../../admin/components/InlineEdit.jsx"));
+// Admin-only Edit / Up / Down / Delete buttons under every block: also loaded on demand.
+const BlockTools = lazy(() => import("../../admin/components/BlockTools.jsx"));
 
 const AR = "\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF";
 const RTL_RUN = new RegExp(`[${AR}]+(?:[\\s\\u200c\\u200d.,:;!?()'"\\u201C\\u201D\\u00AB\\u00BB\\-\\u2013\\u2014]+[${AR}]+)*`, "g");
@@ -176,10 +178,15 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           {editing
             ? <Suspense fallback={null}><InlineEdit block={b} baseLang={baseLang} lang={editLang} onCancel={() => setEditingKey(null)} saveLabel={edit.saveLabel} onSave={async (nb) => { await edit.onSave(i, nb); setEditingKey(null); }} /></Suspense>
             : renderBlock(b, i)}
-          {edit && !editing && b.type !== "divider" && (
-            <div dir="ltr" className="my-1 font-sans">
-              <button type="button" onClick={() => setEditingKey(key)} aria-label="Edit this block" className="inline-flex items-center gap-1 rounded-full border border-rule px-2.5 py-0.5 text-[11px] font-semibold text-mute opacity-70 transition hover:border-accent/60 hover:text-ink hover:opacity-100"><Icon name="edit" size={12} />Edit</button>
-            </div>
+          {edit && !editing && (
+            <Suspense fallback={null}>
+              <BlockTools
+                index={i} count={blocks.length} block={b}
+                onEdit={b.type !== "divider" ? () => setEditingKey(key) : null}
+                onMove={edit.onMove ? (dir) => edit.onMove(i, dir, b.id || null) : null}
+                onRemove={edit.onRemove ? () => edit.onRemove(i, b.id || null) : null}
+              />
+            </Suspense>
           )}
           {inline && <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={(block) => inline.onInsert(i, block, b.id || null)} /></Suspense>}
         </Fragment>
