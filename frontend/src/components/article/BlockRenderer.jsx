@@ -165,7 +165,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
 
   return (
     <div className="reading">
-      {inline && blocks.length === 0 && <Suspense fallback={null}><InlineAdd onInsert={(block) => inline.onInsert(-1, block, null)} /></Suspense>}
+      {inline && blocks.length === 0 && <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:start` : undefined} onInsert={(block) => inline.onInsert(-1, block, null)} /></Suspense>}
       {blocks.map((b, i) => {
         const key = b.id || i;
         const editing = !!edit && editingKey === key;
@@ -181,7 +181,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
               <button type="button" onClick={() => setEditingKey(key)} aria-label="Edit this block" className="inline-flex items-center gap-1 rounded-full border border-rule px-2.5 py-0.5 text-[11px] font-semibold text-mute opacity-70 transition hover:border-accent/60 hover:text-ink hover:opacity-100"><Icon name="edit" size={12} />Edit</button>
             </div>
           )}
-          {inline && <Suspense fallback={null}><InlineAdd onInsert={(block) => inline.onInsert(i, block, b.id || null)} /></Suspense>}
+          {inline && <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={(block) => inline.onInsert(i, block, b.id || null)} /></Suspense>}
         </Fragment>
         );
       })}

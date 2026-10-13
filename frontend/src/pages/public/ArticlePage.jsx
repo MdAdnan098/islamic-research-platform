@@ -41,6 +41,7 @@ export default function ArticlePage() {
   } : undefined;
   // Admin only: small "+ Add" under every block, saved straight into this post (no trip back to the dashboard).
   const inline = isAdmin && addOn ? {
+    scope: data.article.id,
     onInsert: async (index, block, afterId) => {
       const next = await insertBlockInto(data.article, data.references, index, afterId, block);
       setData((d) => ({ ...d, ...next }));

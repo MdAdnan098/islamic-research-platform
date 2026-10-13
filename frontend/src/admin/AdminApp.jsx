@@ -7,6 +7,7 @@ import AdminAccess from "./pages/AdminAccess.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Articles from "./pages/Articles.jsx";
 import ArticleEditor from "./pages/ArticleEditor.jsx";
+import ArticleComposer from "./pages/ArticleComposer.jsx";
 import Categories from "./pages/Categories.jsx";
 import Topics from "./pages/Topics.jsx";
 import References from "./pages/References.jsx";
@@ -36,7 +37,6 @@ export default function AdminApp() {
             <Route element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="articles" element={<Articles />} />
-              <Route path="articles/new" element={<ArticleEditor />} />
               <Route path="articles/:id" element={<ArticleEditor />} />
               <Route path="categories" element={<Categories />} />
               <Route path="topics" element={<Topics />} />
@@ -47,6 +47,9 @@ export default function AdminApp() {
               <Route path="payments" element={<Payments />} />
             </Route>
             <Route path="preview/:id" element={<Preview />} />
+            {/* "New article" and "Page view": the post as a live page (outside the admin sidebar layout) */}
+            <Route path="articles/new" element={<ArticleComposer />} />
+            <Route path="articles/:id/write" element={<ArticleComposer />} />
           </Route>
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>

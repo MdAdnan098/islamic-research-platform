@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { newBlock } from "../../lib/blocks.js";
 import { BLOCK_META } from "../../lib/blocks.js";
 import { Icon } from "../../components/ui/icons.jsx";
@@ -15,8 +15,14 @@ function problem(b) {
   return "";
 }
 
-function Draft({ initial, onSave, onCancel }) {
+/* The half-written block is kept in this browser (localStorage) until it is saved or cancelled, so a page reload
+   (for example Chrome refreshing a tab you switched away from) never loses what was pasted into the form. */
+const readBackup = (key) => { try { const v = key && localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch { return null; } };
+const writeBackup = (key, v) => { try { if (key) { v === null ? localStorage.removeItem(key) : localStorage.setItem(key, JSON.stringify(v)); } } catch { /* ignore */ } };
+
+function Draft({ initial, onSave, onCancel, backupKey, restored }) {
   const [block, setBlock] = useState(initial);
+  useEffect(() => { if (backupKey) writeBackup(backupKey, block); }, [block, backupKey]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const set = (p) => { setErr(""); setBlock((b) => ({ ...b, ...p })); };
@@ -31,7 +37,7 @@ function Draft({ initial, onSave, onCancel }) {
   return (
     <ToastProvider>
       <div dir="ltr" className="my-3 space-y-3 rounded-xl border border-rule bg-card p-3.5 font-sans text-base text-ink shadow-soft">
-        <p className="flex items-center gap-2 text-xs font-semibold text-mute"><span className="w-4 text-center">{BLOCK_META[block.type]?.icon}</span>Naya {BLOCK_META[block.type]?.label}</p>
+        <p className="flex items-center gap-2 text-xs font-semibold text-mute"><span className="w-4 text-center">{BLOCK_META[block.type]?.icon}</span>Naya {BLOCK_META[block.type]?.label}{restored && <span className="rounded-full bg-rule/50 px-2 py-0.5">pichla adhura likha hua wapas aaya</span>}</p>
         <Fields block={block} set={set} />
         {err && <p role="alert" className="text-sm text-ad-danger">{err}</p>}
         <div className="flex flex-wrap gap-2">
@@ -48,12 +54,14 @@ function Draft({ initial, onSave, onCancel }) {
  * "Insert below" in the editor; the new block is filled in right here and saved straight into the post,
  * so the admin never has to go back to the dashboard.
  */
-export default function InlineAdd({ onInsert }) {
+export default function InlineAdd({ onInsert, backupKey }) {
   const [menu, setMenu] = useState(false);
-  const [draft, setDraft] = useState(null);
+  const [restored] = useState(() => readBackup(backupKey));
+  const [draft, setDraft] = useState(restored);
+  const closeDraft = () => { writeBackup(backupKey, null); setDraft(null); };
 
   if (draft) {
-    return <Draft initial={draft} onCancel={() => setDraft(null)} onSave={async (b) => { await onInsert(b); setDraft(null); }} />;
+    return <Draft initial={draft} backupKey={backupKey} restored={!!restored && draft === restored} onCancel={closeDraft} onSave={async (b) => { await onInsert(b); closeDraft(); }} />;
   }
   return (
     <div dir="ltr" className="my-1 font-sans">
