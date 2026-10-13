@@ -62,9 +62,12 @@ export const adminApi = {
     list: (params, signal) => request(`/api/admin/payments${qs(params)}`, { signal }).then((d) => d.payments),
   },
 
-  upload(file) {
+  // Images are shrunk in the browser first (see lib/compressImage.js), then stored in R2.
+  async upload(file) {
+    const { compressImage } = await import("../lib/compressImage.js");
+    const small = await compressImage(file);
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", small);
     return request("/api/admin/media", { method: "POST", form });
   },
 };
