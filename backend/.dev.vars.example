@@ -3,7 +3,7 @@
 
 # MongoDB Atlas connection string (use a database user with least privilege).
 MONGODB_URI=mongodb+srv://<user>:<password>@<cluster-host>/?retryWrites=true&w=majority
-MONGODB_DB_NAME=islamic_research
+MONGODB_DB_NAME=islamic-research
 
 # Reserved for future admin authentication (not implemented yet).
 ADMIN_JWT_SECRET=replace-with-a-long-random-value

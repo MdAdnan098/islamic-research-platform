@@ -1,4 +1,5 @@
 import { loadConfig } from "../config/env.js";
+import { collectMediaKeys, removeUnusedMedia } from "../services/mediaCleanup.js";
 import { requireAdmin } from "../middleware/adminAuth.js";
 import { jsonSuccess } from "../utils/response.js";
 import { safeParseJson } from "../utils/validate.js";
@@ -77,6 +78,7 @@ export async function remove(request, env, ctx, params) {
   const config = loadConfig(env);
   await requireAdmin(request, env);
 
-  await deleteReference(config, params.id);
+  const gone = await deleteReference(config, params.id);
+  await removeUnusedMedia(config, collectMediaKeys(gone)); // its scanned page leaves the R2 bucket too
   return jsonSuccess({ deleted: true }, { allowedOrigin: config.allowedOrigin });
 }

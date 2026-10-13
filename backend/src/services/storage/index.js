@@ -1,4 +1,4 @@
-import { putObject, getObject } from "./r2.service.js";
+import { putObject, getObject, deleteObject } from "./r2.service.js";
 import { uploadToImageKit, imagekitUrl } from "./imagekit.service.js";
 
 /**
@@ -33,6 +33,7 @@ function r2Provider(config) {
   return {
     name: "r2",
     put: (key, data, options) => putObject(config.mediaBucket, key, data, options),
+    delete: (key) => deleteObject(config.mediaBucket, key),
     // Stream the object from the bucket through the Worker (the bucket itself is never public).
     async serve(key) {
       const object = await getObject(config.mediaBucket, key);
@@ -54,6 +55,7 @@ function imagekitProvider(config) {
   return {
     name: "imagekit",
     put: (key, data, options) => uploadToImageKit(config.imagekit, key, data, options),
+    delete: async () => {}, // temporary provider: nothing is removed from ImageKit
     // Temporary: the file lives on ImageKit's CDN, so just redirect to it.
     async serve(key) {
       return new Response(null, {

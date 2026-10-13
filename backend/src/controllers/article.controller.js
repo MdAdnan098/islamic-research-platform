@@ -1,4 +1,5 @@
 import { loadConfig } from "../config/env.js";
+import { collectMediaKeys, removeUnusedMedia } from "../services/mediaCleanup.js";
 import { requireAdmin } from "../middleware/adminAuth.js";
 import { jsonSuccess } from "../utils/response.js";
 import { safeParseJson } from "../utils/validate.js";
@@ -156,7 +157,9 @@ export async function unpublish(request, env, ctx, params) {
 export async function remove(request, env, ctx, params) {
   const config = loadConfig(env);
   await requireAdmin(request, env);
-  await deleteArticle(config, params.id);
+  const gone = await deleteArticle(config, params.id);
+  // The post is gone from MongoDB; now its cover / banner / in-post images leave the R2 bucket too (unless another post still uses them).
+  await removeUnusedMedia(config, collectMediaKeys(gone));
   return jsonSuccess({ deleted: true }, { allowedOrigin: config.allowedOrigin });
 }
 
@@ -164,7 +167,8 @@ export async function remove(request, env, ctx, params) {
 export async function removeAll(request, env) {
   const config = loadConfig(env);
   await requireAdmin(request, env);
-  const count = await deleteAllArticles(config);
+  const { count, articles } = await deleteAllArticles(config);
+  await removeUnusedMedia(config, collectMediaKeys(articles));
   return jsonSuccess({ deleted: count }, { allowedOrigin: config.allowedOrigin });
 }
 

@@ -303,13 +303,15 @@ export async function deleteArticle(config, id) {
   if (!existing) throwNotFound();
   const collection = await getArticlesCollection(config);
   await collection.deleteOne({ _id: new ObjectId(id) });
+  return existing; // the caller removes the media files this article used
 }
 
 /** Permanently deletes EVERY article. Returns how many were removed. */
 export async function deleteAllArticles(config) {
   const collection = await getArticlesCollection(config);
+  const all = await collection.find({}).toArray(); // kept only to find their media files afterwards
   const res = await collection.deleteMany({});
-  return res.deletedCount;
+  return { count: res.deletedCount, articles: all };
 }
 
 /**

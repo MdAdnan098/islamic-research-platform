@@ -152,7 +152,7 @@ export async function deleteReference(config, id) {
 
   const collection = await getReferencesCollection(config);
   await collection.deleteOne({ _id: new ObjectId(id) });
-  return true;
+  return existing; // the caller removes the scanned page file from storage
 }
 
 export function toSafeReference(reference) {
