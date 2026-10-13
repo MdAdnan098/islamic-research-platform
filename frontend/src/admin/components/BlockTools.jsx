@@ -3,14 +3,14 @@ import { BLOCK_META } from "../../lib/blocks.js";
 import { Icon } from "../../components/ui/icons.jsx";
 import { useConfirm, useToast } from "./ui.jsx";
 
-const ib = "inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-full px-1.5 text-[11px] font-semibold text-mute transition hover:bg-rule/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-mute";
+const ib = "inline-flex h-6 min-w-6 items-center justify-center gap-1 rounded-full px-1.5 text-[11px] font-semibold text-mute transition hover:bg-rule/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-mute";
 
 /**
  * Admin-only: the small button row shown under every block of the post -
  * Edit, move Up, move Down and Delete (Delete always asks "Yes, delete / Cancel" first).
  * Loaded on demand, so public visitors never download it.
  */
-export default function BlockTools({ index, count, block, onEdit, onMove, onRemove }) {
+export default function BlockTools({ index, count, block, onEdit, onMove, onRemove, embedded = false }) {
   const [confirm, dialog] = useConfirm();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -33,9 +33,10 @@ export default function BlockTools({ index, count, block, onEdit, onMove, onRemo
   }
 
   // One thin, faint pill at the right edge under the block: it never competes with the text, and lights up on hover / touch.
+  // embedded: sits on the same line as the "+ Add" button (InlineAdd draws that line), so the post stays compact.
   return (
-    <div dir="ltr" className="my-0.5 flex justify-end font-sans opacity-50 transition-opacity focus-within:opacity-100 hover:opacity-100">
-      <div className="inline-flex items-center gap-0.5 rounded-full border border-rule/70 bg-card/70 px-1 py-0.5">
+    <div dir="ltr" className={embedded ? "shrink-0 font-sans" : "my-0 flex justify-end font-sans opacity-50 transition-opacity focus-within:opacity-100 hover:opacity-100"}>
+      <div className="inline-flex items-center gap-0.5 rounded-full border border-rule/70 bg-card/70 px-1 py-0">
         {onEdit && <button type="button" disabled={busy} onClick={onEdit} title="Edit" aria-label={`Edit this ${label}`} className={ib}><Icon name="edit" size={13} />Edit</button>}
         {onMove && <button type="button" disabled={busy || index <= 0} onClick={() => run(() => onMove(-1))} title="Upar" aria-label={`Move this ${label} up`} className={ib}><Icon name="up" size={14} /></button>}
         {onMove && <button type="button" disabled={busy || index >= count - 1} onClick={() => run(() => onMove(1))} title="Neeche" aria-label={`Move this ${label} down`} className={ib}><Icon name="down" size={14} /></button>}

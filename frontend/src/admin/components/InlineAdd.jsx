@@ -54,7 +54,7 @@ function Draft({ initial, onSave, onCancel, backupKey, restored }) {
  * "Insert below" in the editor; the new block is filled in right here and saved straight into the post,
  * so the admin never has to go back to the dashboard.
  */
-export default function InlineAdd({ onInsert, backupKey }) {
+export default function InlineAdd({ onInsert, backupKey, tools = null }) {
   const [menu, setMenu] = useState(false);
   const [restored] = useState(() => readBackup(backupKey));
   const [draft, setDraft] = useState(restored);
@@ -64,13 +64,13 @@ export default function InlineAdd({ onInsert, backupKey }) {
     return <Draft initial={draft} backupKey={backupKey} restored={!!restored && draft === restored} onCancel={closeDraft} onSave={async (b) => { await onInsert(b); closeDraft(); }} />;
   }
   return (
-    <div dir="ltr" className="my-0.5 font-sans">
-      <div className="flex items-center gap-3 opacity-40 transition-opacity focus-within:opacity-100 hover:opacity-100">
-        <span className="h-px flex-1 border-t border-dashed border-rule" aria-hidden="true" />
-        <button type="button" aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="inline-flex items-center gap-1 rounded-full border border-rule bg-card/70 px-2.5 py-0.5 text-[11px] font-semibold text-mute transition hover:border-accent/60 hover:text-ink">
+    <div dir="ltr" className="my-0 font-sans">
+      <div className="flex items-center gap-2 opacity-40 transition-opacity focus-within:opacity-100 hover:opacity-100">
+        <button type="button" aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rule bg-card/70 px-2.5 py-0 text-[11px] font-semibold leading-5 text-mute transition hover:border-accent/60 hover:text-ink">
           <Icon name="plus" size={12} />Add
         </button>
         <span className="h-px flex-1 border-t border-dashed border-rule" aria-hidden="true" />
+        {tools}
       </div>
       {menu && (
         <div className="mt-2 space-y-2 rounded-xl border border-rule bg-card p-2 text-ink shadow-soft">

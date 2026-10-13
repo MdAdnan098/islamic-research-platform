@@ -177,18 +177,20 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
         <Fragment key={key}>
           {editing
             ? <Suspense fallback={null}><InlineEdit block={b} baseLang={baseLang} lang={editLang} onCancel={() => setEditingKey(null)} saveLabel={edit.saveLabel} onSave={async (nb) => { await edit.onSave(i, nb); setEditingKey(null); }} /></Suspense>
-            : renderBlock(b, i)}
-          {edit && !editing && (
-            <Suspense fallback={null}>
+            : (inline || edit) ? <div className="[&>*]:!my-2">{renderBlock(b, i)}</div> : renderBlock(b, i)}
+          {(() => {
+            const tools = edit && !editing ? (
               <BlockTools
+                embedded={!!inline}
                 index={i} count={blocks.length} block={b}
                 onEdit={b.type !== "divider" ? () => setEditingKey(key) : null}
                 onMove={edit.onMove ? (dir) => edit.onMove(i, dir, b.id || null) : null}
                 onRemove={edit.onRemove ? () => edit.onRemove(i, b.id || null) : null}
               />
-            </Suspense>
-          )}
-          {inline && <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={(block) => inline.onInsert(i, block, b.id || null)} /></Suspense>}
+            ) : null;
+            if (inline) return <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={(block) => inline.onInsert(i, block, b.id || null)} tools={tools} /></Suspense>;
+            return tools ? <Suspense fallback={null}>{tools}</Suspense> : null;
+          })()}
         </Fragment>
         );
       })}
