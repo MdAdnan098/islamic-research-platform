@@ -41,7 +41,7 @@ function problem(b, onVersion, lang) {
  * Roman / Urdu text edits that script's converted text, the author's own script edits the base text.
  * The "Save & Publish" button appears as soon as something is changed; saving stores the whole post and publishes it.
  */
-export default function InlineEdit({ block, baseLang, lang, onSave, onCancel }) {
+export default function InlineEdit({ block, baseLang, lang, onSave, onCancel, saveLabel }) {
   const [draft, setDraft] = useState(block);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -108,9 +108,9 @@ export default function InlineEdit({ block, baseLang, lang, onSave, onCancel }) 
 
         {err && <p role="alert" className="text-sm text-ad-danger">{err}</p>}
         <div className="flex flex-wrap items-center gap-2">
-          {dirty && <button type="button" className="a-btn-primary" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save & Publish"}</button>}
+          {dirty && <button type="button" className="a-btn-primary" disabled={busy} onClick={save}>{busy ? "Saving…" : saveLabel || "Save & Publish"}</button>}
           <button type="button" className="a-btn" disabled={busy} onClick={onCancel}>{dirty ? "Cancel" : "Band karein"}</button>
-          {!dirty && <span className="text-xs text-mute">Kuch badalte hi yahan Save &amp; Publish button aa jayega.</span>}
+          {!dirty && <span className="text-xs text-mute">Kuch badalte hi yahan {saveLabel || "Save & Publish"} button aa jayega.</span>}
         </div>
       </div>
     </ToastProvider>

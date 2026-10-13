@@ -174,7 +174,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
         return (
         <Fragment key={key}>
           {editing
-            ? <Suspense fallback={null}><InlineEdit block={b} baseLang={baseLang} lang={editLang} onCancel={() => setEditingKey(null)} onSave={async (nb) => { await edit.onSave(i, nb); setEditingKey(null); }} /></Suspense>
+            ? <Suspense fallback={null}><InlineEdit block={b} baseLang={baseLang} lang={editLang} onCancel={() => setEditingKey(null)} saveLabel={edit.saveLabel} onSave={async (nb) => { await edit.onSave(i, nb); setEditingKey(null); }} /></Suspense>
             : renderBlock(b, i)}
           {edit && !editing && b.type !== "divider" && (
             <div dir="ltr" className="my-1 font-sans">
