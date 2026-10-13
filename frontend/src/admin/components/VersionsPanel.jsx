@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Modal } from "./ui.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
-import { VERSION_LANGS, isConvertible, buildCopyText, parsePaste, applyPaste } from "../../lib/versions.js";
+import { VERSION_LANGS, isConvertible, isRefBlock, buildCopyText, parsePaste, applyPaste } from "../../lib/versions.js";
+import { adminApi } from "../../services/admin.js";
 import { alignmentIssues } from "../../lib/highlights.js";
 
 /**
@@ -11,12 +12,17 @@ import { alignmentIssues } from "../../lib/highlights.js";
  */
 export function VersionsPanel({ baseLang, title, titleTr, setTitleTr, blocks, setBlocks, toast }) {
   const [paste, setPaste] = useState(null); // { lang, label, text }
-  const total = blocks.filter(isConvertible).length;
+  const hasTr = (b, code) => (isRefBlock(b) ? !!b.tr?.[code]?.book || !!b.tr?.[code]?.author || !!b.tr?.[code]?.referenceText : !!b.tr?.[code]?.trim());
+  const total = blocks.filter((b) => isConvertible(b) || isRefBlock(b)).length;
 
   async function copy(lang, label) {
     if (!total) return toast("Pehle upar post likhein, phir copy karein", "error");
     try {
-      await navigator.clipboard.writeText(buildCopyText(lang, title, blocks));
+      // References are read fresh, so a book name edited a moment ago is what gets copied.
+      const ids = [...new Set(blocks.filter(isRefBlock).map((b) => b.referenceId))];
+      const found = (await Promise.all(ids.map((id) => adminApi.references.get(id).catch(() => null)))).filter(Boolean);
+      const refs = Object.fromEntries(found.map((r) => [r.id, r]));
+      await navigator.clipboard.writeText(buildCopyText(lang, title, blocks, baseLang || "en", refs));
       toast(`Copy ho gaya. Ab ChatGPT mein paste karke ${label} mein convert karwayein.`);
     } catch { toast("Copy nahi ho paya", "error"); }
   }
@@ -44,7 +50,7 @@ export function VersionsPanel({ baseLang, title, titleTr, setTitleTr, blocks, se
       </div>
       {VERSION_LANGS.map(([code, label]) => {
         const mine = code === baseLang;
-        const done = blocks.filter((b) => isConvertible(b) && b.tr?.[code]?.trim()).length;
+        const done = blocks.filter((b) => (isConvertible(b) || isRefBlock(b)) && hasTr(b, code)).length;
         return (
           <div key={code} className="space-y-2 rounded-lg border border-ad-rule p-3">
             <p className="text-sm font-semibold">{label} version {!mine && <span className="ms-1 text-xs font-normal text-ad-mute">{done}/{total} hisse bhare</span>}</p>

@@ -2,7 +2,7 @@ import { Fragment, lazy, Suspense, useState } from "react";
 import { useI18n } from "../../i18n/index.jsx";
 import { mediaUrl } from "../../lib/media.js";
 import { isRtl, scriptOf, splitScriptRuns } from "../../lib/script.js";
-import { pickVersion } from "../../lib/versions.js";
+import { pickRef, pickVersion } from "../../lib/versions.js";
 import { Text, cleanText } from "../ui/Text.jsx";
 import { rangesOf, shownLang, sliceRanges, splitByRanges, splitParagraphs } from "../../lib/highlights.js";
 import { Icon } from "../ui/icons.jsx";
@@ -140,7 +140,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           case "quote":
             return <Quote key={key} b={b} text={txt(b)} ranges={ranges} attrs={hlAttrs(hlEdit, b, lang)} />;
           case "reference":
-            return refMap[b.referenceId] ? <ReferenceCard key={key} reference={refMap[b.referenceId]} /> : null;
+            return refMap[b.referenceId] ? <ReferenceCard key={key} reference={pickRef(refMap[b.referenceId], b.tr, baseLang, contentLang)} /> : null;
           case "image":
             return b.key ? <Figure key={key} pages={[{ src: mediaUrl(b.key), alt: b.alt, caption: b.caption }]} caption={b.caption} /> : null;
           case "scan": {

@@ -23,7 +23,7 @@ function ReferenceField({ block, set }) {
     <>
       <Field label="Reference">
         <div className="flex gap-2">
-          <select className="a-input" value={block.referenceId || ""} onChange={(e) => set({ referenceId: e.target.value })}>
+          <select className="a-input" value={block.referenceId || ""} onChange={(e) => set({ referenceId: e.target.value, tr: undefined })}>
             <option value="">— choose a reference —</option>
             {list.map((r) => <option key={r.id} value={r.id}>{r.book}{r.volume ? ` · v${r.volume}` : ""}{r.page ? ` · p${r.page}` : ""}</option>)}
           </select>
@@ -38,7 +38,7 @@ function ReferenceField({ block, set }) {
       )}
       {creating && (
         <Modal title="New reference" wide onClose={() => setCreating(false)}>
-          <ReferenceForm onCancel={() => setCreating(false)} onSaved={(r) => { setData((l) => [r, ...(l || [])]); set({ referenceId: r.id }); setCreating(false); reload(); }} />
+          <ReferenceForm onCancel={() => setCreating(false)} onSaved={(r) => { setData((l) => [r, ...(l || [])]); set({ referenceId: r.id, tr: undefined }); setCreating(false); reload(); }} />
         </Modal>
       )}
     </>
