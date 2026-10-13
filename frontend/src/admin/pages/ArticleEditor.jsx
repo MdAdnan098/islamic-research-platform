@@ -129,7 +129,6 @@ export default function ArticleEditor() {
       <div className="sticky top-0 z-30 -mx-4 mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-ad-rule bg-ad-bg/95 px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex items-center gap-3"><Link to="/admin/articles" className="text-sm text-ad-mute hover:text-ad-ink">← Articles</Link>{!isNew && <StatusBadge status={live} />}{dirty && <span className="text-xs text-ad-warn">Unsaved changes</span>}</div>
         <div className="flex flex-wrap gap-2">
-          {!isNew && <Link to={`/admin/articles/${id}/write`} className="a-btn inline-flex items-center gap-1.5" title="Post ko page ki tarah dekhte hue likhein / badlein">Page view</Link>}
           <button className="a-btn inline-flex items-center gap-1.5" onClick={openPreview} title="Ab tak jitna likha hai uska preview"><Icon name="eye" size={16} />Preview</button>
           {live === "published"
             ? <button className="a-btn-primary" onClick={() => save()} disabled={busy || !dirty} title="Edit kiye hue changes live post par save karein">{busy ? "Saving…" : "Save changes"}</button>

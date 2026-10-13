@@ -64,10 +64,14 @@ export default function InlineAdd({ onInsert, backupKey }) {
     return <Draft initial={draft} backupKey={backupKey} restored={!!restored && draft === restored} onCancel={closeDraft} onSave={async (b) => { await onInsert(b); closeDraft(); }} />;
   }
   return (
-    <div dir="ltr" className="my-1 font-sans">
-      <button type="button" aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="inline-flex items-center gap-1 rounded-full border border-dashed border-rule px-2.5 py-0.5 text-[11px] font-semibold text-mute opacity-70 transition hover:border-accent/60 hover:text-ink hover:opacity-100">
-        <Icon name="plus" size={12} />Add
-      </button>
+    <div dir="ltr" className="my-0.5 font-sans">
+      <div className="flex items-center gap-3 opacity-40 transition-opacity focus-within:opacity-100 hover:opacity-100">
+        <span className="h-px flex-1 border-t border-dashed border-rule" aria-hidden="true" />
+        <button type="button" aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="inline-flex items-center gap-1 rounded-full border border-rule bg-card/70 px-2.5 py-0.5 text-[11px] font-semibold text-mute transition hover:border-accent/60 hover:text-ink">
+          <Icon name="plus" size={12} />Add
+        </button>
+        <span className="h-px flex-1 border-t border-dashed border-rule" aria-hidden="true" />
+      </div>
       {menu && (
         <div className="mt-2 space-y-2 rounded-xl border border-rule bg-card p-2 text-ink shadow-soft">
           {MENU_GROUPS.map((g) => (

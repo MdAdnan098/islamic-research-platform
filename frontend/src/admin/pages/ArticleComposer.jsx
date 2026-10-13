@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
@@ -104,7 +104,7 @@ export default function ArticleComposer() {
           a = await adminApi.articles.create({ ...body, slug: `${slug}-${Math.random().toString(36).slice(2, 6)}` });
         }
         setId(a.id);
-        try { window.history.replaceState(null, "", `/admin/articles/${a.id}/write`); } catch { /* ignore */ }
+        try { window.history.replaceState(null, "", `/admin/articles/${a.id}`); } catch { /* ignore */ }
         writeTitle("");
       } else {
         a = await adminApi.articles.update(cur.id, { ...body, baseUpdatedAt: rev.current });
@@ -214,19 +214,28 @@ export default function ArticleComposer() {
     },
   };
 
+  // The heading looks like the post's own heading (big, no box); it grows with the text.
+  const titleRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = titleRef.current;
+    if (el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }
+  }, [title, loaded.data]);
   const titleField = (
     <div dir="ltr" className="font-sans">
-      <input
-        className="a-input !py-3.5 !text-xl !font-semibold"
+      <textarea
+        ref={titleRef}
+        rows={1}
+        className="block w-full resize-none overflow-hidden border-0 border-b-2 border-dashed border-rule bg-transparent px-0 py-1 font-display text-3xl font-semibold leading-[1.25] text-ink outline-none transition-colors placeholder:text-mute/50 focus:border-accent sm:text-5xl"
         dir="auto"
         autoFocus={!routeId}
-        placeholder="Post ka heading yahan likhein (zaroori)"
+        placeholder="Post ka heading yahan likhein"
         value={title}
         onChange={(e) => { setTitle(e.target.value); if (!id) writeTitle(e.target.value); }}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); } }}
         onBlur={onTitleBlur}
         aria-label="Heading"
       />
-      {!title.trim() && <p className="mt-1.5 text-xs text-mute">Heading ke bina post save nahi hogi. Heading likhne ke baad neeche Add button se paragraph, reference, image jodein.</p>}
+      {!title.trim() && <p className="mt-2 text-xs text-mute">Pehle heading likhein, phir neeche <b>+ Add</b> se paragraph, image ya reference jodein.</p>}
     </div>
   );
 
@@ -252,6 +261,7 @@ export default function ArticleComposer() {
         article={{ title, language: lang, blocks, titleTr: null, coverKey: extra.coverKey || null, excerpt: extra.excerpt || null, createdAt: new Date().toISOString() }}
         references={refs}
         titleNode={titleField}
+        hideLanguage
         inline={inline}
         edit={edit}
       />

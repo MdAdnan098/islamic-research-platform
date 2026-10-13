@@ -27,7 +27,7 @@ function ReadingProgress() {
 }
 
 /** Shared by the public article page and the admin preview. */
-export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline, edit, titleNode }) {
+export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline, edit, titleNode, hideLanguage = false }) {
   const bodyRef = useRef(null);
   const { t, contentLang } = useI18n();
   const title = pickVersion(article.title, article.titleTr, article.language, contentLang);
@@ -53,7 +53,7 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
           <span className="ms-auto shrink-0">{formatDate(article.publishedAt || article.createdAt)}</span>
         </div>
         {/* Always pinned to the left, above the heading, whatever the script of the post is. */}
-        <div dir="ltr" className="mb-3 flex justify-start"><ArticleLanguage /></div>
+        {!hideLanguage && <div dir="ltr" className="mb-3 flex justify-start"><ArticleLanguage /></div>}
         {titleNode ?? <Text as="h1" className="font-display text-3xl font-semibold leading-[1.25] sm:text-5xl">{title}</Text>}
         {article.excerpt && <Text as="p" className="mt-5 text-lg text-mute">{article.excerpt}</Text>}
       </header>

@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "../context/AuthContext.jsx";
 import { ToastProvider } from "./components/ui.jsx";
 import { AdminLayout } from "./AdminLayout.jsx";
@@ -16,6 +16,12 @@ import LiveSessions from "./pages/LiveSessions.jsx";
 import Courses from "./pages/Courses.jsx";
 import Enrollments from "./pages/Enrollments.jsx";
 import Payments from "./pages/Payments.jsx";
+
+// Old "Page view" address -> the article now opens in the page view by default.
+function WriteRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/admin/articles/${id}`} replace />;
+}
 
 function Protected() {
   const { status } = useAuth();
@@ -37,7 +43,7 @@ export default function AdminApp() {
             <Route element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="articles" element={<Articles />} />
-              <Route path="articles/:id" element={<ArticleEditor />} />
+              <Route path="articles/:id/form" element={<ArticleEditor />} />
               <Route path="categories" element={<Categories />} />
               <Route path="topics" element={<Topics />} />
               <Route path="references" element={<References />} />
@@ -47,9 +53,10 @@ export default function AdminApp() {
               <Route path="payments" element={<Payments />} />
             </Route>
             <Route path="preview/:id" element={<Preview />} />
-            {/* "New article" and "Page view": the post as a live page (outside the admin sidebar layout) */}
+            {/* "New article" and every existing article: the post as a live page (outside the admin sidebar layout) */}
             <Route path="articles/new" element={<ArticleComposer />} />
-            <Route path="articles/:id/write" element={<ArticleComposer />} />
+            <Route path="articles/:id" element={<ArticleComposer />} />
+            <Route path="articles/:id/write" element={<WriteRedirect />} />
           </Route>
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>

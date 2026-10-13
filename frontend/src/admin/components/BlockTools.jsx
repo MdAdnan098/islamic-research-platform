@@ -3,7 +3,7 @@ import { BLOCK_META } from "../../lib/blocks.js";
 import { Icon } from "../../components/ui/icons.jsx";
 import { useConfirm, useToast } from "./ui.jsx";
 
-const btn = "inline-flex items-center gap-1 rounded-full border border-rule px-2.5 py-0.5 text-[11px] font-semibold text-mute opacity-70 transition hover:border-accent/60 hover:text-ink hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-rule disabled:hover:text-mute";
+const ib = "inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-full px-1.5 text-[11px] font-semibold text-mute transition hover:bg-rule/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-mute";
 
 /**
  * Admin-only: the small button row shown under every block of the post -
@@ -32,12 +32,15 @@ export default function BlockTools({ index, count, block, onEdit, onMove, onRemo
     if (ok) await run(onRemove);
   }
 
+  // One thin, faint pill at the right edge under the block: it never competes with the text, and lights up on hover / touch.
   return (
-    <div dir="ltr" className="my-1 flex flex-wrap items-center gap-1.5 font-sans">
-      {onEdit && <button type="button" disabled={busy} onClick={onEdit} aria-label={`Edit this ${label}`} className={btn}><Icon name="edit" size={12} />Edit</button>}
-      {onMove && <button type="button" disabled={busy || index <= 0} onClick={() => run(() => onMove(-1))} aria-label={`Move this ${label} up`} className={btn}><Icon name="up" size={12} />Up</button>}
-      {onMove && <button type="button" disabled={busy || index >= count - 1} onClick={() => run(() => onMove(1))} aria-label={`Move this ${label} down`} className={btn}><Icon name="down" size={12} />Down</button>}
-      {onRemove && <button type="button" disabled={busy} onClick={remove} aria-label={`Delete this ${label}`} className={`${btn} hover:!border-ad-danger/60 hover:!text-ad-danger`}><Icon name="trash" size={12} />Delete</button>}
+    <div dir="ltr" className="my-0.5 flex justify-end font-sans opacity-50 transition-opacity focus-within:opacity-100 hover:opacity-100">
+      <div className="inline-flex items-center gap-0.5 rounded-full border border-rule/70 bg-card/70 px-1 py-0.5">
+        {onEdit && <button type="button" disabled={busy} onClick={onEdit} title="Edit" aria-label={`Edit this ${label}`} className={ib}><Icon name="edit" size={13} />Edit</button>}
+        {onMove && <button type="button" disabled={busy || index <= 0} onClick={() => run(() => onMove(-1))} title="Upar" aria-label={`Move this ${label} up`} className={ib}><Icon name="up" size={14} /></button>}
+        {onMove && <button type="button" disabled={busy || index >= count - 1} onClick={() => run(() => onMove(1))} title="Neeche" aria-label={`Move this ${label} down`} className={ib}><Icon name="down" size={14} /></button>}
+        {onRemove && <button type="button" disabled={busy} onClick={remove} title="Delete" aria-label={`Delete this ${label}`} className={`${ib} hover:!bg-ad-danger/10 hover:!text-ad-danger`}><Icon name="trash" size={13} /></button>}
+      </div>
       {dialog}
     </div>
   );
