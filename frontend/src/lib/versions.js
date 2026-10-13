@@ -113,12 +113,13 @@ export function buildCopyText(lang, title, blocks, baseLang, refs = {}) {
     "",
     "RULES:",
     "1. This is NOT a translation. Only the script changes. Keep every word exactly as the author wrote it (Urdu-style words stay Urdu-style). Example: if the source says \"alfaaz\", Hindi output is \"अल्फ़ाज़\" and Urdu output is \"الفاظ\", never \"शब्द\". Never use pure (Sanskrit) Hindi words and never swap words for synonyms: the readers are Muslims.",
-    "2. Keep every [number] marker exactly as it is, in the same order. Convert only the text under each marker. Do not merge, split, skip or reorder anything.",
-    "3. Keep Arabic text (Quran, hadith, Arabic phrases) unchanged.",
-    "4. If the source has an obvious spelling mistake, write the corrected spelling. Do not copy the mistake.",
-    "5. A block that has lines starting with Book:, Author:, Volume:, Page:, Text: is a book reference. Keep those five labels in English, each on its own line, and convert only what comes after each label. Numbers stay as they are.",
-    "6. Reply with ONLY the converted blocks. No introduction, no explanation, no notes, no code block, no bold or other markdown.",
-    `7. The whole answer must be in ${to.name}. Start your answer directly with [${first}].`,
+    "2. Keep every [number] marker exactly as it is, written with English digits like [5] (even in Urdu or Hindi), in the same order. Output block [5] must be the conversion of input block [5] and nothing else. Never move text from one marker to another.",
+    "3. Inside each block keep exactly the same number of lines and sentences: line 1 stays line 1, line 2 stays line 2. Keep the same line breaks and blank lines. Do not merge, split, add or drop any line or sentence.",
+    "4. Keep Arabic text (Quran, hadith, Arabic phrases) unchanged.",
+    "5. If the source has an obvious spelling mistake, write the corrected spelling. Do not copy the mistake.",
+    "6. A block that has lines starting with Book:, Author:, Volume:, Page:, Text: is a book reference. Keep those five labels in English, each on its own line, and convert only what comes after each label. Numbers stay as they are.",
+    "7. Reply with ONLY the converted blocks. No introduction, no explanation, no notes, no code block, no bold or other markdown.",
+    `8. The whole answer must be in ${to.name}. Start your answer directly with [${first}].`,
     "",
     "TEXT TO CONVERT:",
     "",
@@ -127,27 +128,53 @@ export function buildCopyText(lang, title, blocks, baseLang, refs = {}) {
   return parts.join("\n");
 }
 
+const toAscii = (str) => str.replace(/[\u0660-\u0669\u06F0-\u06F9\u0966-\u096F]/g, (ch) => {
+  const c = ch.charCodeAt(0);
+  return String(c >= 0x0966 ? c - 0x0966 : c >= 0x06f0 ? c - 0x06f0 : c - 0x0660);
+});
+
 /**
  * "[3] text..." or "[3]\ntext..." -> { 3: "text..." }
- * ChatGPT often puts the text on the same line as the marker, or drops line
- * breaks, so markers are found anywhere in the text. To avoid false hits (e.g.
- * "[1]" used as a footnote inside a paragraph) a marker only counts when its
- * number is higher than the previous one and not above `max`.
+ * Tolerant on purpose, so a converter's small slips never block the paste:
+ *  - markers may come in ANY order (each block is matched by its own number, not by its position);
+ *  - Urdu / Hindi digits are accepted ([۵] = [5]);
+ *  - the text may follow the marker on the same line, or line breaks may be missing;
+ *  - a number that appears more than once (e.g. "[1]" used as a footnote inside a paragraph) counts once: the
+ *    occurrence at the start of a line wins, otherwise the first one. Numbers above `max` are ignored.
  */
 export function parsePaste(text, max = Infinity) {
-  const marks = [];
-  let last = -1, m;
-  const re = /[\[【]\s*(\d+)\s*[\]】]/g;
-  while ((m = re.exec(text))) {
-    const n = Number(m[1]);
-    if (n > last && n <= max) { marks.push({ n, start: m.index, end: m.index + m[0].length }); last = n; }
+  const src = String(text || "");
+  const re = /[\[【［]\s*([0-9\u0660-\u0669\u06F0-\u06F9\u0966-\u096F]+)\s*[\]】］]/g;
+  const best = new Map();
+  let m;
+  while ((m = re.exec(src))) {
+    const n = Number(toAscii(m[1]));
+    if (n > max) continue;
+    const before = src.slice(src.lastIndexOf("\n", m.index - 1) + 1, m.index);
+    const lineStart = /^[\s*_#>\-]*$/.test(before);
+    const cur = best.get(n);
+    if (!cur || (lineStart && !cur.lineStart)) best.set(n, { n, start: m.index, end: m.index + m[0].length, lineStart });
   }
+  const marks = [...best.values()].sort((x, y) => x.start - y.start);
   const out = {};
   marks.forEach((k, i) => {
-    const body = text.slice(k.end, i + 1 < marks.length ? marks[i + 1].start : text.length);
+    const body = src.slice(k.end, i + 1 < marks.length ? marks[i + 1].start : src.length);
     out[k.n] = body.replace(/^[ \t]*[:：.\-–]?[ \t]*/, "").trim();
   });
   return out;
+}
+
+/**
+ * Last resort when the answer has no [number] markers at all: if it has exactly as many blank-line separated parts as
+ * there are things to convert, they are taken in order. Returns null when the counts do not match.
+ */
+export function parseByOrder(text, blocks, hasTitle) {
+  const parts = String(text || "").split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  for (const withRefs of [true, false]) {
+    const idx = [...(hasTitle ? [0] : []), ...blocks.map((b, i) => (isConvertible(b) || (withRefs && isRefBlock(b)) ? i + 1 : null)).filter((x) => x !== null)];
+    if (idx.length && idx.length === parts.length) return Object.fromEntries(idx.map((n, k) => [n, parts[k]]));
+  }
+  return null;
 }
 
 export function applyPaste(lang, parsed, titleTr, blocks, baseLang) {

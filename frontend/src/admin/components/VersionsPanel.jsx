@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Modal } from "./ui.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
-import { VERSION_LANGS, isConvertible, isRefBlock, buildCopyText, parsePaste, applyPaste } from "../../lib/versions.js";
+import { VERSION_LANGS, isConvertible, isRefBlock, buildCopyText, parsePaste, parseByOrder, applyPaste } from "../../lib/versions.js";
 import { adminApi } from "../../services/admin.js";
 import { alignmentIssues } from "../../lib/highlights.js";
 
@@ -28,13 +28,15 @@ export function VersionsPanel({ baseLang, title, titleTr, setTitleTr, blocks, se
   }
 
   function apply() {
-    const r = applyPaste(paste.lang, parsePaste(paste.text, blocks.length), titleTr, blocks, baseLang);
+    let parsed = parsePaste(paste.text, blocks.length);
+    if (!Object.keys(parsed).length) parsed = parseByOrder(paste.text, blocks, !!title.trim()) || {};
+    const r = applyPaste(paste.lang, parsed, titleTr, blocks, baseLang);
     if (!r.count) return toast("Koi [number] wala hissa nahi mila. ChatGPT ka jawab waisa hi paste karein jaisa mila.", "error");
     setBlocks(r.blocks); setTitleTr(r.titleTr); setPaste(null);
     toast(`${r.count} hisse apni jagah par lag gaye`);
     // Highlights follow the same line in every version only when each version has the same number of lines/sentences.
     const bad = alignmentIssues(r.blocks, baseLang);
-    if (bad.length) toast(`Hissa ${bad.slice(0, 8).join(", ")}: lines/jumle ki ginti dusri zabaan se alag hai, isliye wahan highlight sirf ek zabaan mein hoga. ChatGPT se dobara convert karwayein.`, "error");
+    if (bad.length) toast(`Paste ho gaya. Sirf hissa ${bad.slice(0, 8).join(", ")} mein lines/jumle ki ginti dusri zabaan se alag hai, isliye wahan highlight sirf ek zabaan mein chalega. Chahein to dobara convert karwa lein.`);
   }
 
   return (
