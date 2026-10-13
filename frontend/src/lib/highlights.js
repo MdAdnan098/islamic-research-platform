@@ -233,14 +233,25 @@ export function unitMap(b, baseLang) {
 }
 
 /**
- * The spans [{ lang, range }] that a selection [s, e) of version `lang` stands for: every sentence/line it touches,
- * in EVERY version. Returns null when the block is not aligned (caller then uses the plain selection).
+ * The spans [{ lang, range }] that a selection [s, e) of version `lang` stands for in EVERY version - but ONLY when the
+ * selection really covers whole sentence(s)/line(s) (a trailing full stop or quote may be left out). A selection of just
+ * a few words, or of part of a sentence, returns null: the caller then highlights exactly what was selected, in this
+ * script only. (Snapping a partial selection to the whole sentence made one selected line mark the entire item.)
+ * Also null when the block is not aligned.
  */
 export function syncSpans(b, baseLang, lang, [s, e]) {
   const map = unitMap(b, baseLang);
   if (!map?.aligned || !map.versions[lang]) return null;
+  const text = versionString(b, baseLang, lang);
   const idx = [];
-  map.versions[lang].forEach(([a, z], i) => { if (a < e && z > s) idx.push(i); });
+  for (let i = 0; i < map.versions[lang].length; i++) {
+    const [a, z] = map.versions[lang][i];
+    if (!(a < e && z > s)) continue;
+    let zz = z; // end of the unit without its closing punctuation
+    while (zz > a && /[.!?।۔؟"'”’)»\]\s]/.test(text[zz - 1])) zz--;
+    if (s > a || e < Math.max(zz, a + 1)) return null; // partial -> exact selection only
+    idx.push(i);
+  }
   if (!idx.length) return null;
   return Object.entries(map.versions).flatMap(([l, units]) => idx.map((i) => ({ lang: l, range: units[i] })));
 }

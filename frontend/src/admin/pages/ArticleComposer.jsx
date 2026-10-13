@@ -4,7 +4,7 @@ import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { isSlug, slugify } from "../../lib/format.js";
 import { referenceIdsOf, withIds } from "../../lib/blocks.js";
-import { cleanBlocksHl } from "../../lib/highlights.js";
+import { applyEdits, cleanBlocksHl } from "../../lib/highlights.js";
 import { detectLang } from "../../lib/versions.js";
 import { flattenTree, folderLabel } from "../../lib/folders.js";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
@@ -32,6 +32,10 @@ export default function ArticleComposer() {
   const { id: routeId } = useParams();
   const toast = useToast();
   const nav = useNavigate();
+  // Same three switches as on the live post page: Highlight / Add buttons / Edit buttons.
+  const [hlOn, setHlOn] = useState(false);
+  const [addOn, setAddOn] = useState(true);
+  const [editOn, setEditOn] = useState(true);
 
   const [id, setId] = useState(routeId || null);
   const [title, setTitle] = useState(() => (routeId ? "" : readTitle()));
@@ -175,7 +179,7 @@ export default function ArticleComposer() {
     persist(() => next).catch(fail);
   };
 
-  const inline = {
+  const inline = !addOn ? undefined : {
     scope: id || "new",
     onInsert: async (index, block, afterId) => {
       await persist((cur) => {
@@ -184,7 +188,7 @@ export default function ArticleComposer() {
       });
     },
   };
-  const edit = {
+  const edit = !editOn ? undefined : {
     saveLabel: meta.status === "published" ? "Save (live update)" : "Save Draft",
     onSave: async (index, nb) => {
       await persist((cur) => {
@@ -213,6 +217,12 @@ export default function ArticleComposer() {
       toast("Hissa delete ho gaya");
     },
   };
+
+  // Highlight: only the selected words are marked; stored with the post like any other edit.
+  const editor = hlOn && id ? {
+    enabled: true,
+    onApply: async (edits) => { await persist((cur) => applyEdits(cur, edits)); },
+  } : undefined;
 
   // The heading looks like the post's own heading (big, no box); it grows with the text.
   const titleRef = useRef(null);
@@ -262,9 +272,24 @@ export default function ArticleComposer() {
         references={refs}
         titleNode={titleField}
         hideLanguage
+        editor={editor}
         inline={inline}
         edit={edit}
       />
+
+      <div dir="ltr" className="fixed bottom-4 start-4 z-[60] flex max-w-[80vw] flex-col gap-1 rounded-xl border border-rule bg-paper px-3 py-2 font-sans text-xs text-ink shadow-elev">
+        <button type="button" aria-pressed={hlOn} disabled={!id} onClick={() => setHlOn((v) => !v)} className="text-start font-semibold disabled:opacity-50">
+          Admin · Highlight mode: {hlOn ? "ON" : "OFF"}
+        </button>
+        <button type="button" aria-pressed={addOn} onClick={() => setAddOn((v) => !v)} className="text-start font-semibold">
+          Admin · Add buttons: {addOn ? "ON" : "OFF"}
+        </button>
+        <button type="button" aria-pressed={editOn} onClick={() => setEditOn((v) => !v)} className="text-start font-semibold">
+          Admin · Edit buttons: {editOn ? "ON" : "OFF"}
+        </button>
+        {hlOn && id && <span className="text-mute">Text select karein, phir Highlight dabayein.</span>}
+        {!id && <span className="text-mute">Highlight ke liye pehle post save karein.</span>}
+      </div>
 
       {/* Settings: below the live page, after a divider, above the footer. */}
       <section dir="ltr" className="container-article pb-16 pt-6 font-sans text-ink" aria-label="Post settings">

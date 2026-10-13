@@ -35,7 +35,8 @@ assert.deepEqual(w.hl,{en:[[9,15]]});
 test("same-line sync across scripts", () => {
   assert.deepEqual(h.splitUnits("Pehli baat. Doosri baat?\nTeesri"), [[0,11],[12,24],[25,31]]);
   const b = { id: "x", type: "text", text: "Pehli baat. Doosri baat.", tr: { ur: "پہلی بات۔ دوسری بات۔", hi: "पहली बात। दूसरी बात।" } };
-  const sp = h.syncSpans(b, "en", "ur", [0, 3]);
+  assert.equal(h.syncSpans(b, "en", "en", [0, 3]), null); // a few words only -> exact selection, no snapping
+  const sp = h.syncSpans(b, "en", "en", [0, 10]); // whole sentence (full stop left out) -> same line in every script
   assert.deepEqual(sp.map((x) => x.lang).sort(), ["en", "hi", "ur"]);
   assert.deepEqual(sp.find((x) => x.lang === "en").range, [0, 11]);
   // different line counts -> no sync
@@ -54,6 +55,7 @@ test("sync falls back to lines when sentence counts differ", () => {
   const m = h.unitMap(c, "en");
   assert.equal(m.aligned, true);
   assert.equal(m.level, "line");
-  const sp = h.syncSpans(c, "en", "en", [0, 4]);
+  assert.equal(h.syncSpans(c, "en", "en", [0, 4]), null);
+  const sp = h.syncSpans(c, "en", "en", [0, 10]);
   assert.deepEqual(sp.find((x) => x.lang === "hi").range, [0, 16]);
 });
