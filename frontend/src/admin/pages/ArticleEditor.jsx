@@ -195,7 +195,7 @@ export default function ArticleEditor() {
               <button className="rounded-lg border border-rule px-3 py-1 text-sm hover:border-accent/60" onClick={() => setPreview(null)}>✕ Band karein</button>
             </div>
           </div>
-          <ArticleView article={{ ...f, language: lang || "en", title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs} editor={hlOn ? { enabled: true, onApply: async (edits) => setBlocks((bs) => applyEdits(bs, edits)) } : undefined} />
+          <ArticleView article={{ ...f, language: lang || "en", title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs} inline={{ onInsert: async (index, block) => { setBlocks((bs) => [...bs.slice(0, index + 1), block, ...bs.slice(index + 1)]); if (block.type === "reference" && block.referenceId) { const r = await adminApi.references.get(block.referenceId).catch(() => null); if (r) setPreview((p) => ({ ...p, refs: [...p.refs.filter((x) => x.id !== r.id), r] })); } } }} editor={hlOn ? { enabled: true, onApply: async (edits) => setBlocks((bs) => applyEdits(bs, edits)) } : undefined} />
         </div>,
         document.body
       )}

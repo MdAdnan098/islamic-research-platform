@@ -45,7 +45,7 @@ function ReferenceField({ block, set }) {
   );
 }
 
-function Fields({ block, set }) {
+export function Fields({ block, set }) {
   switch (block.type) {
     case "heading":
       return (
@@ -115,7 +115,7 @@ function Fields({ block, set }) {
 }
 
 /** How the add-block menu is grouped (internal block types are unchanged). */
-const MENU_GROUPS = [
+export const MENU_GROUPS = [
   { title: "Text", types: ["heading", "text", "quote", "divider"] },
   { title: "Reference", types: ["reference"] },
   { title: "Media", types: ["image", "scan", "pdf"] },

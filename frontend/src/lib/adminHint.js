@@ -29,3 +29,22 @@ export async function saveHighlights(article, edits) {
   const { adminApi } = await import("../services/admin.js");
   return adminApi.articles.highlights(article.id, { baseUpdatedAt: article.updatedAt, edits });
 }
+
+/**
+ * Inserts `block` right after the block `afterId` (or after position `index` when the displayed blocks have no ids yet)
+ * of a stored article, straight from the post page. It works on a fresh copy fetched from the server, so a stale
+ * page cannot overwrite newer edits. Returns what the page needs to refresh itself.
+ */
+export async function insertBlockInto(article, references, index, afterId, block) {
+  const [{ adminApi }, { withIds, referenceIdsOf }] = await Promise.all([import("../services/admin.js"), import("./blocks.js")]);
+  const fresh = await adminApi.articles.get(article.id);
+  const current = withIds(fresh.blocks || []);
+  const at = afterId && current.some((b) => b.id === afterId) ? current.findIndex((b) => b.id === afterId) : Math.min(index, current.length - 1);
+  const next = [...current.slice(0, at + 1), block, ...current.slice(at + 1)];
+  const saved = await adminApi.articles.update(article.id, { blocks: next, references: referenceIdsOf(next), baseUpdatedAt: fresh.updatedAt });
+  // A newly added reference block needs its reference loaded so it can be drawn immediately.
+  const known = new Set((references || []).map((r) => r.id));
+  const missing = referenceIdsOf(saved.blocks).filter((id) => !known.has(id));
+  const extra = (await Promise.all(missing.map((id) => adminApi.references.get(id).catch(() => null)))).filter(Boolean);
+  return { article: { ...article, blocks: saved.blocks, updatedAt: saved.updatedAt }, references: [...(references || []), ...extra] };
+}

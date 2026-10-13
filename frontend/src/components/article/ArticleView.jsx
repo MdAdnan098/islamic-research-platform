@@ -27,7 +27,7 @@ function ReadingProgress() {
 }
 
 /** Shared by the public article page and the admin preview. */
-export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor }) {
+export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline }) {
   const bodyRef = useRef(null);
   const { t, contentLang } = useI18n();
   const title = pickVersion(article.title, article.titleTr, article.language, contentLang);
@@ -59,7 +59,7 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
       </header>
       {cover && <div className="container-page max-w-4xl"><img src={cover} alt="" className="w-full rounded-xl border border-rule" /></div>}
       <div ref={bodyRef} className={`container-article pb-6 pt-4 ${editor?.enabled ? "hl-editing" : ""}`}>
-        <BlockRenderer blocks={article.blocks} references={references} baseLang={article.language} hlEdit={!!editor?.enabled} />
+        <BlockRenderer blocks={article.blocks} references={references} baseLang={article.language} hlEdit={!!editor?.enabled} inline={inline} />
       </div>
       {editor?.enabled && (
         <Suspense fallback={null}>

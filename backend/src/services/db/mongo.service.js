@@ -21,19 +21,42 @@ import { MongoClient } from "mongodb";
 const clientsByConfig = new WeakMap();
 
 /**
+ * Atlas can be slow to answer the very first connection of a cold Worker (or briefly refuse it).
+ * One failed attempt used to surface straight away as a 503 to whoever happened to be signing in.
+ * Now a failed attempt is retried a couple of times (with a short pause) before giving up, so a
+ * momentary hiccup is invisible to the admin. Each attempt still fails fast instead of hanging.
+ */
+const CONNECT_ATTEMPTS = 3;
+const ATTEMPT_TIMEOUT_MS = 5000;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function connectWithRetry(config) {
+  let lastErr;
+  for (let attempt = 1; attempt <= CONNECT_ATTEMPTS; attempt += 1) {
+    const client = new MongoClient(config.mongodbUri, {
+      maxPoolSize: 3,
+      serverSelectionTimeoutMS: ATTEMPT_TIMEOUT_MS,
+      connectTimeoutMS: ATTEMPT_TIMEOUT_MS,
+    });
+    try {
+      return await client.connect();
+    } catch (err) {
+      lastErr = err;
+      try { await client.close(); } catch { /* already closed */ }
+      if (attempt < CONNECT_ATTEMPTS) await sleep(300 * attempt);
+    }
+  }
+  throw lastErr;
+}
+
+/**
  * @param {{ mongodbUri: string, mongodbDbName: string }} config
  * @returns {Promise<import("mongodb").Db>}
  */
 export async function getDb(config) {
   let clientPromise = clientsByConfig.get(config);
   if (!clientPromise) {
-    const client = new MongoClient(config.mongodbUri, {
-      maxPoolSize: 3,
-      // Fail fast with a clear error instead of hanging if Atlas is
-      // unreachable (wrong URI, IP not allow-listed, network issue, etc).
-      serverSelectionTimeoutMS: 8000,
-    });
-    clientPromise = client.connect();
+    clientPromise = connectWithRetry(config);
     clientsByConfig.set(config, clientPromise);
   }
 

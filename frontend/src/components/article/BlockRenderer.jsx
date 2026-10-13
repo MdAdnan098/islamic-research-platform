@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { Fragment, lazy, Suspense, useState } from "react";
 import { useI18n } from "../../i18n/index.jsx";
 import { mediaUrl } from "../../lib/media.js";
-import { scriptOf } from "../../lib/script.js";
+import { isRtl, scriptOf, splitScriptRuns } from "../../lib/script.js";
 import { pickVersion } from "../../lib/versions.js";
 import { Text, cleanText } from "../ui/Text.jsx";
 import { rangesOf, shownLang, sliceRanges, splitByRanges, splitParagraphs } from "../../lib/highlights.js";
@@ -9,10 +9,39 @@ import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
 
-/** Text with its saved highlights as <mark> elements (plain string when there are none). Offsets are relative to `text`. */
-function marked(text, ranges) {
-  if (!ranges?.length) return text;
-  return splitByRanges(text, ranges).map((p, i) => (p.marked ? <mark key={i} className="hl-mark">{p.text}</mark> : p.text));
+// Admin-only inline "add block" control: loaded on demand, so public visitors never download it.
+const InlineAdd = lazy(() => import("../../admin/components/InlineAdd.jsx"));
+
+const AR = "\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF";
+const RTL_RUN = new RegExp(`[${AR}]+(?:[\\s\\u200c\\u200d.,:;!?()'"\\u201C\\u201D\\u00AB\\u00BB\\-\\u2013\\u2014]+[${AR}]+)*`, "g");
+const HAS_AR = new RegExp(`[${AR}]`);
+const URDU_ONLY = /[\u0679\u0688\u0691\u06BA\u06BE\u06C1\u06C3\u06D2\u06D3\u06CC\u06A9\u06AF\u0686\u067E\u0698]/;
+
+/**
+ * Arabic / Urdu words inside a left-to-right line (Roman or Hindi) are wrapped as their own right-to-left run
+ * with the proper Arabic font, so they neither flip the surrounding words nor get odd spacing.
+ * Same characters in, same characters out - highlight offsets are unaffected.
+ */
+function isolateRtl(str) {
+  if (typeof str !== "string" || !HAS_AR.test(str)) return str;
+  const out = [];
+  let last = 0, m, n = 0;
+  RTL_RUN.lastIndex = 0;
+  while ((m = RTL_RUN.exec(str))) {
+    if (m.index > last) out.push(str.slice(last, m.index));
+    out.push(<span key={n++} dir="rtl" className={URDU_ONLY.test(m[0]) ? "inl-ur" : "inl-ar"}>{m[0]}</span>);
+    last = m.index + m[0].length;
+  }
+  if (last < str.length) out.push(str.slice(last));
+  return out;
+}
+
+/** Text with its saved highlights as <mark> elements (plain string when there are none). Offsets are relative to `text`.
+ *  `host` is the script of the line it sits in; inside a left-to-right host, Arabic runs are isolated (see isolateRtl). */
+function marked(text, ranges, host) {
+  const iso = host && !isRtl(host) ? isolateRtl : (x) => x;
+  if (!ranges?.length) return iso(text);
+  return splitByRanges(text, ranges).map((p, i) => (p.marked ? <mark key={i} className="hl-mark">{iso(p.text)}</mark> : <Fragment key={i}>{iso(p.text)}</Fragment>));
 }
 
 /** Only in highlight-editing mode: lets the admin toolbar map a selection back to (block, version, offset). */
@@ -31,7 +60,7 @@ function Quote({ b, text, ranges, attrs }) {
       <span aria-hidden="true" className={`${mark} left-4 top-1 sm:left-6`}>&ldquo;</span>
       <span aria-hidden="true" className={`${mark} bottom-[-1.9rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
       {sacred && <p className="eyebrow relative mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
-      <Text as="blockquote" src={text} force={big ? s : undefined} {...attrs} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.1rem] sm:text-[1.4rem]" : "sacred-arabic text-[1.55rem] sm:text-[2rem]") : `font-display text-[0.85rem] leading-[1.8] sm:text-base lg:text-lg ${slant}`}`}>{marked(cleanText(text), ranges)}</Text>
+      <Text as="blockquote" src={text} force={big ? s : undefined} {...attrs} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.1rem] sm:text-[1.4rem]" : "sacred-arabic text-[1.55rem] sm:text-[2rem]") : `font-display text-[0.85rem] leading-[1.8] sm:text-base lg:text-lg ${slant}`}`}>{marked(cleanText(text), ranges, s)}</Text>
       {b.source && <Text as="figcaption" className="relative mt-3 text-xs text-bronze sm:text-sm">— {b.source}</Text>}
     </figure>
   );
@@ -80,13 +109,11 @@ function Pdf({ b }) {
   );
 }
 
-export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", hlEdit = false }) {
+export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", hlEdit = false, inline }) {
   const { contentLang } = useI18n();
   const txt = (b) => (b.kind === "ayat" || b.kind === "hadith" ? b.text : pickVersion(b.text, b.tr, baseLang, contentLang));
   const refMap = Object.fromEntries(references.map((r) => [r.id, r]));
-  return (
-    <div className="reading">
-      {blocks.map((b, i) => {
+  function renderBlock(b, i) {
         const key = b.id || i;
         const lang = shownLang(b, baseLang, contentLang); // which script version is on screen = which highlight set applies
         const ranges = rangesOf(b, lang);
@@ -94,16 +121,18 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           case "heading": {
             const text = cleanText(txt(b));
             const attrs = hlAttrs(hlEdit, b, lang);
+            const host = scriptOf(text);
             return b.level === 3
-              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-10 font-display text-xl font-semibold sm:text-2xl">{marked(text, ranges)}</Text>
-              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-8 font-display text-2xl font-semibold sm:text-3xl">{marked(text, ranges)}</Text>;
+              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-10 font-display text-xl font-semibold sm:text-2xl">{marked(text, ranges, host)}</Text>
+              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-8 font-display text-2xl font-semibold sm:text-3xl">{marked(text, ranges, host)}</Text>;
           }
           case "text":
             return (
               <div key={key} className="my-5">
-                {splitParagraphs(cleanText(txt(b))).map((seg, j) => (
-                  <Text key={j} as="p" src={seg.text} {...hlAttrs(hlEdit, b, lang, seg.start)} className="whitespace-pre-line">
-                    {marked(seg.text, sliceRanges(ranges, seg.start, seg.start + seg.text.length))}
+                {splitParagraphs(cleanText(txt(b))).flatMap((seg) => splitScriptRuns(seg.text, seg.start)).map((run, j) => (
+                  // Each run of same-script lines is its own paragraph with its own direction (offsets stay relative to the whole block).
+                  <Text key={j} as="p" src={run.text} force={run.script} {...hlAttrs(hlEdit, b, lang, run.start)} className="whitespace-pre-line">
+                    {marked(run.text, sliceRanges(ranges, run.start, run.start + run.text.length), run.script)}
                   </Text>
                 ))}
               </div>
@@ -129,7 +158,17 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           default:
             return null;
         }
-      })}
+  }
+
+  return (
+    <div className="reading">
+      {inline && blocks.length === 0 && <Suspense fallback={null}><InlineAdd onInsert={(block) => inline.onInsert(-1, block, null)} /></Suspense>}
+      {blocks.map((b, i) => (
+        <Fragment key={b.id || i}>
+          {renderBlock(b, i)}
+          {inline && <Suspense fallback={null}><InlineAdd onInsert={(block) => inline.onInsert(i, block, b.id || null)} /></Suspense>}
+        </Fragment>
+      ))}
     </div>
   );
 }

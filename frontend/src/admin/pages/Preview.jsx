@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { saveHighlights } from "../../lib/adminHint.js";
+import { insertBlockInto, saveHighlights } from "../../lib/adminHint.js";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
@@ -24,7 +24,7 @@ export default function Preview() {
         : error && !data ? <div className="container-read py-16"><ErrorState error={error} onRetry={reload} /></div>
         : (
           <>
-            <ArticleView {...data} banner={data.article.status !== "published" ? `Preview — status: ${data.article.status}. Not visible to the public.` : "Preview — this article is live."}
+            <ArticleView {...data} inline={{ onInsert: async (index, block, afterId) => { const next = await insertBlockInto(data.article, data.references, index, afterId, block); setData((d) => ({ ...d, ...next })); } }} banner={data.article.status !== "published" ? `Preview — status: ${data.article.status}. Not visible to the public.` : "Preview — this article is live."}
               editor={hlOn ? { enabled: true, onApply: async (edits) => { const saved = await saveHighlights(data.article, edits); setData((d) => ({ ...d, article: { ...d.article, blocks: saved.blocks, updatedAt: saved.updatedAt } })); } } : undefined} />
             <button type="button" dir="ltr" aria-pressed={hlOn} onClick={() => setHlOn((v) => !v)} className="fixed bottom-4 start-4 z-[60] rounded-xl border border-rule bg-paper px-3 py-2 text-xs font-semibold text-ink shadow-elev">Highlight mode: {hlOn ? "ON" : "OFF"}</button>
           </>

@@ -3,7 +3,7 @@ import { useI18n } from "../../i18n/index.jsx";
 import { SECTION_PATH, publicApi } from "../../services/public.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { useState } from "react";
-import { saveHighlights, useIsAdmin } from "../../lib/adminHint.js";
+import { insertBlockInto, saveHighlights, useIsAdmin } from "../../lib/adminHint.js";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { Skeleton, ErrorState, NotFoundState } from "../../components/ui/feedback.jsx";
 
@@ -11,6 +11,7 @@ export default function ArticlePage() {
   const { slug } = useParams();
   const isAdmin = useIsAdmin();
   const [editing, setEditing] = useState(false);
+  const [addOn, setAddOn] = useState(true);
   const { t } = useI18n();
   const { data, error, loading, reload, setData } = useAsync(async (signal) => {
     const { article, references, trail } = await publicApi.article(slug, signal);
@@ -37,14 +38,24 @@ export default function ArticlePage() {
       setData((d) => ({ ...d, article: { ...d.article, blocks: saved.blocks, updatedAt: saved.updatedAt } }));
     },
   } : undefined;
+  // Admin only: small "+ Add" under every block, saved straight into this post (no trip back to the dashboard).
+  const inline = isAdmin && addOn ? {
+    onInsert: async (index, block, afterId) => {
+      const next = await insertBlockInto(data.article, data.references, index, afterId, block);
+      setData((d) => ({ ...d, ...next }));
+    },
+  } : undefined;
   const missingIds = (data.article.blocks || []).some((b) => ["heading", "text", "quote"].includes(b.type) && !b.id);
   return (
     <>
-      <ArticleView {...data} editor={editor} />
+      <ArticleView {...data} editor={editor} inline={inline} />
       {isAdmin && (
         <div dir="ltr" className="fixed bottom-4 start-4 z-[60] flex max-w-[80vw] flex-col gap-1 rounded-xl border border-rule bg-paper px-3 py-2 text-xs text-ink shadow-elev">
           <button type="button" aria-pressed={editing} onClick={() => setEditing((v) => !v)} className="font-semibold">
             Admin · Highlight mode: {editing ? "ON" : "OFF"}
+          </button>
+          <button type="button" aria-pressed={addOn} onClick={() => setAddOn((v) => !v)} className="text-start font-semibold">
+            Admin · Add buttons: {addOn ? "ON" : "OFF"}
           </button>
           {editing && missingIds && <span className="text-mute">Is article ko ek baar editor mein kholkar Save karein, tab highlight chalega.</span>}
           {editing && !missingIds && <span className="text-mute">Text select karein, phir Highlight dabayein.</span>}
