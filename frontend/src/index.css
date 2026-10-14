@@ -199,6 +199,9 @@
   h1.script-urdu, h2.script-urdu, h3.script-urdu, h4.script-urdu { line-height: 1.95 !important; font-weight: 400; }
   .script-urdu.truncate, .script-urdu.line-clamp-2, .script-urdu.line-clamp-3 { padding-block: .15em; }
   p.script-urdu, p.script-arabic, blockquote.script-arabic, blockquote.script-urdu { text-wrap: pretty; }
+  /* Arabic paragraphs in a post: justified, so every line starts and ends evenly (the last line stays at the start side).
+     Centred blocks (titles, sacred cards) are left as they are. */
+  .reading p.script-arabic:not(.text-center), .reading blockquote.script-arabic:not(.text-center) { text-align: justify; text-justify: inter-word; }
   /* Arabic / Urdu words inside a Roman or Hindi line: own right-to-left run, proper font, no extra line height */
   .inl-ar, .inl-ur { unicode-bidi: isolate; letter-spacing: 0; font-variant-ligatures: common-ligatures contextual; line-height: 1.4; }
   .inl-ar { font-family: "FS Arabic", "FS Quran", "Amiri", "Noto Naskh Arabic", serif; font-size: 1.12em; }
