@@ -64,7 +64,7 @@ function Quote({ b, text, ranges, attrs }) {
       <span aria-hidden="true" className={`${mark} left-4 top-1 sm:left-6`}>&ldquo;</span>
       <span aria-hidden="true" className={`${mark} bottom-[-1.9rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
       {sacred && <p className="eyebrow relative mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
-      <Text as="blockquote" src={text} force={big ? s : undefined} {...attrs} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.1rem] sm:text-[1.4rem]" : "sacred-arabic text-[1.55rem] sm:text-[2rem]") : `font-display text-[0.85rem] leading-[1.8] sm:text-base lg:text-lg ${slant}`}`}>{marked(cleanText(text), ranges, s)}</Text>
+      <Text as="blockquote" src={text} force={big ? s : undefined} {...attrs} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.2em] sm:text-[1.4em]" : "sacred-arabic text-[1.45em] sm:text-[1.75em]") : `font-display text-[0.95em] sm:text-[1.05em] leading-[1.8] ${slant}`}`}>{marked(cleanText(text), ranges, s)}</Text>
       {b.source && <Text as="figcaption" className="relative mt-3 text-xs text-bronze sm:text-sm">— {b.source}</Text>}
     </figure>
   );
@@ -128,8 +128,8 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
             const attrs = hlAttrs(hlEdit, b, lang);
             const host = scriptOf(text);
             return b.level === 3
-              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-10 font-display text-xl font-semibold sm:text-2xl">{marked(text, ranges, host)}</Text>
-              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-8 font-display text-2xl font-semibold sm:text-3xl">{marked(text, ranges, host)}</Text>;
+              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-10 font-display text-[1.25em] sm:text-[1.38em] font-semibold">{marked(text, ranges, host)}</Text>
+              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-8 font-display text-[1.45em] sm:text-[1.65em] font-semibold">{marked(text, ranges, host)}</Text>;
           }
           case "text":
             return (
