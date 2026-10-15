@@ -8,6 +8,8 @@ import { Text } from "../ui/Text.jsx";
 import { BlockRenderer } from "./BlockRenderer.jsx";
 import { pickVersion } from "../../lib/versions.js";
 import { ArticleLanguage } from "../public/Controls.jsx";
+import { useFontSize } from "../../context/FontSizeContext.jsx";
+import { FontSizeControl, FloatingReaderControls } from "./FontSizeControl.jsx";
 
 // Admin-only: loaded on demand, so public visitors never download the highlight toolbar.
 const HighlightToolbar = lazy(() => import("../../admin/components/HighlightToolbar.jsx"));
@@ -30,12 +32,13 @@ function ReadingProgress() {
 export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline, edit, titleNode, hideLanguage = false }) {
   const bodyRef = useRef(null);
   const { t, contentLang } = useI18n();
+  const { scale } = useFontSize();
   const title = pickVersion(article.title, article.titleTr, article.language, contentLang);
   const cover = mediaUrl(article.coverKey);
   useMeta({ title: article.seoTitle || title, description: article.seoDescription || article.excerpt, image: cover });
 
   return (
-    <article className="select-text">
+    <article className="select-text" style={{ "--reading-font-scale": scale }}>
       <ReadingProgress />
       {banner && <div className="bg-accent/10 px-4 py-2 text-center text-sm font-medium text-accent">{banner}</div>}
       <header className="container-article pb-6 pt-10 sm:pt-14">
@@ -52,10 +55,13 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
           ) : <span />}
           <span className="ms-auto shrink-0">{formatDate(article.publishedAt || article.createdAt)}</span>
         </div>
-        {/* Always pinned to the left, above the heading, whatever the script of the post is. */}
-        {!hideLanguage && <div dir="ltr" className="mb-3 flex justify-start"><ArticleLanguage /></div>}
-        {titleNode ?? <Text as="h1" className="font-display text-3xl font-semibold leading-[1.25] sm:text-5xl">{title}</Text>}
-        {article.excerpt && <Text as="p" className="mt-5 text-lg text-mute">{article.excerpt}</Text>}
+        {/* Reading toolbar: Language selector on the start, font size adjustment controls on the end */}
+        <div dir="ltr" className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          {!hideLanguage ? <ArticleLanguage /> : <span />}
+          <FontSizeControl />
+        </div>
+        {titleNode ?? <Text as="h1" className="font-display article-title text-3xl font-semibold leading-[1.25] sm:text-5xl">{title}</Text>}
+        {article.excerpt && <Text as="p" className="article-excerpt mt-5 text-lg text-mute">{article.excerpt}</Text>}
       </header>
       {cover && <div className="container-page max-w-4xl"><img src={cover} alt="" className="w-full rounded-xl border border-rule" /></div>}
       <div ref={bodyRef} className={`container-article pb-6 pt-4 ${editor?.enabled ? "hl-editing" : ""}`}>
@@ -66,6 +72,7 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
           <HighlightToolbar containerRef={bodyRef} blocks={article.blocks} baseLang={article.language} onApply={editor.onApply} />
         </Suspense>
       )}
+      <FloatingReaderControls />
     </article>
   );
 }

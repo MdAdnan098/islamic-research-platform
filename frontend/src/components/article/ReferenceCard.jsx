@@ -17,10 +17,10 @@ export function ReferenceCard({ reference: r }) {
     <aside className="my-9">
       <div>
         {/* fixed colours on purpose (do not change with the theme) */}
-        <Text as="p" className="rounded-xl border-2 px-4 py-2.5 text-[1.05rem] font-semibold leading-snug sm:text-lg" style={{ background: "#e0efff", borderColor: "#3b82f6", color: "#1e3a8a" }}>{line}</Text>
+        <Text as="p" className="rounded-xl border-2 px-4 py-2.5 text-[0.95em] font-semibold leading-snug sm:text-[1.05em]" style={{ background: "#e0efff", borderColor: "#3b82f6", color: "#1e3a8a" }}>{line}</Text>
 
         {r.referenceText && (
-          <Text as="p" className="mt-4 text-[1.05rem] leading-relaxed sm:text-lg">{r.referenceText}</Text>
+          <Text as="p" className="mt-4 text-[0.95em] leading-relaxed sm:text-[1.05em]">{r.referenceText}</Text>
         )}
 
         {scan && (

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { insertBlockInto, saveBlockEdit, saveHighlights, useIsAdmin } from "../../lib/adminHint.js";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { Skeleton, ErrorState, NotFoundState } from "../../components/ui/feedback.jsx";
+import { DEMO_ARTICLE_PAYLOAD } from "../../config/demoArticle.js";
 
 export default function ArticlePage() {
   const { slug } = useParams();
@@ -15,15 +16,39 @@ export default function ArticlePage() {
   const [editOn, setEditOn] = useState(false);
   const { t } = useI18n();
   const { data, error, loading, reload, setData } = useAsync(async (signal) => {
-    const { article, references, trail } = await publicApi.article(slug, signal);
-    const section = trail?.section ? SECTION_PATH[trail.section] || "aqaid" : null;
-    const base = section ? `/${section}` : null;
-    const crumbs = [
-      { label: t.nav.home, to: "/" },
-      base && { label: section === "aqaid" ? t.nav.aqaid : t.nav.masail, to: base },
-      ...((base && trail?.folders) || []).map((f) => ({ label: f.title, to: `${base}/${f.slug}` })),
-    ].filter(Boolean);
-    return { article, references, crumbs, sectionBase: base ? base.slice(1) : null };
+    if (slug === "demo" || slug === "sample") {
+      const { article, references, trail } = DEMO_ARTICLE_PAYLOAD;
+      const base = "/aqaid";
+      const crumbs = [
+        { label: t.nav.home, to: "/" },
+        { label: t.nav.aqaid, to: base },
+        ...trail.folders.map((f) => ({ label: f.title, to: `${base}/${f.slug}` })),
+      ];
+      return { article, references, crumbs, sectionBase: "aqaid" };
+    }
+    try {
+      const { article, references, trail } = await publicApi.article(slug, signal);
+      const section = trail?.section ? SECTION_PATH[trail.section] || "aqaid" : null;
+      const base = section ? `/${section}` : null;
+      const crumbs = [
+        { label: t.nav.home, to: "/" },
+        base && { label: section === "aqaid" ? t.nav.aqaid : t.nav.masail, to: base },
+        ...((base && trail?.folders) || []).map((f) => ({ label: f.title, to: `${base}/${f.slug}` })),
+      ].filter(Boolean);
+      return { article, references, crumbs, sectionBase: base ? base.slice(1) : null };
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        const { article, references, trail } = DEMO_ARTICLE_PAYLOAD;
+        const base = "/aqaid";
+        const crumbs = [
+          { label: t.nav.home, to: "/" },
+          { label: t.nav.aqaid, to: base },
+          ...trail.folders.map((f) => ({ label: f.title, to: `${base}/${f.slug}` })),
+        ];
+        return { article, references, crumbs, sectionBase: "aqaid" };
+      }
+      throw err;
+    }
   }, [slug]);
 
   if (loading && !data) {
