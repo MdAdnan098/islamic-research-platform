@@ -120,7 +120,7 @@ async function loadReferenceDocs(config, ids = []) {
   const valid = [...new Set(ids.map(String))].filter((id) => ObjectId.isValid(id));
   if (!valid.length) return [];
   const db = await getDb(config);
-  return db.collection("references").find({ _id: { $in: valid.map((id) => new ObjectId(id)) } }).project({ book: 1, author: 1 }).toArray();
+  return db.collection("references").find({ _id: { $in: valid.map((id) => new ObjectId(id)) } }).project({ book: 1, author: 1, referenceText: 1 }).toArray();
 }
 
 export async function createArticle(config, input) {

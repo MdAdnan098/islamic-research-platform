@@ -241,8 +241,15 @@ export function validateReferenceInput(data, { partial = false } = {}) {
   const errors = [];
   if (!data || typeof data !== "object") return [err("Request body must be a JSON object.")];
 
-  if (!partial || data.book !== undefined) {
-    if (!isNonEmptyString(data.book, 300)) errors.push(err("book is required (max 300 characters)."));
+  // A reference is now one free-text field (`referenceText`); `book` is only kept for older, book-style references.
+  const hasText = typeof data.referenceText === "string" && data.referenceText.trim().length > 0;
+  if (!partial && !hasText && !isNonEmptyString(data.book, 300)) {
+    errors.push(err("reference is required."));
+  }
+  if (data.book !== undefined && data.book !== null) {
+    if (typeof data.book !== "string" || data.book.length > 300) {
+      errors.push(err("book must be a string up to 300 characters."));
+    }
   }
   if (data.author !== undefined && data.author !== null) {
     if (typeof data.author !== "string" || data.author.length > 300) {
@@ -261,7 +268,7 @@ export function validateReferenceInput(data, { partial = false } = {}) {
   }
   if (data.referenceText !== undefined && data.referenceText !== null) {
     if (typeof data.referenceText !== "string" || data.referenceText.length > 5000) {
-      errors.push(err("referenceText must be a string up to 5000 characters."));
+      errors.push(err("reference must be a string up to 5000 characters."));
     }
   }
   if (data.mediaKey !== undefined && data.mediaKey !== null) {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BLOCK_META, newBlock } from "../../lib/blocks.js";
+import { BLOCK_META, newBlock, referenceLabel } from "../../lib/blocks.js";
 import { withTextEdit } from "../../lib/highlights.js";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
@@ -25,7 +25,7 @@ function ReferenceField({ block, set }) {
         <div className="flex gap-2">
           <select className="a-input" value={block.referenceId || ""} onChange={(e) => set({ referenceId: e.target.value, tr: undefined })}>
             <option value="">— choose a reference —</option>
-            {list.map((r) => <option key={r.id} value={r.id}>{r.book}{r.volume ? ` · v${r.volume}` : ""}{r.page ? ` · p${r.page}` : ""}</option>)}
+            {list.map((r) => <option key={r.id} value={r.id}>{referenceLabel(r)}</option>)}
           </select>
           <button type="button" className="a-btn shrink-0" onClick={() => setCreating(true)}><Icon name="plus" size={15} />New</button>
           {current && <button type="button" className="a-btn shrink-0" onClick={() => setEditing(true)}><Icon name="edit" size={15} />Edit</button>}

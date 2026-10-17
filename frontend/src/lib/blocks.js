@@ -40,6 +40,14 @@ export const newBlock = (type) => ({ id: uid(), type, ...structuredClone(DEFAULT
 export const withIds = (blocks = []) => blocks.map((b) => (b.id ? b : { ...b, id: uid() }));
 export const cloneBlocks = (blocks = []) => blocks.map((b) => ({ ...structuredClone(b), id: uid() }));
 
+/** One-line label for a reference in lists / dropdowns (works for old book-style references and new single-field ones). */
+export const referenceLabel = (r, max = 80) => {
+  if (!r) return "";
+  const old = [r.book, r.author, r.volume && `v${r.volume}`, r.page && `p${r.page}`].filter(Boolean).join(" · ");
+  const txt = String(old || r.referenceText || "").replace(/\s+/g, " ").trim();
+  return txt.length > max ? `${txt.slice(0, max)}…` : txt;
+};
+
 /** The article's `references` array is derived from its reference blocks. */
 export const referenceIdsOf = (blocks = []) => [...new Set(blocks.filter((b) => b.type === "reference" && b.referenceId).map((b) => b.referenceId))];
 

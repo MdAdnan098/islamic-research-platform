@@ -7,7 +7,7 @@ import { countArticlesUsingReference } from "./article.service.js";
  * Data access for the `references` collection.
  *
  * Document shape:
- *   { _id, book, author, volume, page, referenceText, mediaKey, createdAt, updatedAt }
+ *   { _id, referenceText, mediaKey, createdAt, updatedAt }  (+ book, author, volume, page on older references)
  *
  * References are reusable, standalone documents — articles link to them
  * by ObjectId (article.references[]) rather than embedding them. No
@@ -63,7 +63,7 @@ export async function createReference(config, input) {
   const now = new Date();
 
   const doc = {
-    book: input.book.trim(),
+    book: input.book?.trim() || null,
     author: input.author?.trim() || null,
     volume: input.volume?.trim() || null,
     page: input.page?.trim() || null,
@@ -159,7 +159,7 @@ export function toSafeReference(reference) {
   if (!reference) return null;
   return {
     id: String(reference._id),
-    book: reference.book,
+    book: reference.book || null,
     author: reference.author || null,
     volume: reference.volume || null,
     page: reference.page || null,

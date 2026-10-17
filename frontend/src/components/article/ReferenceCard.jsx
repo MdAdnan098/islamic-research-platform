@@ -5,22 +5,27 @@ import { Text } from "../ui/Text.jsx";
 import { Icon } from "../ui/icons.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
 
-/** Scholarly citation: Book → Author → Volume → Page → Text → Scanned page. */
+/** Scholarly citation. New references are a single free-text field; older ones (Book / Author / Volume / Page) still render as before. */
 export function ReferenceCard({ reference: r }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const scan = mediaUrl(r.mediaKey);
   // One compact line, like a citation: Book · Author · Jild · Safha
-  const line = [r.book, r.author, r.volume && `${t.article.volume} ${r.volume}`, r.page && `${t.article.page} ${r.page}`].filter(Boolean).join(" · ");
+  const oldLine = [r.book, r.author, r.volume && `${t.article.volume} ${r.volume}`, r.page && `${t.article.page} ${r.page}`].filter(Boolean).join(" · ");
+  // Single-field reference: its text goes in the highlighted box; an old-style reference keeps its citation line + text below.
+  const line = oldLine || r.referenceText || "";
+  const below = oldLine ? r.referenceText : "";
 
   return (
     <aside className="my-9">
       <div>
         {/* fixed colours on purpose (do not change with the theme) */}
-        <Text as="p" className="rounded-xl border-2 px-4 py-2.5 text-[1.05rem] font-semibold leading-snug sm:text-lg" style={{ background: "#e0efff", borderColor: "#3b82f6", color: "#1e3a8a" }}>{line}</Text>
+        {line && (
+          <Text as="p" className="whitespace-pre-line rounded-xl border-2 px-4 py-2.5 text-[1.05rem] font-semibold leading-snug sm:text-lg" style={{ background: "#e0efff", borderColor: "#3b82f6", color: "#1e3a8a" }}>{line}</Text>
+        )}
 
-        {r.referenceText && (
-          <Text as="p" className="mt-4 text-[1.05rem] leading-relaxed sm:text-lg">{r.referenceText}</Text>
+        {below && (
+          <Text as="p" className="mt-4 text-[1.05rem] leading-relaxed sm:text-lg">{below}</Text>
         )}
 
         {scan && (
@@ -36,7 +41,7 @@ export function ReferenceCard({ reference: r }) {
           )
         )}
       </div>
-      {open && <ScanViewer pages={[{ src: scan, caption: [r.book, r.page && `${t.article.page} ${r.page}`].filter(Boolean).join(" · ") }]} onClose={() => setOpen(false)} />}
+      {open && <ScanViewer pages={[{ src: scan, caption: [r.book, r.page && `${t.article.page} ${r.page}`].filter(Boolean).join(" · ") || undefined }]} onClose={() => setOpen(false)} />}
     </aside>
   );
 }

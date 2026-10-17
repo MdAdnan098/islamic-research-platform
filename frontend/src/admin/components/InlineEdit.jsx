@@ -7,7 +7,7 @@ import { Field, ToastProvider } from "./ui.jsx";
 
 const TEXTY = new Set(["heading", "text", "quote"]);
 const isSacred = (b) => b.type === "quote" && (b.kind === "ayat" || b.kind === "hadith");
-const REF_FIELDS = [["book", "Book"], ["author", "Author"], ["volume", "Volume"], ["page", "Page"], ["referenceText", "Text"]];
+const REF_FIELDS = [["book", "Book"], ["author", "Author"], ["volume", "Volume"], ["page", "Page"], ["referenceText", "Reference"]];
 const isObj = (v) => !!v && typeof v === "object" && !Array.isArray(v);
 
 /** Sets the text of one converted version (block.tr[lang]) and keeps that version's highlights on the same words. */
@@ -94,7 +94,7 @@ export default function InlineEdit({ block, baseLang, lang, onSave, onCancel, sa
           </div>
         ) : refVersion ? (
           <div className="space-y-3">
-            {REF_FIELDS.map(([k, name]) => (
+            {REF_FIELDS.filter(([k]) => k === "referenceText" || draft.tr?.[lang]?.[k]).map(([k, name]) => (
               <Field key={k} label={name}>
                 {k === "referenceText"
                   ? <textarea className="a-input" dir="auto" rows={3} value={draft.tr?.[lang]?.[k] || ""} onChange={(e) => setRefField(k, e.target.value)} />

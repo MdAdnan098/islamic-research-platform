@@ -1,20 +1,26 @@
 import { useState } from "react";
 import { adminApi } from "../../services/admin.js";
 import { Field, useToast } from "./ui.jsx";
-import { MediaUploader } from "./MediaUploader.jsx";
 
-const EMPTY = { book: "", author: "", volume: "", page: "", referenceText: "", mediaKey: "" };
+/** Older references were Book / Author / Volume / Page / Text: when one is edited, those parts are merged into the single field. */
+function startText(initial) {
+  if (!initial) return "";
+  const old = [initial.book, initial.author, initial.volume && `Vol. ${initial.volume}`, initial.page && `p. ${initial.page}`].filter(Boolean).join(" · ");
+  return [old, initial.referenceText].filter(Boolean).join("\n");
+}
 
 export function ReferenceForm({ initial, onSaved, onCancel }) {
   const toast = useToast();
-  const [f, setF] = useState({ ...EMPTY, ...Object.fromEntries(Object.entries(initial || {}).filter(([k]) => k in EMPTY).map(([k, v]) => [k, v ?? ""])) });
+  const [text, setText] = useState(startText(initial));
   const [busy, setBusy] = useState(false);
-  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
 
   async function submit(e) {
     e.preventDefault();
+    const referenceText = text.trim();
+    if (!referenceText) return toast("Reference likhiye.", "error");
     setBusy(true);
-    const body = Object.fromEntries(Object.entries(f).map(([k, v]) => [k, typeof v === "string" ? v.trim() : v]).map(([k, v]) => [k, k === "book" ? v : v || null]));
+    // The single field is stored as `referenceText`; the old separate fields are cleared (a saved scan, if any, is left untouched).
+    const body = { referenceText, book: null, author: null, volume: null, page: null };
     try {
       const saved = initial?.id ? await adminApi.references.update(initial.id, body) : await adminApi.references.create(body);
       toast("Reference saved");
@@ -28,17 +34,9 @@ export function ReferenceForm({ initial, onSaved, onCancel }) {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <Field label="Book *"><input className="a-input" dir="auto" required value={f.book} onChange={set("book")} /></Field>
-      <Field label="Author"><input className="a-input" dir="auto" value={f.author} onChange={set("author")} /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Volume"><input className="a-input" dir="auto" value={f.volume} onChange={set("volume")} /></Field>
-        <Field label="Page"><input className="a-input" dir="auto" value={f.page} onChange={set("page")} /></Field>
-      </div>
-      <Field label="Reference text"><textarea className="a-input min-h-28" dir="auto" value={f.referenceText} onChange={set("referenceText")} /></Field>
-      <div>
-        <span className="a-label">Scanned page</span>
-        <MediaUploader value={f.mediaKey} onChange={(k) => setF((s) => ({ ...s, mediaKey: k }))} label="Upload scan" />
-      </div>
+      <Field label="Reference">
+        <textarea className="a-input min-h-32" dir="auto" autoFocus required value={text} onChange={(e) => setText(e.target.value)} />
+      </Field>
       <div className="flex justify-end gap-2 pt-2">
         {onCancel && <button type="button" className="a-btn" onClick={onCancel}>Cancel</button>}
         <button className="a-btn-primary" disabled={busy}>{busy ? "Saving…" : "Save reference"}</button>

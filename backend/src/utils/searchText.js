@@ -155,7 +155,7 @@ const MAX_SEARCH_TEXT = 200_000;
 /**
  * Builds the normalised searchable copies of an article.
  * @param {object} article  { title, titleTr, excerpt, seoTitle, seoDescription, blocks }
- * @param {Array<{ book?: string, author?: string }>} references  resolved reference documents
+ * @param {Array<{ book?: string, author?: string, referenceText?: string }>} references  resolved reference documents
  * @returns {{ searchTitle: string, searchText: string, searchPhonetic: string, searchPhoneticTitle: string }}
  */
 export function buildArticleSearchFields(article, references = []) {
@@ -171,7 +171,7 @@ export function buildArticleSearchFields(article, references = []) {
     else if (b.type === "scan") { parts.push(b.caption); (b.pages || []).forEach((p) => parts.push(p?.caption)); }
     else if (b.type === "pdf") parts.push(b.title);
   }
-  for (const r of references) parts.push(r?.book, r?.author);
+  for (const r of references) parts.push(r?.book, r?.author, r?.referenceText);
 
   const searchTitle = normalizeForSearch(titles.join(" "));
   const searchText = normalizeForSearch(parts.filter((x) => typeof x === "string").join(" \n ")).slice(0, MAX_SEARCH_TEXT);
