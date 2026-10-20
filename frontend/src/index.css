@@ -229,15 +229,20 @@
   .cat-arabic { font-family: "FS Urdu", "Noto Nastaliq Urdu", serif; font-size: 2.35rem; line-height: 1.6; font-weight: 400; letter-spacing: 0; }
   @media (min-width: 640px) { .cat-arabic { font-size: 3rem; } }
 
-  /* Phones: smaller, cleaner body text (Arabic / Urdu runs stay a little larger so they remain readable) */
-  .reading { font-size: .9rem; }
+  /* Phones: smaller, cleaner body text (Arabic / Urdu runs stay a little larger so they remain readable).
+     Scales smoothly with --reading-font-scale when readers adjust font size. */
+  .reading { font-size: calc(0.9rem * var(--reading-font-scale, 1)); }
   .reading .script-latin { line-height: 1.85; }
   /* Urdu/Arabic already get size-adjust on the font-face; no extra boost, so their paragraph : heading ratio equals Roman's */
   .reading .script-urdu, .reading .script-arabic { font-size: 1em; }
-  @media (min-width: 640px) { .reading { font-size: 1.125rem; } .reading .script-latin { line-height: 1.7; } }
-  @media (min-width: 1024px) { .reading { font-size: 1.25rem; } }
+  @media (min-width: 640px) { .reading { font-size: calc(1.125rem * var(--reading-font-scale, 1)); } .reading .script-latin { line-height: 1.7; } }
+  @media (min-width: 1024px) { .reading { font-size: calc(1.25rem * var(--reading-font-scale, 1)); } }
   .reading p + p { margin-top: 1.1em; }
   .reading { overflow-wrap: anywhere; }
+
+  /* Article header title and excerpt scaling with reader font preference */
+  .article-title { font-size: clamp(1.85rem, calc(2.5rem * var(--reading-font-scale, 1)), 3.75rem); line-height: 1.25; }
+  .article-excerpt { font-size: calc(1.125rem * var(--reading-font-scale, 1)); line-height: 1.6; }
   /* Saved text highlight: yellow background, red text, same in every theme. No padding so Urdu/Arabic letters keep joining. */
   .hl-mark { background: #fde047; color: #b91c1c; border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
   .hl-editing [data-hl-block] { cursor: text; }
