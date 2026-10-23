@@ -77,7 +77,7 @@ function Figure({ pages, caption, startOpen }) {
     <figure className="my-9">
       <div className={single ? "" : "flex flex-col gap-4"}>
         {pages.map((p, i) => (
-          <button key={i} onClick={() => setOpen(i)} className={`card-lift block w-full overflow-hidden rounded-lg border border-rule bg-card text-start`} aria-label={p.caption || "Open"}>
+          <button key={i} onClick={() => setOpen(i)} className="block w-full text-start" aria-label={p.caption || "Open"}>
             <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-auto w-full bg-rule/30" />
           </button>
         ))}
@@ -134,12 +134,17 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           case "text":
             return (
               <div key={key} className="my-5">
-                {splitParagraphs(cleanText(txt(b))).flatMap((seg) => splitScriptRuns(seg.text, seg.start)).map((run, j) => (
-                  // Each run of same-script lines is its own paragraph with its own direction (offsets stay relative to the whole block).
-                  <Text key={j} as="p" src={run.text} force={run.script} {...hlAttrs(hlEdit, b, lang, run.start)} className="whitespace-pre-line">
-                    {marked(run.text, sliceRanges(ranges, run.start, run.start + run.text.length), run.script)}
-                  </Text>
-                ))}
+                {splitParagraphs(cleanText(txt(b))).flatMap((seg) => splitScriptRuns(seg.text, seg.start)).map((run, j) => {
+                  // Arabic / Urdu lines are joined with a space (1 character -> 1 character, so highlight offsets stay valid):
+                  // the text then fills the full width line after line and is justified, instead of stopping at each pasted line break.
+                  const flow = isRtl(run.script) ? run.text.replace(/\n/g, " ") : run.text;
+                  return (
+                    // Each run of same-script lines is its own paragraph with its own direction (offsets stay relative to the whole block).
+                    <Text key={j} as="p" src={flow} force={run.script} {...hlAttrs(hlEdit, b, lang, run.start)} className="whitespace-pre-line">
+                      {marked(flow, sliceRanges(ranges, run.start, run.start + flow.length), run.script)}
+                    </Text>
+                  );
+                })}
               </div>
             );
           case "quote":
