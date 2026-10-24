@@ -38,6 +38,7 @@ const { routes: categoryRoutes } = await import("../src/routes/admin.categories.
 const { routes: topicRoutes } = await import("../src/routes/admin.topics.routes.js");
 const { routes: articleRoutes } = await import("../src/routes/admin.articles.routes.js");
 const { routes: referenceRoutes } = await import("../src/routes/admin.references.routes.js");
+const { routes: importRoutes } = await import("../src/routes/admin.import.routes.js");
 const { routes: liveRoutes } = await import("../src/routes/admin.live.routes.js");
 const { routes: courseRoutes } = await import("../src/routes/admin.courses.routes.js");
 const { routes: enrollmentRoutes } = await import("../src/routes/admin.enrollments.routes.js");
@@ -137,7 +138,7 @@ test("a successful login clears the failure counter, so a real admin is never wo
 /* ------------------------- authorization / token handling ------------------------- */
 test("EVERY /api/admin route (other than login/logout/register/reset) rejects unauthenticated requests", async () => {
   const id = new ObjectId().toString();
-  const all = [...categoryRoutes, ...topicRoutes, ...articleRoutes, ...referenceRoutes, ...liveRoutes, ...courseRoutes, ...enrollmentRoutes, ...mediaRoutes, ["GET", "/api/admin/me"], ["GET", "/api/admin/ping"]]
+  const all = [...categoryRoutes, ...topicRoutes, ...articleRoutes, ...referenceRoutes, ...importRoutes, ...liveRoutes, ...courseRoutes, ...enrollmentRoutes, ...mediaRoutes, ["GET", "/api/admin/me"], ["GET", "/api/admin/ping"]]
     .filter(([, pattern]) => pattern.startsWith("/api/admin/"));
   assert.ok(all.length > 40, `expected the full admin surface, got ${all.length}`);
   for (const [method, pattern] of all) {

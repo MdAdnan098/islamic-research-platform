@@ -3,10 +3,12 @@ import { resolveAllowedOrigin } from "../config/env.js";
 
 /**
  * 5xx codes whose message was written for end users on purpose (payment gateway
- * problems). Every other 5xx message is replaced with a generic one so driver errors,
- * cluster hostnames, binding names or internal details never reach a client.
+ * problems; the article importer's fixed "the site could not be fetched / took too long"
+ * messages, which never contain anything from the remote site). Every other 5xx message
+ * is replaced with a generic one so driver errors, cluster hostnames, binding names or
+ * internal details never reach a client.
  */
-const SAFE_5XX_CODES = new Set(["PAYMENTS_NOT_CONFIGURED", "PAYMENT_GATEWAY_ERROR"]);
+const SAFE_5XX_CODES = new Set(["PAYMENTS_NOT_CONFIGURED", "PAYMENT_GATEWAY_ERROR", "IMPORT_UPSTREAM_ERROR", "IMPORT_TIMEOUT"]);
 
 const GENERIC_5XX_MESSAGES = {
   CONFIG_ERROR: "Server configuration error.",
