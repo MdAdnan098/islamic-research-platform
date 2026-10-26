@@ -19,9 +19,9 @@ export function ReferenceCard({ reference: r }) {
   return (
     <aside className="my-9">
       <div>
-        {/* fixed colours on purpose (do not change with the theme) */}
+        {/* colours live in index.css (.ref-line): fixed light blue in Light, deep blue in Dark */}
         {line && (
-          <Text as="p" className="whitespace-pre-line rounded-xl border-2 px-4 py-2.5 text-[0.95em] font-semibold leading-snug sm:text-[1.05em]" style={{ background: "#e0efff", borderColor: "#3b82f6", color: "#1e3a8a" }}>{line}</Text>
+          <Text as="p" className="ref-line whitespace-pre-line rounded-xl border-2 px-4 py-2.5 text-[0.95em] font-semibold leading-snug sm:text-[1.05em]">{line}</Text>
         )}
 
         {below && (

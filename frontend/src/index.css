@@ -134,26 +134,28 @@
     --ad-danger: 192 57 43; --ad-ok: 55 121 75; --ad-warn: 176 112 16;
   }
 
+  /* Dark = deep teal-slate (same family as the brand teal), soft layers, warm parchment text instead of stark white. */
   .dark {
-    --paper: 32 33 37;         /* #202125 */
+    --paper: 21 25 27;         /* page + navbar            #15191B */
     --paper-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72' fill='none' stroke='%23ffffff' stroke-opacity='.045' stroke-width='1'%3E%3Crect x='20' y='20' width='32' height='32'/%3E%3Crect x='20' y='20' width='32' height='32' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='7'/%3E%3C/svg%3E");
     --hero-ink: 116 160 159;   /* hero text, same teal-grey as Light */
-    --card: 32 33 37;
-    --ink: 233 234 238;        /* #E9EAEE */
-    --mute: 183 184 188;       /* #B7B8BC */
-    --rule: 68 68 68;          /* #444444 */
+    --card: 28 33 36;          /* cards                    #1C2124 */
+    --ink: 220 215 202;        /* body / headings: warm parchment  #DCD7CA */
+    --mute: 160 165 163;       /* secondary text           #A0A5A3 */
+    --rule: 52 60 64;          /* borders / dividers       #343C40 */
     --accent: 43 164 172;      /* #2BA4AC */
-    --tint: 22 22 22;          /* #161616 */
-    --soft: 53 58 64;          /* #353A40 */
-    --hero: 0 0 0;             /* #000000 */
-    --calli: 16 16 16;         /* ~#101010 (reference is #060606, lifted slightly so it stays visible) */
-    --field: 53 58 64;         /* #353A40 */
-    --footer: 22 23 26;        /* footer band              #16171A */
-    --shadow-soft: 0 2px 16px rgb(0 0 0 / .45), 0 0 0 6px rgb(0 0 0 / .12);
-    --ad-bg: 22 22 22; --ad-card: 32 33 37; --ad-ink: 233 234 238; --ad-mute: 183 184 188;
-    --ad-rule: 68 68 68; --ad-brand: 43 164 172;
+    --tint: 36 43 47;          /* chips / pills            #242B2F */
+    --soft: 33 39 42;          /* Ayat / Hadith panels     #21272A */
+    --hero: 17 22 24;          /* hero band                #111618 */
+    --calli: 28 35 38;         /* hero calligraphy         #1C2326 */
+    --field: 33 39 42;         /* search / inputs          #21272A */
+    --footer: 17 21 23;        /* footer band              #111517 */
+    --shadow-soft: 0 2px 16px rgb(0 0 0 / .4), 0 0 0 6px rgb(0 0 0 / .1);
+    --ad-bg: 17 21 23; --ad-card: 28 33 36; --ad-ink: 220 215 202; --ad-mute: 160 165 163;
+    --ad-rule: 52 60 64; --ad-brand: 43 164 172;
     --ad-danger: 232 106 92; --ad-ok: 80 190 140; --ad-warn: 226 168 70;
-    --ar-red: #ff5c5c;
+    --ar-red: #f07c74;         /* Arabic marked red: soft coral on dark */
+    --ar-ink: 232 226 208;     /* Arabic text: warm ivory  #E8E2D0 */
     color-scheme: dark;
   }
 
@@ -270,6 +272,18 @@
   /* Arabic text the admin turned red by hand (text colour only). Inside a coloured highlight the highlight's own colours win. */
   .ar-red { color: var(--ar-red, #ee0000); }
   .hl-mark .ar-red { color: inherit; }
+  /* Dark: the same four highlight colours, a little calmer so they do not glare at night. */
+  .dark .hl-mark.hl-yellow { background: #d8bf4a; color: #8a1c1c; }
+  .dark .hl-mark.hl-pink { background: #d4609f; color: #0b0b0b; }
+  .dark .hl-mark.hl-blue { background: #9b99dc; color: #0b0b0b; }
+  .dark .hl-mark.hl-green { background: #1d7a38; color: #f1f1ec; }
+  /* Dark: normal Arabic in a post is warm ivory; red / highlighted words keep their own colours. */
+  .dark .reading .script-arabic, .dark .reading .inl-ar { color: rgb(var(--ar-ink)); }
+  /* Dark: pictures inside a post (images, scans, reference scans) are dimmed a little. */
+  .dark .reading img { filter: brightness(.8); }
+  /* Reference line (blue box): fixed light colours in Light, a deep blue in Dark. */
+  .ref-line { background: #e0efff; border-color: #3b82f6; color: #1e3a8a; }
+  .dark .ref-line { background: #1d2b44; border-color: #3f6db8; color: #c7dafc; }
   .hl-editing [data-hl-block] { cursor: text; }
   .hl-editing .hl-mark { cursor: pointer; }
   .card-lift { @apply shadow-elev transition duration-300 ease-out hover:-translate-y-1 hover:border-accent/40 hover:shadow-soft motion-reduce:transition-none motion-reduce:hover:translate-y-0; }

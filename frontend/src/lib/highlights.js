@@ -32,7 +32,7 @@ export function shownLang(b, baseLang, want) {
 export const COLOR_FIELDS = ["hl", "hlPink", "hlBlue", "hlGreen"];
 export const AR_FIELD = "arRed";
 export const MARK_FIELDS = [...COLOR_FIELDS, AR_FIELD];
-const COLOR_CLASS = { hl: "hl-mark", hlPink: "hl-mark hl-pink", hlBlue: "hl-mark hl-blue", hlGreen: "hl-mark hl-green" };
+const COLOR_CLASS = { hl: "hl-mark hl-yellow", hlPink: "hl-mark hl-pink", hlBlue: "hl-mark hl-blue", hlGreen: "hl-mark hl-green" };
 export const markClass = (field) => COLOR_CLASS[field] || "hl-mark";
 
 export const rangesOf = (b, lang, field = "hl") => (Array.isArray(b?.[field]?.[lang]) ? b[field][lang] : []);
