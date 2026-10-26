@@ -284,6 +284,10 @@
   /* Reference (Hawala): plain blue text, no box. Vivid royal blue in Light, bright sky blue in Dark, so it stands apart from the post text. */
   .ref-line { color: #0a58ff; }
   .dark .ref-line { color: #4aa3ff; }
+  /* Label + reference sit tight together: cancel the post's paragraph gap and the tall per-script line-heights. */
+  .reading .ref-line p + p, .ref-line p + p { margin-top: 0; }
+  .ref-line p { line-height: 1.45 !important; }
+  .ref-line p.script-urdu, .ref-line p.script-arabic { line-height: 1.8 !important; }
   .hl-editing [data-hl-block] { cursor: text; }
   .hl-editing .hl-mark { cursor: pointer; }
   .card-lift { @apply shadow-elev transition duration-300 ease-out hover:-translate-y-1 hover:border-accent/40 hover:shadow-soft motion-reduce:transition-none motion-reduce:hover:translate-y-0; }

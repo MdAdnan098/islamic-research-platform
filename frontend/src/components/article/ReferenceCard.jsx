@@ -6,8 +6,8 @@ import { Icon } from "../ui/icons.jsx";
 import { isRtl, scriptOf } from "../../lib/script.js";
 import { ScanViewer } from "./ScanViewer.jsx";
 
-// Old content may already carry the "Hawala" label / 📖 / [ ] brackets: strip them so they are never shown twice.
-const LABEL_RE = /^\s*(?:📖\s*)?(?:hawala|hawale|حوالہ|حوالے|हवाला|हवाले)(?![\p{L}\p{M}])\s*(?:📖)?\s*[:：\-–—]?\s*/iu;
+// Old content may already carry the "Hawala" label / 📖 / ":-" / [ ] brackets: strip them so they are never shown twice.
+const LABEL_RE = /^\s*(?:📖\s*)?(?:hawala|hawale|حوالہ|حوالے|हवाला|हवाले)(?![\p{L}\p{M}])\s*(?:📖)?\s*[:：\-–—]*\s*/iu;
 const BRACKET_RE = /^[\[［【]\s*([\s\S]*?)\s*[\]］】]$/;
 
 // The UI dictionary is always Roman, so the label follows the reader's selected language instead.
@@ -43,10 +43,10 @@ export function ReferenceCard({ reference: r }) {
   return (
     <aside className="my-6">
       <div>
-        {/* Plain book-style citation: "Hawala 📖" then "[ book jild safa ]". Colours live in index.css (.ref-line): blue in Light, soft blue in Dark. */}
+        {/* Plain book-style citation: "Hawala :-" then "[ book jild safa ]". Colours live in index.css (.ref-line): blue in Light, soft blue in Dark. */}
         {line && (
           <div className="ref-line">
-            <Text as="p" dir={dir} className="text-[0.9em] font-semibold leading-snug sm:text-[1em]">{LABELS[contentLang] || LABELS.en} 📖</Text>
+            <Text as="p" dir={dir} className="text-[0.9em] font-semibold leading-snug sm:text-[1em]">{LABELS[contentLang] || LABELS.en} :-</Text>
             <Text as="p" className="whitespace-pre-line text-[0.9em] font-semibold leading-snug sm:text-[1em]">{line}</Text>
           </div>
         )}
