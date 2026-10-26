@@ -46,8 +46,8 @@ export function ReferenceCard({ reference: r }) {
         {/* Plain book-style citation: "Hawala :-" then "[ book jild safa ]". Colours live in index.css (.ref-line): blue in Light, soft blue in Dark. */}
         {line && (
           <div className="ref-line">
-            <Text as="p" dir={dir} className="text-[0.9em] font-semibold leading-snug sm:text-[1em]">{LABELS[contentLang] || LABELS.en} :-</Text>
-            <Text as="p" className="whitespace-pre-line text-[0.9em] font-semibold leading-snug sm:text-[1em]">{line}</Text>
+            <Text as="p" dir={dir} className="text-[1.05em] font-semibold leading-snug sm:text-[1.12em]">{LABELS[contentLang] || LABELS.en} :-</Text>
+            <Text as="p" className="whitespace-pre-line text-[1.05em] font-semibold leading-snug sm:text-[1.12em]">{line}</Text>
           </div>
         )}
 
