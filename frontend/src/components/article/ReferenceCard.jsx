@@ -3,7 +3,27 @@ import { useI18n } from "../../i18n/index.jsx";
 import { mediaUrl, isPdfKey } from "../../lib/media.js";
 import { Text } from "../ui/Text.jsx";
 import { Icon } from "../ui/icons.jsx";
+import { isRtl, scriptOf } from "../../lib/script.js";
 import { ScanViewer } from "./ScanViewer.jsx";
+
+// Old content may already carry the "Hawala" label / 📖 / [ ] brackets: strip them so they are never shown twice.
+const LABEL_RE = /^\s*(?:📖\s*)?(?:hawala|hawale|حوالہ|حوالے|हवाला|हवाले)(?![\p{L}\p{M}])\s*(?:📖)?\s*[:：\-–—]?\s*/iu;
+const BRACKET_RE = /^[\[［【]\s*([\s\S]*?)\s*[\]］】]$/;
+
+/** Plain reference text -> "[ text ]" (one bracketed line per source line), with any existing label/brackets removed first. */
+function toBracketed(text) {
+  const body = String(text ?? "").replace(LABEL_RE, "");
+  return body
+    .split("\n")
+    .map((l) => {
+      let x = l.trim(), m;
+      while ((m = x.match(BRACKET_RE))) x = m[1].trim();
+      return x;
+    })
+    .filter(Boolean)
+    .map((x) => `[ ${x} ]`)
+    .join("\n");
+}
 
 /** Scholarly citation. New references are a single free-text field; older ones (Book / Author / Volume / Page) still render as before. */
 export function ReferenceCard({ reference: r }) {
@@ -13,15 +33,19 @@ export function ReferenceCard({ reference: r }) {
   // One compact line, like a citation: Book · Author · Jild · Safha
   const oldLine = [r.book, r.author, r.volume && `${t.article.volume} ${r.volume}`, r.page && `${t.article.page} ${r.page}`].filter(Boolean).join(" · ");
   // Single-field reference: its text goes in the highlighted box; an old-style reference keeps its citation line + text below.
-  const line = oldLine || r.referenceText || "";
+  const line = toBracketed(oldLine || r.referenceText || "");
+  const dir = isRtl(scriptOf(line)) ? "rtl" : "ltr";
   const below = oldLine ? r.referenceText : "";
 
   return (
-    <aside className="my-9">
+    <aside className="my-6">
       <div>
-        {/* colours live in index.css (.ref-line): fixed light blue in Light, deep blue in Dark */}
+        {/* Plain book-style citation: "Hawala 📖" then "[ book jild safa ]". Colours live in index.css (.ref-line): blue in Light, soft blue in Dark. */}
         {line && (
-          <Text as="p" className="ref-line whitespace-pre-line rounded-xl border-2 px-4 py-2.5 text-[0.95em] font-semibold leading-snug sm:text-[1.05em]">{line}</Text>
+          <div className="ref-line">
+            <Text as="p" dir={dir} className="text-[0.9em] font-semibold leading-snug sm:text-[1em]">{t.article.reference} 📖</Text>
+            <Text as="p" className="whitespace-pre-line text-[0.9em] font-medium leading-snug sm:text-[1em]">{line}</Text>
+          </div>
         )}
 
         {below && (

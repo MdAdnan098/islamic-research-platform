@@ -281,9 +281,9 @@
   .dark .reading .script-arabic, .dark .reading .inl-ar { color: rgb(var(--ar-ink)); }
   /* Dark: pictures inside a post (images, scans, reference scans) are dimmed a little. */
   .dark .reading img { filter: brightness(.8); }
-  /* Reference line (blue box): fixed light colours in Light, a deep blue in Dark. */
-  .ref-line { background: #e0efff; border-color: #3b82f6; color: #1e3a8a; }
-  .dark .ref-line { background: #1d2b44; border-color: #3f6db8; color: #c7dafc; }
+  /* Reference (Hawala): plain blue text, no box. Deep blue in Light, soft blue in Dark. */
+  .ref-line { color: #1e3a8a; }
+  .dark .ref-line { color: #c7dafc; }
   .hl-editing [data-hl-block] { cursor: text; }
   .hl-editing .hl-mark { cursor: pointer; }
   .card-lift { @apply shadow-elev transition duration-300 ease-out hover:-translate-y-1 hover:border-accent/40 hover:shadow-soft motion-reduce:transition-none motion-reduce:hover:translate-y-0; }
