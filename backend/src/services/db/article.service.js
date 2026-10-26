@@ -5,7 +5,7 @@ import { findTopicById } from "./topic.service.js";
 import { normalizeSlug, slugify } from "../../utils/slug.js";
 import { validateArticleInput } from "../../utils/validate.js";
 import { buildArticleSearchFields, escapeRegex, phoneticFieldRegex, skeletonOf } from "../../utils/searchText.js";
-import { HL_LANGS, isHighlightable, normalizeRanges, versionText } from "../../utils/highlights.js";
+import { HL_LANGS, isHighlightable, MARK_FIELDS, normalizeRanges, versionText } from "../../utils/highlights.js";
 
 /**
  * Data access for the `articles` collection.
@@ -457,8 +457,9 @@ const MAX_HIGHLIGHT_EDITS = 200;
 
 /**
  * Applies highlight edits to existing blocks, addressed by block id (never by text or position).
- * edits: [{ blockId, lang, ranges: [[start, end], ...] }]  - `ranges` REPLACES that block+version's ranges ([] removes them).
- * Only `hl` changes; text, order and every other block are untouched. Compare-and-swap on updatedAt means a
+ * edits: [{ blockId, lang, field?, ranges: [[start, end], ...] }]  - `ranges` REPLACES that block+layer+version's ranges ([] removes them).
+ * `field` is one of MARK_FIELDS (default "hl" = yellow; hlPink / hlBlue / hlGreen = other colours; arRed = red Arabic text).
+ * Only the mark layers change; text, order and every other block are untouched. Compare-and-swap on updatedAt means a
  * stale page can never overwrite a newer save: it gets a 409 instead.
  */
 export async function updateBlockHighlights(config, id, { baseUpdatedAt, edits }) {
@@ -488,9 +489,11 @@ export async function updateBlockHighlights(config, id, { baseUpdatedAt, edits }
   };
   const wellFormed = (r) => Array.isArray(r) && r.length === 2 && Number.isInteger(r[0]) && Number.isInteger(r[1]) && r[0] >= 0 && r[1] > r[0];
 
-  const blocks = (existing.blocks || []).map((b) => ({ ...b, ...(b.hl ? { hl: { ...b.hl } } : {}) }));
+  const blocks = (existing.blocks || []).map((b) => ({ ...b, ...Object.fromEntries(MARK_FIELDS.filter((f) => b[f]).map((f) => [f, { ...b[f] }])) }));
   for (const edit of edits) {
     if (!edit || typeof edit.blockId !== "string" || !HL_LANGS.includes(edit.lang) || !Array.isArray(edit.ranges)) bad("Each edit needs blockId, lang and ranges.", "INVALID_INPUT");
+    const field = edit.field === undefined ? "hl" : edit.field;
+    if (!MARK_FIELDS.includes(field)) bad("Unknown highlight layer.", "INVALID_INPUT");
     if (!edit.ranges.every(wellFormed)) bad("Highlight ranges must be [start, end] integer pairs with start < end.");
     const block = blocks.find((b) => b.id === edit.blockId);
     if (!block) bad("A highlighted block no longer exists. Reload the article.");
@@ -501,11 +504,11 @@ export async function updateBlockHighlights(config, id, { baseUpdatedAt, edits }
     if (ranges.some(([, e]) => e > length)) bad("A highlight is outside the text. Reload the article.");
     if (ranges.length > 500) bad("Too many highlights in one block.");
 
-    const hl = { ...(block.hl || {}) };
-    if (ranges.length) hl[edit.lang] = ranges;
-    else delete hl[edit.lang];
-    if (Object.keys(hl).length) block.hl = hl;
-    else delete block.hl;
+    const layer = { ...(block[field] || {}) };
+    if (ranges.length) layer[edit.lang] = ranges;
+    else delete layer[edit.lang];
+    if (Object.keys(layer).length) block[field] = layer;
+    else delete block[field];
   }
 
   const collection = await getArticlesCollection(config);

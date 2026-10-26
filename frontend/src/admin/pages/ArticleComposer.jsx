@@ -15,6 +15,7 @@ import { FolderForm } from "../components/FolderForm.jsx";
 import { MediaUploader } from "../components/MediaUploader.jsx";
 import { VersionsPanel } from "../components/VersionsPanel.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
+import { useNoPattern } from "../../lib/useNoPattern.js";
 
 const TITLE_BACKUP = "fs_compose_title";
 const readTitle = () => { try { return localStorage.getItem(TITLE_BACKUP) || ""; } catch { return ""; } };
@@ -29,6 +30,7 @@ const clock = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute:
  * post on top is never covered.
  */
 export default function ArticleComposer() {
+  useNoPattern(); // post pages: plain page colour, no geometric pattern
   const { id: routeId } = useParams();
   const toast = useToast();
   const nav = useNavigate();

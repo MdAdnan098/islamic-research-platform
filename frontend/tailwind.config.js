@@ -21,7 +21,7 @@ export default {
       fontFamily: {
         sans: ["var(--font-body)"],
         display: ["var(--font-display)"],
-        ui: ["Figtree", "system-ui", "sans-serif"],
+        ui: ["Figtree", "'FS Urdu'", "system-ui", "sans-serif"],
         arabic: ["'FS Arabic'", "'FS Quran'", "Amiri", "'Noto Naskh Arabic'", "serif"],
         urdu: ["'FS Urdu'", "'Noto Nastaliq Urdu'", "serif"],
       },

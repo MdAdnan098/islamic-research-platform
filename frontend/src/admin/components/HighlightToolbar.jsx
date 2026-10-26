@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { addRange, covered, overlaps, rangesOf, removeRange, syncSpans, trimRange, unitMap } from "../../lib/highlights.js";
+import { addRange, AR_FIELD, arabicSpans, COLOR_FIELDS, covered, overlaps, rangesOf, removeRange, syncSpans, trimRange, unitMap } from "../../lib/highlights.js";
 
 /**
- * Admin-only floating toolbar: Highlight / Remove highlight for the current text selection.
+ * Admin-only floating toolbar for the current text selection: four highlight colours (yellow, pink, blue, green),
+ * "Arabic red" (red text colour, set by hand) and the matching Remove buttons.
  * The selection is mapped to (block id, script version, character offsets) through the data-hl-* attributes
  * the renderer puts on each text element - never by searching for the selected string - so repeated words
  * and sentences are unambiguous. `onApply(edits)` receives [{ blockId, lang, ranges }] (full replacement ranges).
@@ -49,7 +50,13 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     return (b && syncSpans(b, baseLang, p.lang, [p.start, p.end])) || [{ lang: p.lang, range: [p.start, p.end] }];
   }, [baseLang]);
 
-  const currentRanges = useCallback((blockId, lang) => rangesOf(blocksRef.current.find((b) => b.id === blockId), lang), []);
+  const currentRanges = useCallback((blockId, lang, field = "hl") => rangesOf(blocksRef.current.find((b) => b.id === blockId), lang, field), []);
+
+  /** Where "Arabic red" lands for a piece: this version + the same Arabic words (same index) in the other versions. */
+  const arabicOf = useCallback((p) => {
+    const b = blocksRef.current.find((x) => x.id === p.blockId);
+    return b ? arabicSpans(b, baseLang, p.lang, [p.start, p.end]) : { spans: [{ lang: p.lang, range: [p.start, p.end] }], missing: [] };
+  }, [baseLang]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -58,8 +65,8 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     // Highlight / Remove is used, the X is pressed, or a new text is selected.
     const update = () => { if (busy) return; const next = readSelection(container); if (next) setSel(next); };
     const onClick = (e) => {
-      // Tapping an existing highlight selects it, so "Remove highlight" appears for it.
-      const mark = e.target.closest?.("mark.hl-mark");
+      // Tapping an existing highlight selects it, so "Remove highlight" / "Remove red" appears for it.
+      const mark = e.target.closest?.("mark.hl-mark, span.ar-red");
       if (mark && window.getSelection()?.isCollapsed) window.getSelection().selectAllChildren(mark);
     };
     document.addEventListener("selectionchange", update);
@@ -69,25 +76,54 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
 
   if (!sel) return null;
 
+  // Colours: is any part of the selection already coloured / is all of it already this colour?
   const state = sel.pieces.reduce((acc, p) => {
-    const r = currentRanges(p.blockId, p.lang);
     const own = spansOf(p).filter((x) => x.lang === p.lang).map((x) => x.range);
-    return { anyMarked: acc.anyMarked || own.some((x) => overlaps(r, x)), allMarked: acc.allMarked && own.every((x) => covered(r, x)) };
-  }, { anyMarked: false, allMarked: true });
+    const next = { ...acc, anyMarked: acc.anyMarked, full: { ...acc.full } };
+    for (const f of COLOR_FIELDS) {
+      const r = currentRanges(p.blockId, p.lang, f);
+      if (own.some((x) => overlaps(r, x))) next.anyMarked = true;
+      next.full[f] = next.full[f] && own.every((x) => covered(r, x));
+    }
+    return next;
+  }, { anyMarked: false, full: Object.fromEntries(COLOR_FIELDS.map((f) => [f, true])) });
+  // Arabic red: is the selection already (partly) red, and which versions do not contain the same Arabic text?
+  const ar = sel.pieces.reduce((acc, p) => {
+    const a = arabicOf(p);
+    const own = a.spans.filter((x) => x.lang === p.lang).map((x) => x.range);
+    const r = currentRanges(p.blockId, p.lang, AR_FIELD);
+    return { any: acc.any || own.some((x) => overlaps(r, x)), missing: [...new Set([...acc.missing, ...a.missing])] };
+  }, { any: false, missing: [] });
   // Some block of the selection has versions whose line count differs: highlight then stays in this script only.
   const unsyncedMap = sel.pieces.map((p) => unitMap(blocksRef.current.find((x) => x.id === p.blockId), baseLang)).find((m) => m?.aligned === false);
   const NAMES = { en: "Roman", hi: "Hindi", ur: "Urdu" };
   const unsynced = unsyncedMap ? Object.entries(unsyncedMap.counts).map(([l, n]) => `${NAMES[l]} ${n}`).join(", ") : "";
+  const arMissing = ar.missing.map((l) => NAMES[l]).join(", ");
 
-  async function run(mode) {
+  /** mode "add" | "remove"; field = one of COLOR_FIELDS (a colour), or AR_FIELD, or null for "remove every colour". */
+  async function run(mode, field) {
     const edits = new Map();
+    const put = (blockId, lang, f, change) => {
+      const key = `${blockId}|${lang}|${f}`;
+      const base = edits.get(key)?.ranges ?? currentRanges(blockId, lang, f);
+      edits.set(key, { blockId, lang, field: f, ranges: change(base) });
+    };
     for (const p of sel.pieces) {
+      if (field === AR_FIELD) {
+        for (const { lang, range } of arabicOf(p).spans) put(p.blockId, lang, AR_FIELD, (r) => (mode === "add" ? addRange(r, range) : removeRange(r, range)));
+        continue;
+      }
       for (const { lang, range } of spansOf(p)) {
-        const key = `${p.blockId}|${lang}`;
-        const base = edits.get(key)?.ranges ?? currentRanges(p.blockId, lang);
-        edits.set(key, { blockId: p.blockId, lang, ranges: mode === "add" ? addRange(base, range) : removeRange(base, range) });
+        if (mode === "add") {
+          put(p.blockId, lang, field, (r) => addRange(r, range));
+          // one background colour per character: the other colours step aside
+          for (const other of COLOR_FIELDS) if (other !== field && overlaps(edits.get(`${p.blockId}|${lang}|${other}`)?.ranges ?? currentRanges(p.blockId, lang, other), range)) put(p.blockId, lang, other, (r) => removeRange(r, range));
+        } else {
+          for (const f of COLOR_FIELDS) if (overlaps(edits.get(`${p.blockId}|${lang}|${f}`)?.ranges ?? currentRanges(p.blockId, lang, f), range)) put(p.blockId, lang, f, (r) => removeRange(r, range));
+        }
       }
     }
+    if (!edits.size) { window.getSelection()?.removeAllRanges(); setSel(null); return; }
     setBusy(true); setError("");
     try {
       await onApply([...edits.values()]);
@@ -101,7 +137,13 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
   // and used to cover a bottom bar. Position never depends on the (possibly stale) selection rectangle.
   const style = { position: "fixed", left: "50%", transform: "translateX(-50%)", top: "calc(env(safe-area-inset-top, 0px) + 72px)" };
 
-  const btn = "rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-50";
+  const btn = "rounded-full px-3.5 py-2 text-sm font-semibold disabled:opacity-50";
+  const swatches = [
+    { field: "hl", label: "Yellow", style: { background: "#fde047", color: "#b91c1c" } },
+    { field: "hlPink", label: "Pink", style: { background: "#FF6EB4", color: "#000" } },
+    { field: "hlBlue", label: "Blue", style: { background: "#AEACFF", color: "#000" } },
+    { field: "hlGreen", label: "Green", style: { background: "#16a34a", color: "#fff" } },
+  ];
   return (
     <div
       role="toolbar"
@@ -111,12 +153,18 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
       onMouseDown={(e) => e.preventDefault()}
       className="flex max-w-[94vw] flex-col items-center gap-1 rounded-2xl border border-rule bg-paper p-1.5 text-ink shadow-elev"
     >
-      <div className="flex items-center gap-1.5">
-        {!state.allMarked && <button type="button" disabled={busy} onClick={() => run("add")} className={`${btn} bg-[#fde047] text-[#b91c1c]`}>{busy ? "Saving…" : "Highlight"}</button>}
-        {state.anyMarked && <button type="button" disabled={busy} onClick={() => run("remove")} className={`${btn} border border-rule bg-card`}>Remove highlight</button>}
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        {swatches.map((c) => (
+          <button key={c.field} type="button" disabled={busy} title={`Highlight ${c.label}`} aria-label={`Highlight ${c.label}`} onClick={() => run("add", c.field)}
+            style={c.style} className={`${btn} ${state.full[c.field] ? "ring-2 ring-ink/60" : ""}`}>{busy ? "…" : "Aa"}</button>
+        ))}
+        <button type="button" disabled={busy} onClick={() => run(ar.any ? "remove" : "add", AR_FIELD)} title={ar.any ? "Arabic ka red hatao" : "Arabic text red karo"}
+          className={`${btn} border border-rule bg-card`}><span style={{ color: "#e60000" }}>Arabic</span> {ar.any ? "– Remove red" : "red"}</button>
+        {state.anyMarked && <button type="button" disabled={busy} onClick={() => run("remove", null)} className={`${btn} border border-rule bg-card`}>Remove highlight</button>}
         <button type="button" aria-label="Close" onClick={() => { window.getSelection()?.removeAllRanges(); setSel(null); }} className="grid h-9 w-9 place-items-center rounded-full text-mute hover:bg-tint">✕</button>
       </div>
       {unsynced && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">Lines teeno zabaan mein barabar nahi ({unsynced}), isliye highlight sirf isi zabaan mein lagega.</p>}
+      {arMissing && !ar.any && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{arMissing} version mein ye Arabic text same nahi mila, wahan red nahi lagega.</p>}
       {error && <p role="alert" className="max-w-xs px-2 pb-1 text-center text-xs text-red-600">{error}</p>}
     </div>
   );

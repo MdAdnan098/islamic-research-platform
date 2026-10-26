@@ -14,12 +14,14 @@ import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
 import { VersionsPanel } from "../components/VersionsPanel.jsx";
 import { detectLang } from "../../lib/versions.js";
+import { useNoPattern } from "../../lib/useNoPattern.js";
 import { ErrorBox, Field, Modal, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 
 const BLANK = { titleTr: {}, title: "", slug: "", language: "ur", categoryId: "", topicId: "", excerpt: "", seoTitle: "", seoDescription: "", coverKey: "", status: "draft" };
 const pick = (a) => ({ ...BLANK, ...Object.fromEntries(Object.keys(BLANK).map((k) => [k, a[k] ?? ""])), titleTr: a.titleTr || {} });
 
 export default function ArticleEditor() {
+  useNoPattern(); // post pages: plain page colour, no geometric pattern
   const { id } = useParams();
   const isNew = !id;
   const nav = useNavigate();
@@ -189,7 +191,7 @@ export default function ArticleEditor() {
         </Modal>
       )}
       {preview && createPortal(
-        <div className="paper-pattern fixed inset-0 z-[70] overflow-y-auto bg-paper font-sans text-ink">
+        <div className="fixed inset-0 z-[70] overflow-y-auto bg-paper font-sans text-ink">
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-rule bg-card/95 px-4 py-2.5 backdrop-blur">
             <span className="text-sm font-medium">Preview — abhi tak ka likha hua (save nahi hua)</span>
             <div className="flex items-center gap-2">

@@ -9,6 +9,11 @@
  */
 
 export const HL_LANGS = ["en", "hi", "ur", "ar"];
+/**
+ * Mark layers - each has the same `{ lang: [[start, end], ...] }` shape as `hl`:
+ *   hl (yellow), hlPink, hlBlue, hlGreen (background colours) and arRed (red Arabic text colour).
+ */
+export const MARK_FIELDS = ["hl", "hlPink", "hlBlue", "hlGreen", "arRed"];
 export const MAX_HL_RANGES_PER_VERSION = 500;
 const HL_BLOCK_TYPES = new Set(["heading", "text", "quote"]);
 
@@ -29,26 +34,34 @@ export function versionText(block, key, language) {
  * `language` may be undefined (partial update without it): the bound is then the longer of the candidate strings.
  */
 export function validateBlockHighlights(block, language) {
-  if (block.hl === undefined || block.hl === null) return null;
-  if (!isHighlightable(block)) return "only heading, text and quote blocks can carry highlights.";
-  const hl = block.hl;
-  if (typeof hl !== "object" || Array.isArray(hl)) return "hl must be an object keyed by language.";
+  for (const field of MARK_FIELDS) {
+    const error = validateLayer(block, field, language);
+    if (error) return error;
+  }
+  return null;
+}
 
-  for (const [key, ranges] of Object.entries(hl)) {
-    if (!HL_LANGS.includes(key)) return `hl has an unknown language key "${key}".`;
-    if (!Array.isArray(ranges)) return `hl.${key} must be an array of [start, end] pairs.`;
-    if (ranges.length > MAX_HL_RANGES_PER_VERSION) return `hl.${key} has too many ranges (max ${MAX_HL_RANGES_PER_VERSION}).`;
+function validateLayer(block, field, language) {
+  const layer = block[field];
+  if (layer === undefined || layer === null) return null;
+  if (!isHighlightable(block)) return "only heading, text and quote blocks can carry highlights.";
+  if (typeof layer !== "object" || Array.isArray(layer)) return `${field} must be an object keyed by language.`;
+
+  for (const [key, ranges] of Object.entries(layer)) {
+    if (!HL_LANGS.includes(key)) return `${field} has an unknown language key "${key}".`;
+    if (!Array.isArray(ranges)) return `${field}.${key} must be an array of [start, end] pairs.`;
+    if (ranges.length > MAX_HL_RANGES_PER_VERSION) return `${field}.${key} has too many ranges (max ${MAX_HL_RANGES_PER_VERSION}).`;
 
     const candidates = [language ? versionText(block, key, language) : null, block.tr?.[key], block.text].filter((s) => typeof s === "string");
     const bound = language ? (candidates[0] ?? 0).length : Math.max(0, ...candidates.map((s) => s.length));
 
     let prevEnd = 0;
     for (const r of ranges) {
-      if (!Array.isArray(r) || r.length !== 2 || !Number.isInteger(r[0]) || !Number.isInteger(r[1])) return `hl.${key} contains an invalid range.`;
+      if (!Array.isArray(r) || r.length !== 2 || !Number.isInteger(r[0]) || !Number.isInteger(r[1])) return `${field}.${key} contains an invalid range.`;
       const [s, e] = r;
-      if (s < 0 || e <= s) return `hl.${key} contains an empty or negative range.`;
-      if (s < prevEnd) return `hl.${key} ranges must be sorted and must not overlap.`;
-      if (e > bound) return `hl.${key} has a range beyond the end of the text.`;
+      if (s < 0 || e <= s) return `${field}.${key} contains an empty or negative range.`;
+      if (s < prevEnd) return `${field}.${key} ranges must be sorted and must not overlap.`;
+      if (e > bound) return `${field}.${key} has a range beyond the end of the text.`;
       prevEnd = e;
     }
   }

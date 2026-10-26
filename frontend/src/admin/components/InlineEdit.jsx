@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { BLOCK_META } from "../../lib/blocks.js";
-import { remapRanges, withTextEdit } from "../../lib/highlights.js";
+import { MARK_FIELDS, remapRanges, withTextEdit } from "../../lib/highlights.js";
 import { VERSION_LANGS } from "../../lib/versions.js";
 import { Fields } from "./BlockEditor.jsx";
 import { Field, ToastProvider } from "./ui.jsx";
@@ -13,12 +13,13 @@ const isObj = (v) => !!v && typeof v === "object" && !Array.isArray(v);
 /** Sets the text of one converted version (block.tr[lang]) and keeps that version's highlights on the same words. */
 function withVersionText(block, lang, text) {
   const next = { ...block, tr: { ...(block.tr || {}), [lang]: text } };
-  const marks = block.hl?.[lang];
-  if (marks?.length) {
+  for (const field of MARK_FIELDS) {
+    const marks = block[field]?.[lang];
+    if (!marks?.length) continue;
     const mapped = remapRanges(block.tr?.[lang] || "", text, marks);
-    const hl = { ...block.hl };
-    if (mapped.length) hl[lang] = mapped; else delete hl[lang];
-    if (Object.keys(hl).length) next.hl = hl; else delete next.hl;
+    const layer = { ...block[field] };
+    if (mapped.length) layer[lang] = mapped; else delete layer[lang];
+    if (Object.keys(layer).length) next[field] = layer; else delete next[field];
   }
   return next;
 }

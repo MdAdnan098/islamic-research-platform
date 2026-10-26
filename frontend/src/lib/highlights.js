@@ -20,7 +20,51 @@ export function shownLang(b, baseLang, want) {
   return want;
 }
 
-export const rangesOf = (b, lang) => (Array.isArray(b?.hl?.[lang]) ? b.hl[lang] : []);
+/**
+ * Mark layers. Every layer has the same shape ({ en?: [[s, e], ...], hi?: [...], ur?: [...] }) and its own block field:
+ *   hl       yellow background, red text (the original highlight)
+ *   hlPink   #FF6EB4 background, black text
+ *   hlBlue   #AEACFF background, black text
+ *   hlGreen  green background, white text
+ *   arRed    red TEXT colour for Arabic (no background) - set by hand, never guessed
+ * The four background colours exclude each other on the same characters; arRed is independent of them.
+ */
+export const COLOR_FIELDS = ["hl", "hlPink", "hlBlue", "hlGreen"];
+export const AR_FIELD = "arRed";
+export const MARK_FIELDS = [...COLOR_FIELDS, AR_FIELD];
+const COLOR_CLASS = { hl: "hl-mark", hlPink: "hl-mark hl-pink", hlBlue: "hl-mark hl-blue", hlGreen: "hl-mark hl-green" };
+export const markClass = (field) => COLOR_CLASS[field] || "hl-mark";
+
+export const rangesOf = (b, lang, field = "hl") => (Array.isArray(b?.[field]?.[lang]) ? b[field][lang] : []);
+
+/** All layers of one block+version that have ranges: [{ field, ranges }]. */
+export const layersOf = (b, lang) => MARK_FIELDS.map((field) => ({ field, ranges: rangesOf(b, lang, field) })).filter((l) => l.ranges.length);
+
+/** Layers clipped to [start, end) and made relative to `start` (for rendering one paragraph). */
+export const sliceLayers = (layers, start, end) => layers.map((l) => ({ field: l.field, ranges: sliceRanges(l.ranges, start, end) })).filter((l) => l.ranges.length);
+
+/**
+ * Cuts `text` into [{ text, field, ar }] pieces: `field` = the background colour layer covering the piece (or null),
+ * `ar` = true when the piece is in the Arabic-red layer. Colour layers: the first layer in COLOR_FIELDS order wins.
+ */
+export function segmentsOf(text, layers) {
+  const cuts = new Set([0, text.length]);
+  const norm = layers.map((l) => ({ field: l.field, ranges: normalizeRanges(l.ranges, text.length) }));
+  for (const l of norm) for (const [s, e] of l.ranges) { cuts.add(s); cuts.add(e); }
+  const points = [...cuts].sort((a, b) => a - b);
+  const out = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i], z = points[i + 1];
+    if (z <= a) continue;
+    let field = null, ar = false;
+    for (const l of norm) {
+      if (!overlaps(l.ranges, [a, z])) continue;
+      if (l.field === AR_FIELD) ar = true; else if (!field) field = l.field;
+    }
+    out.push({ text: text.slice(a, z), field, ar });
+  }
+  return out;
+}
 
 /** Paragraph segments exactly as the renderer splits a text block, each with its start offset in the full string. */
 export function splitParagraphs(str) {
@@ -123,57 +167,70 @@ export function remapRanges(oldText, newText, ranges) {
   return normalizeRanges(out, newText.length);
 }
 
-/** Block after its text changed: re-maps the highlights of the version that text belongs to. */
+/** Block after its text changed: re-maps the marks (every layer) of the version that text belongs to. */
 export function withTextEdit(block, baseLang, newText) {
-  if (!block.hl || !baseLang) return { ...block, text: newText };
   const next = { ...block, text: newText };
-  const mapped = remapRanges(block.text || "", newText, block.hl[baseLang]);
-  const hl = { ...block.hl };
-  if (mapped.length) hl[baseLang] = mapped; else delete hl[baseLang];
-  if (Object.keys(hl).length) next.hl = hl; else delete next.hl;
+  if (!baseLang) return next;
+  for (const field of MARK_FIELDS) {
+    if (!block[field]) continue;
+    const mapped = remapRanges(block.text || "", newText, block[field][baseLang]);
+    const layer = { ...block[field] };
+    if (mapped.length) layer[baseLang] = mapped; else delete layer[baseLang];
+    if (Object.keys(layer).length) next[field] = layer; else delete next[field];
+  }
   return next;
 }
 
 /** A pasted translation replaces that version's whole text, so marks that referred to the old text are dropped. */
 export function withoutVersionMarks(block, lang) {
-  if (!block.hl?.[lang]) return block;
-  const hl = { ...block.hl };
-  delete hl[lang];
   const next = { ...block };
-  if (Object.keys(hl).length) next.hl = hl; else delete next.hl;
+  for (const field of MARK_FIELDS) {
+    if (!block[field]?.[lang]) continue;
+    const layer = { ...block[field] };
+    delete layer[lang];
+    if (Object.keys(layer).length) next[field] = layer; else delete next[field];
+  }
   return next;
 }
 
-/** Applies [{ blockId, lang, ranges }] (ranges REPLACE that block+version's ranges) to a blocks array. */
+/** Applies [{ blockId, lang, field?, ranges }] (ranges REPLACE that block+layer+version's ranges; field defaults to "hl") to a blocks array. */
 export function applyEdits(blocks, edits) {
   return blocks.map((b) => {
     const mine = edits.filter((x) => x.blockId === b.id);
     if (!mine.length) return b;
-    const hl = { ...(b.hl || {}) };
-    for (const { lang, ranges } of mine) { if (ranges.length) hl[lang] = ranges; else delete hl[lang]; }
     const next = { ...b };
-    if (Object.keys(hl).length) next.hl = hl; else delete next.hl;
+    for (const { lang, field = "hl", ranges } of mine) {
+      if (!MARK_FIELDS.includes(field)) continue;
+      const layer = { ...(next[field] || {}) };
+      if (ranges.length) layer[lang] = ranges; else delete layer[lang];
+      if (Object.keys(layer).length) next[field] = layer; else delete next[field];
+    }
     return next;
   });
 }
 
 /**
- * Before saving: drop any highlight whose version text no longer exists or that points past its end (for example
+ * Before saving: drop any mark whose version text no longer exists or that points past its end (for example
  * after the base script of the article changed), so a stale mark can never make the save fail.
  */
 export function cleanBlocksHl(blocks, baseLang) {
   return blocks.map((b) => {
-    if (!b.hl) return b;
-    if (!isHighlightable(b)) { const { hl, ...rest } = b; return rest; }
-    const hl = {};
-    for (const [key, ranges] of Object.entries(b.hl)) {
-      const text = key === baseLang ? b.text : b.tr?.[key];
-      if (!text) continue;
-      const clean = normalizeRanges(ranges, text.length);
-      if (clean.length) hl[key] = clean;
+    if (!MARK_FIELDS.some((f) => b[f])) return b;
+    const rest = { ...b };
+    for (const f of MARK_FIELDS) delete rest[f];
+    if (!isHighlightable(b)) return rest;
+    for (const field of MARK_FIELDS) {
+      if (!b[field]) continue;
+      const layer = {};
+      for (const [key, ranges] of Object.entries(b[field])) {
+        const text = key === baseLang ? b.text : b.tr?.[key];
+        if (!text) continue;
+        const clean = normalizeRanges(ranges, text.length);
+        if (clean.length) layer[key] = clean;
+      }
+      if (Object.keys(layer).length) rest[field] = layer;
     }
-    const { hl: _old, ...rest } = b;
-    return Object.keys(hl).length ? { ...rest, hl } : rest;
+    return rest;
   });
 }
 
@@ -266,10 +323,76 @@ export function alignmentIssues(blocks, baseLang) {
 /** After a translation is pasted: marks of the other versions are carried over to it, line for line (when aligned). */
 export function inheritMarks(block, baseLang, lang) {
   const map = unitMap(block, baseLang);
-  if (!map?.aligned || !map.versions[lang] || !block.hl) return block;
-  const from = [baseLang, ...SYNC_LANGS].find((l) => l !== lang && map.versions[l] && rangesOf(block, l).length);
-  if (!from) return block;
-  const marked = map.versions[from].map((u, i) => (overlaps(rangesOf(block, from), u) ? i : -1)).filter((i) => i >= 0);
-  if (!marked.length) return block;
-  return { ...block, hl: { ...block.hl, [lang]: normalizeRanges(marked.map((i) => map.versions[lang][i])) } };
+  if (!map?.aligned || !map.versions[lang]) return block;
+  let next = block;
+  // Colour layers follow the line. (arRed is word-level, so it is re-found by its text instead - see arabicSpans.)
+  for (const field of COLOR_FIELDS) {
+    if (!block[field]) continue;
+    const from = [baseLang, ...SYNC_LANGS].find((l) => l !== lang && map.versions[l] && rangesOf(block, l, field).length);
+    if (!from) continue;
+    const marked = map.versions[from].map((u, i) => (overlaps(rangesOf(block, from, field), u) ? i : -1)).filter((i) => i >= 0);
+    if (!marked.length) continue;
+    next = { ...next, [field]: { ...(next[field] || {}), [lang]: normalizeRanges(marked.map((i) => map.versions[lang][i])) } };
+  }
+  if (block[AR_FIELD]) {
+    const text = versionString(block, baseLang, lang);
+    const from = [baseLang, ...SYNC_LANGS].find((l) => l !== lang && rangesOf(block, l, AR_FIELD).length);
+    if (from && text) {
+      const src = versionString(block, baseLang, from);
+      const found = [];
+      for (const r of rangesOf(block, from, AR_FIELD)) {
+        const hit = findSame(src, text, r);
+        if (hit) found.push(hit);
+      }
+      if (found.length) next = { ...next, [AR_FIELD]: { ...(next[AR_FIELD] || {}), [lang]: normalizeRanges(found) } };
+    }
+  }
+  return next;
+}
+
+/* ------------------------------------------------------------------------------------------------ */
+/* Arabic red: the same words in every script                                                       */
+/* ------------------------------------------------------------------------------------------------ */
+const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Matches `sub` in `text` (whitespace-insensitive: a line break and a space count as the same). Returns all [start, end]. */
+function occurrences(text, sub) {
+  const parts = sub.split(/\s+/).filter(Boolean).map(escapeRe);
+  if (!parts.length) return [];
+  const re = new RegExp(parts.join("\\s+"), "g");
+  const out = [];
+  let m;
+  while ((m = re.exec(text))) { out.push([m.index, m.index + m[0].length]); if (m[0].length === 0) re.lastIndex++; }
+  return out;
+}
+
+/**
+ * The Arabic words written in `from` at `range` are the very same characters in every other version, so they are
+ * found by index: it is the n-th time this text occurs in `from`, and the n-th time in `to`. null when `to` does not contain it.
+ */
+function findSame(fromText, toText, [s, e]) {
+  const sub = fromText.slice(s, e);
+  const n = occurrences(fromText, sub).findIndex(([a]) => a === s);
+  if (n < 0) return null;
+  return occurrences(toText, sub)[n] || null;
+}
+
+/**
+ * Where a selection [s, e) of version `lang` should turn red: [{ lang, range }] for this version and, where the
+ * same Arabic text exists at the same index, for the other versions. `missing` lists the versions without it.
+ * Sacred blocks (ayat / hadith) and single-version blocks stay on their own version.
+ */
+export function arabicSpans(b, baseLang, lang, [s, e]) {
+  const own = [{ lang, range: [s, e] }];
+  if (!isHighlightable(b) || isSacred(b) || !baseLang) return { spans: own, missing: [] };
+  const fromText = versionString(b, baseLang, lang);
+  const spans = [...own], missing = [];
+  for (const other of SYNC_LANGS) {
+    if (other === lang) continue;
+    const t = versionString(b, baseLang, other);
+    if (!t.trim()) continue;
+    const hit = findSame(fromText, t, [s, e]);
+    if (hit) spans.push({ lang: other, range: hit }); else missing.push(other);
+  }
+  return { spans, missing };
 }

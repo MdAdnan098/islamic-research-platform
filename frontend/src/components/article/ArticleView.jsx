@@ -9,6 +9,7 @@ import { BlockRenderer } from "./BlockRenderer.jsx";
 import { pickVersion } from "../../lib/versions.js";
 import { ArticleLanguage } from "../public/Controls.jsx";
 import { useFontSize } from "../../context/FontSizeContext.jsx";
+import { useNoPattern } from "../../lib/useNoPattern.js";
 import { FontSizeControl, FloatingReaderControls } from "./FontSizeControl.jsx";
 
 // Admin-only: loaded on demand, so public visitors never download the highlight toolbar.
@@ -30,6 +31,7 @@ function ReadingProgress() {
 
 /** Shared by the public article page and the admin preview. */
 export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline, edit, titleNode, hideLanguage = false }) {
+  useNoPattern(); // post pages: plain page colour, no geometric pattern
   const bodyRef = useRef(null);
   const { t, contentLang } = useI18n();
   const { scale } = useFontSize();

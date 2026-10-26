@@ -4,22 +4,38 @@
 
 /* ------------------------------------------------------------------
    Dedicated Arabic + Urdu typography (self-hosted, no generic fallbacks first)
-   - FS Arabic : Scheherazade New  (open, generous Naskh with clear tashkeel)
+   - FS Arabic : Noto Naskh Arabic (Medium for body text, Bold for headings) - the Naskh face of the reference screenshot
    - FS Quran  : Amiri Quran       (fallback / Quranic marks)
-   - FS Urdu   : Jameel Noori Nastaleeq (classic Indo-Pak Nastaleeq, as in Urdu Quran apps)
-   size-adjust makes the glyphs optically larger without touching layout sizes.
+   - FS Urdu   : Jameel Noori Nastaleeq (classic Indo-Pak Nastaleeq, as in the reference screenshot)
+   size-adjust keeps the glyphs the same optical size as before (line widths unchanged), without touching any CSS font-size.
    ------------------------------------------------------------------ */
 @font-face {
   font-family: "FS Arabic";
-  src: url("/fonts/ScheherazadeNew-Regular.woff2") format("woff2");
+  src: url("/fonts/NotoNaskhArabic-Medium.woff2") format("woff2");
   font-weight: 400; font-style: normal; font-display: swap;
-  size-adjust: 112%;
+  size-adjust: 114%;
+  unicode-range: U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;
 }
 @font-face {
   font-family: "FS Arabic";
-  src: url("/fonts/ScheherazadeNew-Bold.woff2") format("woff2");
+  src: url("/fonts/NotoNaskhArabic-Medium-latin.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+  size-adjust: 114%;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-200B,U+200F-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: "FS Arabic";
+  src: url("/fonts/NotoNaskhArabic-Bold.woff2") format("woff2");
   font-weight: 700; font-style: normal; font-display: swap;
-  size-adjust: 112%;
+  size-adjust: 114%;
+  unicode-range: U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;
+}
+@font-face {
+  font-family: "FS Arabic";
+  src: url("/fonts/NotoNaskhArabic-Bold-latin.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+  size-adjust: 114%;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-200B,U+200F-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 @font-face {
   font-family: "FS Quran";
@@ -68,8 +84,9 @@
     --ad-rule: 234 238 241; --ad-brand: 43 164 172;
     --ad-danger: 192 57 43; --ad-ok: 55 121 75; --ad-warn: 176 112 16;
 
-    --font-body: "Figtree", system-ui, sans-serif;
-    --font-display: "Figtree", system-ui, sans-serif;
+    --font-body: "Figtree", "FS Urdu", system-ui, sans-serif;   /* Latin = Figtree; any Arabic-script UI text falls to Jameel Noori */
+    --font-display: "Figtree", "FS Urdu", system-ui, sans-serif;
+    --ar-red: #ee0000;         /* Arabic text marked red by the admin */
     color-scheme: light;
   }
 
@@ -136,6 +153,7 @@
     --ad-bg: 22 22 22; --ad-card: 32 33 37; --ad-ink: 233 234 238; --ad-mute: 183 184 188;
     --ad-rule: 68 68 68; --ad-brand: 43 164 172;
     --ad-danger: 232 106 92; --ad-ok: 80 190 140; --ad-warn: 226 168 70;
+    --ar-red: #ff5c5c;
     color-scheme: dark;
   }
 
@@ -243,8 +261,15 @@
   /* Article header title and excerpt scaling with reader font preference */
   .article-title { font-size: clamp(1.85rem, calc(2.5rem * var(--reading-font-scale, 1)), 3.75rem); line-height: 1.25; }
   .article-excerpt { font-size: calc(1.125rem * var(--reading-font-scale, 1)); line-height: 1.6; }
-  /* Saved text highlight: yellow background, red text, same in every theme. No padding so Urdu/Arabic letters keep joining. */
+  /* Saved text highlight: yellow background + red text (original), plus pink / blue / green. Same in every theme.
+     No padding so Urdu/Arabic letters keep joining. */
   .hl-mark { background: #fde047; color: #b91c1c; border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  .hl-mark.hl-pink { background: #FF6EB4; color: #000; }
+  .hl-mark.hl-blue { background: #AEACFF; color: #000; }
+  .hl-mark.hl-green { background: #008000; color: #fff; }
+  /* Arabic text the admin turned red by hand (text colour only). Inside a coloured highlight the highlight's own colours win. */
+  .ar-red { color: var(--ar-red, #ee0000); }
+  .hl-mark .ar-red { color: inherit; }
   .hl-editing [data-hl-block] { cursor: text; }
   .hl-editing .hl-mark { cursor: pointer; }
   .card-lift { @apply shadow-elev transition duration-300 ease-out hover:-translate-y-1 hover:border-accent/40 hover:shadow-soft motion-reduce:transition-none motion-reduce:hover:translate-y-0; }
@@ -265,7 +290,7 @@
 
   /* Hero band with faint Islamic calligraphy behind the text */
   .hero-band { position: relative; isolation: isolate; overflow: hidden; background: rgb(var(--hero)); }
-  .hero-calli { position: absolute; inset: 0; z-index: -1; pointer-events: none; user-select: none; color: rgb(var(--calli)); font-family: "Aref Ruqaa", "Amiri", serif; font-weight: 700; direction: rtl; line-height: 1; white-space: nowrap; }
+  .hero-calli { position: absolute; inset: 0; z-index: -1; pointer-events: none; user-select: none; color: rgb(var(--calli)); font-family: "FS Arabic", "FS Quran", serif; font-weight: 700; direction: rtl; line-height: 1; white-space: nowrap; }
   .hero-calli span { position: absolute; }
 
   /* ---------- Admin system ---------- */
@@ -312,3 +337,7 @@
 .open-badge { animation: open-ring 2.2s ease-out infinite; }
 .live-dot { animation: live-dot 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .live-badge, .open-badge, .live-dot { animation: none; } }
+
+/* Post pages (reading, preview, admin writing): no geometric pattern anywhere, only the plain page colour.
+   The class is put on <body> by useNoPattern(). */
+body.no-pattern, body.no-pattern .admin-root, body.no-pattern .paper-pattern, body.no-pattern .bar-teal { background-image: none !important; }

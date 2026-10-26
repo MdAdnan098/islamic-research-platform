@@ -4,7 +4,7 @@ import { mediaUrl } from "../../lib/media.js";
 import { isRtl, scriptOf, splitScriptRuns } from "../../lib/script.js";
 import { pickRef, pickVersion } from "../../lib/versions.js";
 import { Text, cleanText } from "../ui/Text.jsx";
-import { rangesOf, shownLang, sliceRanges, splitByRanges, splitParagraphs } from "../../lib/highlights.js";
+import { layersOf, markClass, segmentsOf, shownLang, sliceLayers, splitParagraphs } from "../../lib/highlights.js";
 import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
@@ -40,18 +40,24 @@ function isolateRtl(str) {
   return out;
 }
 
-/** Text with its saved highlights as <mark> elements (plain string when there are none). Offsets are relative to `text`.
+/** Text with its saved marks as <mark> (background colours) and <span class="ar-red"> (red Arabic) elements
+ *  (plain string when there are none). Offsets are relative to `text`.
  *  `host` is the script of the line it sits in; inside a left-to-right host, Arabic runs are isolated (see isolateRtl). */
-function marked(text, ranges, host) {
+function marked(text, layers, host) {
   const iso = host && !isRtl(host) ? isolateRtl : (x) => x;
-  if (!ranges?.length) return iso(text);
-  return splitByRanges(text, ranges).map((p, i) => (p.marked ? <mark key={i} className="hl-mark">{iso(p.text)}</mark> : <Fragment key={i}>{iso(p.text)}</Fragment>));
+  if (!layers?.length) return iso(text);
+  return segmentsOf(text, layers).map((p, i) => {
+    let node = iso(p.text);
+    if (p.ar) node = <span className="ar-red">{node}</span>;
+    if (p.field) return <mark key={i} className={markClass(p.field)}>{node}</mark>;
+    return <Fragment key={i}>{node}</Fragment>;
+  });
 }
 
 /** Only in highlight-editing mode: lets the admin toolbar map a selection back to (block, version, offset). */
 const hlAttrs = (on, b, lang, start = 0) => (on && b.id ? { "data-hl-block": b.id, "data-hl-lang": lang, "data-hl-start": start } : {});
 
-function Quote({ b, text, ranges, attrs }) {
+function Quote({ b, text, layers, attrs }) {
   const { t } = useI18n();
   const sacred = b.kind === "ayat" || b.kind === "hadith";
   const s = scriptOf(b.text);
@@ -64,7 +70,7 @@ function Quote({ b, text, ranges, attrs }) {
       <span aria-hidden="true" className={`${mark} left-4 top-1 sm:left-6`}>&ldquo;</span>
       <span aria-hidden="true" className={`${mark} bottom-[-1.9rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
       {sacred && <p className="eyebrow relative mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
-      <Text as="blockquote" src={text} force={big ? s : undefined} {...attrs} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.2em] sm:text-[1.4em]" : "sacred-arabic text-[1.45em] sm:text-[1.75em]") : `font-display text-[0.95em] sm:text-[1.05em] leading-[1.8] ${slant}`}`}>{marked(cleanText(text), ranges, s)}</Text>
+      <Text as="blockquote" src={text} force={big ? s : undefined} {...attrs} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.2em] sm:text-[1.4em]" : "sacred-arabic text-[1.45em] sm:text-[1.75em]") : `font-display text-[0.95em] sm:text-[1.05em] leading-[1.8] ${slant}`}`}>{marked(cleanText(text), layers, s)}</Text>
       {b.source && <Text as="figcaption" className="relative mt-3 text-xs text-bronze sm:text-sm">— {b.source}</Text>}
     </figure>
   );
@@ -121,15 +127,15 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
   function renderBlock(b, i) {
         const key = b.id || i;
         const lang = shownLang(b, baseLang, contentLang); // which script version is on screen = which highlight set applies
-        const ranges = rangesOf(b, lang);
+        const layers = layersOf(b, lang);
         switch (b.type) {
           case "heading": {
             const text = cleanText(txt(b));
             const attrs = hlAttrs(hlEdit, b, lang);
             const host = scriptOf(text);
             return b.level === 3
-              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-10 font-display text-[1.25em] sm:text-[1.38em] font-semibold">{marked(text, ranges, host)}</Text>
-              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-8 font-display text-[1.45em] sm:text-[1.65em] font-semibold">{marked(text, ranges, host)}</Text>;
+              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-10 font-display text-[1.25em] sm:text-[1.38em] font-semibold">{marked(text, layers, host)}</Text>
+              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-8 font-display text-[1.45em] sm:text-[1.65em] font-semibold">{marked(text, layers, host)}</Text>;
           }
           case "text":
             return (
@@ -141,14 +147,14 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
                   return (
                     // Each run of same-script lines is its own paragraph with its own direction (offsets stay relative to the whole block).
                     <Text key={j} as="p" src={flow} force={run.script} {...hlAttrs(hlEdit, b, lang, run.start)} className="whitespace-pre-line">
-                      {marked(flow, sliceRanges(ranges, run.start, run.start + flow.length), run.script)}
+                      {marked(flow, sliceLayers(layers, run.start, run.start + flow.length), run.script)}
                     </Text>
                   );
                 })}
               </div>
             );
           case "quote":
-            return <Quote key={key} b={b} text={txt(b)} ranges={ranges} attrs={hlAttrs(hlEdit, b, lang)} />;
+            return <Quote key={key} b={b} text={txt(b)} layers={layers} attrs={hlAttrs(hlEdit, b, lang)} />;
           case "reference":
             return refMap[b.referenceId] ? <ReferenceCard key={key} reference={pickRef(refMap[b.referenceId], b.tr, baseLang, contentLang)} /> : null;
           case "image":
