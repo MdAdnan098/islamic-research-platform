@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { SOCIAL } from "../../config/env.js";
 import { publicApi } from "../../services/public.js";
@@ -81,18 +82,57 @@ function StateBadge({ state }) {
   );
 }
 
+/** "Open YouTube?" confirmation, so an accidental tap on a card never jumps straight out of the site. Rendered in <body> so no transformed/clipped parent affects it. */
+function ConfirmYouTube({ url, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const stop = (e) => e.stopPropagation();
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-5" onClick={onClose} onTouchStart={stop} onTouchMove={stop} onTouchEnd={stop}>
+      <div role="dialog" aria-modal="true" aria-labelledby="yt-confirm-title" onClick={stop} className="w-full max-w-sm rounded-2xl border border-rule bg-card p-6 shadow-elev">
+        <h3 id="yt-confirm-title" className="font-display text-lg font-bold">Open YouTube?</h3>
+        <p className="mt-2 text-sm text-mute">This will open the video on YouTube in a new tab.</p>
+        <div className="mt-5 flex justify-end gap-3">
+          <button type="button" onClick={onClose} className="btn-outline !px-5 !py-2 !text-sm">Cancel</button>
+          <button
+            type="button"
+            autoFocus
+            onClick={() => { window.open(url, "_blank", "noopener,noreferrer"); onClose(); }}
+            className="btn-youtube !gap-2 !px-5 !py-2 !text-sm"
+          >
+            <Icon name="youtube-logo" size={18} />Open YouTube
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 /**
  * Compact home-page card: same footprint as the "Latest posts" card (16:9 image +
  * title row). The whole card opens the YouTube video; the full card with countdown
  * and button is still used on /live.
  */
-export function LiveSessionCompactCard({ session, now }) {
+export function LiveSessionCompactCard({ session, now, onConfirmChange }) {
+  const [asking, setAsking] = useState(false);
+  useEffect(() => { onConfirmChange?.(asking); }, [asking]); // eslint-disable-line react-hooks/exhaustive-deps
   const state = viewState(session, now);
   const when = state === "ended" ? session.actualStartTime || session.scheduledStartTime : session.scheduledStartTime || session.actualStartTime;
   const linked = isYouTubeUrl(session.youtubeUrl);
   const Wrapper = linked ? "a" : "div";
-  const linkProps = linked ? { href: session.youtubeUrl, target: "_blank", rel: "noopener noreferrer" } : {};
+  // A plain tap asks first; ctrl/cmd/shift/middle click keep the browser's own behaviour.
+  const ask = (e) => {
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    setAsking(true);
+  };
+  const linkProps = linked ? { href: session.youtubeUrl, target: "_blank", rel: "noopener noreferrer", onClick: ask } : {};
   return (
+    <>
     <Wrapper {...linkProps} className="card-lift group flex h-full flex-col rounded-2xl border border-rule bg-card p-3">
       <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-tint">
         {session.thumbnailUrl && (
@@ -123,6 +163,8 @@ export function LiveSessionCompactCard({ session, now }) {
         </span>
       </div>
     </Wrapper>
+    {asking && <ConfirmYouTube url={session.youtubeUrl} onClose={() => setAsking(false)} />}
+    </>
   );
 }
 
@@ -132,13 +174,15 @@ export function LiveSessionCard({ session, now }) {
   const cta = state === "live" ? "Watch Live" : state === "ended" ? "Watch Recording" : "Open on YouTube";
 
   // A LIVE session with a valid YouTube link opens on tap anywhere on the card; real links/buttons inside keep their own behaviour.
+  const [asking, setAsking] = useState(false);
   const clickable = state === "live" && isYouTubeUrl(session.youtubeUrl);
   const openCard = (e) => {
     if (e.target.closest("a, button, input, select, textarea, label, [data-no-card-click]")) return;
-    window.open(session.youtubeUrl, "_blank", "noopener,noreferrer");
+    setAsking(true);
   };
 
   return (
+    <>
     <article
       onClick={clickable ? openCard : undefined}
       className={`flex h-full flex-col rounded-2xl border border-rule bg-card p-3 shadow-elev ${clickable ? "card-lift cursor-pointer" : ""}`}
@@ -174,6 +218,8 @@ export function LiveSessionCard({ session, now }) {
         </a>
       </div>
     </article>
+    {asking && <ConfirmYouTube url={session.youtubeUrl} onClose={() => setAsking(false)} />}
+    </>
   );
 }
 
@@ -214,41 +260,89 @@ export function LiveEmpty() {
 const SLIDE_MS = 3500;
 
 /**
- * Phone view: shows the latest session first; every few seconds the card slides to the right and the one
- * posted before it takes its place, down to the oldest, then it jumps back to the latest.
- * `sessions` is newest -> oldest. The track is laid out oldest -> newest (left to right) so that moving to an older
- * card slides the current one out to the right. Touching the carousel pauses it.
+ * Phone view: shows the latest session first; every few seconds the card slides out to the left and the one posted
+ * before it comes in from the right, down to the oldest, then it jumps back to the latest. The reader can also swipe
+ * with a finger in either direction. Autoplay pauses while touching and while the "Open YouTube?" dialog is open.
+ * `sessions` is newest -> oldest and is laid out left to right in that order.
  */
 function MobileLiveCarousel({ sessions, now }) {
-  const order = useMemo(() => [...sessions].reverse(), [sessions]);
-  const n = order.length;
-  const [pos, setPos] = useState({ i: Math.max(n - 1, 0), anim: true });
-  const [paused, setPaused] = useState(false);
+  const n = sessions.length;
+  const [pos, setPos] = useState({ i: 0, anim: true });
+  const [touching, setTouching] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const [drag, setDrag] = useState(null); // px the finger has dragged the track, null when not dragging
+  const box = useRef(null);
+  const touch = useRef({ x: 0, y: 0, axis: null, w: 1 });
+  const moved = useRef(false);
 
-  useEffect(() => { setPos({ i: Math.max(n - 1, 0), anim: true }); }, [n]);
+  useEffect(() => { setPos({ i: 0, anim: true }); }, [n]);
   useEffect(() => {
-    if (n < 2 || paused) return undefined;
-    const id = setInterval(() => {
-      setPos((p) => (p.i <= 0 ? { i: n - 1, anim: false } : { i: p.i - 1, anim: true }));
+    if (n < 2 || touching || asking) return undefined;
+    const id = setTimeout(() => {
+      setPos((p) => (p.i >= n - 1 ? { i: 0, anim: false } : { i: p.i + 1, anim: true }));
     }, SLIDE_MS);
-    return () => clearInterval(id);
-  }, [n, paused]);
+    return () => clearTimeout(id);
+  }, [pos, n, touching, asking]);
+
+  const onStart = (e) => {
+    const p = e.touches[0];
+    touch.current = { x: p.clientX, y: p.clientY, axis: null, w: box.current?.offsetWidth || 1 };
+    moved.current = false;
+    setTouching(true);
+  };
+  const onMove = (e) => {
+    const c = touch.current;
+    const p = e.touches[0];
+    const dx = p.clientX - c.x;
+    const dy = p.clientY - c.y;
+    if (!c.axis) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      c.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y"; // vertical = normal page scroll, left alone
+    }
+    if (c.axis !== "x") return;
+    if (Math.abs(dx) > 8) moved.current = true;
+    const atEdge = (dx > 0 && pos.i === 0) || (dx < 0 && pos.i === n - 1);
+    setDrag(atEdge ? dx / 3 : dx);
+  };
+  const onEnd = () => {
+    const c = touch.current;
+    if (c.axis === "x" && drag !== null) {
+      const limit = Math.max(40, c.w * 0.18);
+      let i = pos.i;
+      if (drag < -limit && i < n - 1) i += 1; // swipe left -> older card
+      else if (drag > limit && i > 0) i -= 1; // swipe right -> newer card
+      setPos({ i, anim: true });
+    }
+    c.axis = null;
+    setDrag(null);
+    setTouching(false);
+  };
+  // A swipe must never count as a tap on the card underneath.
+  const swallowClick = (e) => {
+    if (!moved.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    moved.current = false;
+  };
 
   return (
     <div
+      ref={box}
       dir="ltr"
-      className="overflow-hidden py-1"
-      onTouchStart={() => setPaused(true)}
-      onTouchEnd={() => setPaused(false)}
-      onTouchCancel={() => setPaused(false)}
+      className="touch-pan-y overflow-hidden py-1"
+      onTouchStart={onStart}
+      onTouchMove={onMove}
+      onTouchEnd={onEnd}
+      onTouchCancel={onEnd}
+      onClickCapture={swallowClick}
     >
       <div
-        className={`flex items-stretch ${pos.anim ? "transition-transform duration-500 ease-out motion-reduce:transition-none" : ""}`}
-        style={{ transform: `translateX(-${pos.i * 100}%)` }}
+        className={`flex items-stretch ${drag === null && pos.anim ? "transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none" : ""}`}
+        style={{ transform: `translateX(calc(${-pos.i * 100}% + ${drag || 0}px))` }}
       >
-        {order.map((s) => (
+        {sessions.map((s) => (
           <div key={s.id} className="w-full shrink-0 px-0.5">
-            <LiveSessionCompactCard session={s} now={now} />
+            <LiveSessionCompactCard session={s} now={now} onConfirmChange={setAsking} />
           </div>
         ))}
       </div>
