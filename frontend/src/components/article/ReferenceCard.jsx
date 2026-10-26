@@ -10,6 +10,9 @@ import { ScanViewer } from "./ScanViewer.jsx";
 const LABEL_RE = /^\s*(?:📖\s*)?(?:hawala|hawale|حوالہ|حوالے|हवाला|हवाले)(?![\p{L}\p{M}])\s*(?:📖)?\s*[:：\-–—]?\s*/iu;
 const BRACKET_RE = /^[\[［【]\s*([\s\S]*?)\s*[\]］】]$/;
 
+// The UI dictionary is always Roman, so the label follows the reader's selected language instead.
+const LABELS = { en: "Hawala", ur: "حوالہ", hi: "हवाला" };
+
 /** Plain reference text -> "[ text ]" (one bracketed line per source line), with any existing label/brackets removed first. */
 function toBracketed(text) {
   const body = String(text ?? "").replace(LABEL_RE, "");
@@ -27,7 +30,7 @@ function toBracketed(text) {
 
 /** Scholarly citation. New references are a single free-text field; older ones (Book / Author / Volume / Page) still render as before. */
 export function ReferenceCard({ reference: r }) {
-  const { t } = useI18n();
+  const { t, contentLang } = useI18n();
   const [open, setOpen] = useState(false);
   const scan = mediaUrl(r.mediaKey);
   // One compact line, like a citation: Book · Author · Jild · Safha
@@ -43,8 +46,8 @@ export function ReferenceCard({ reference: r }) {
         {/* Plain book-style citation: "Hawala 📖" then "[ book jild safa ]". Colours live in index.css (.ref-line): blue in Light, soft blue in Dark. */}
         {line && (
           <div className="ref-line">
-            <Text as="p" dir={dir} className="text-[0.9em] font-semibold leading-snug sm:text-[1em]">{t.article.reference} 📖</Text>
-            <Text as="p" className="whitespace-pre-line text-[0.9em] font-medium leading-snug sm:text-[1em]">{line}</Text>
+            <Text as="p" dir={dir} className="text-[0.9em] font-semibold leading-snug sm:text-[1em]">{LABELS[contentLang] || LABELS.en} 📖</Text>
+            <Text as="p" className="whitespace-pre-line text-[0.9em] font-semibold leading-snug sm:text-[1em]">{line}</Text>
           </div>
         )}
 
