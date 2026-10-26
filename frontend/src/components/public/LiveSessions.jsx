@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { SOCIAL } from "../../config/env.js";
 import { publicApi } from "../../services/public.js";
@@ -176,11 +177,25 @@ export function LiveSessionCard({ session, now }) {
   );
 }
 
+/** Newest first, whatever the state (upcoming / live / recording): the latest session is on top, the oldest comes last. */
+function sortNewestFirst(sessions) {
+  const time = (s) => {
+    const t = new Date(s.scheduledStartTime || s.actualStartTime || s.createdAt).getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
+  const made = (s) => {
+    const t = new Date(s.createdAt).getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
+  return [...sessions].sort((a, b) => time(b) - time(a) || made(b) - made(a));
+}
+
 /** Grid + empty/error handling shared by the home section and the /live page. */
 export function LiveSessionGrid({ sessions, now }) {
+  const ordered = useMemo(() => sortNewestFirst(sessions), [sessions]);
   return (
     <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {sessions.map((s) => <LiveSessionCard key={s.id} session={s} now={now} />)}
+      {ordered.map((s) => <LiveSessionCard key={s.id} session={s} now={now} />)}
     </div>
   );
 }
@@ -196,26 +211,49 @@ export function LiveEmpty() {
   );
 }
 
-/**
- * Which sessions the home page shows, in left-to-right order (oldest first):
- * up to two most recent recordings, then the live / upcoming one on the right.
- * With no upcoming session it is simply the three latest. `mobile` marks the single
- * card phones get: the live/upcoming one, else the latest recording.
- */
-function pickHomeSessions(sessions, now) {
-  const withState = sessions.map((s) => ({ s, state: viewState(s, now) }));
-  const active = withState.filter((x) => x.state !== "ended"); // backend order: live, then soonest upcoming
-  const ended = withState.filter((x) => x.state === "ended"); // backend order: most recent first
-  const picks = [];
-  if (active[0]) picks.push(active[0]);
-  for (const e of ended) if (picks.length < 3) picks.push(e);
-  for (const a of active.slice(1)) if (picks.length < 3) picks.push(a);
+const SLIDE_MS = 3500;
 
-  const endedPicks = picks.filter((x) => x.state === "ended").reverse(); // oldest -> newest
-  const activePicks = picks.filter((x) => x.state !== "ended");
-  const ordered = [...endedPicks, ...activePicks];
-  const mobileItem = activePicks[0] || ordered[ordered.length - 1];
-  return ordered.map((x) => ({ ...x, mobile: x === mobileItem }));
+/**
+ * Phone view: shows the latest session first; every few seconds the card slides to the right and the one
+ * posted before it takes its place, down to the oldest, then it jumps back to the latest.
+ * `sessions` is newest -> oldest. The track is laid out oldest -> newest (left to right) so that moving to an older
+ * card slides the current one out to the right. Touching the carousel pauses it.
+ */
+function MobileLiveCarousel({ sessions, now }) {
+  const order = useMemo(() => [...sessions].reverse(), [sessions]);
+  const n = order.length;
+  const [pos, setPos] = useState({ i: Math.max(n - 1, 0), anim: true });
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => { setPos({ i: Math.max(n - 1, 0), anim: true }); }, [n]);
+  useEffect(() => {
+    if (n < 2 || paused) return undefined;
+    const id = setInterval(() => {
+      setPos((p) => (p.i <= 0 ? { i: n - 1, anim: false } : { i: p.i - 1, anim: true }));
+    }, SLIDE_MS);
+    return () => clearInterval(id);
+  }, [n, paused]);
+
+  return (
+    <div
+      dir="ltr"
+      className="overflow-hidden py-1"
+      onTouchStart={() => setPaused(true)}
+      onTouchEnd={() => setPaused(false)}
+      onTouchCancel={() => setPaused(false)}
+    >
+      <div
+        className={`flex items-stretch ${pos.anim ? "transition-transform duration-500 ease-out motion-reduce:transition-none" : ""}`}
+        style={{ transform: `translateX(-${pos.i * 100}%)` }}
+      >
+        {order.map((s) => (
+          <div key={s.id} className="w-full shrink-0 px-0.5">
+            <LiveSessionCompactCard session={s} now={now} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /** Home page section — loads independently so a failure here never blanks the rest of the page. */
@@ -223,7 +261,7 @@ export function LiveSessionsSection() {
   const { data, error, loading, reload } = useAsync((signal) => publicApi.liveSessions({ limit: 12 }, signal), []);
   const needsTick = (data || []).some((s) => s.status === "scheduled");
   const now = useNow(needsTick);
-  const picks = pickHomeSessions(data || [], now);
+  const ordered = useMemo(() => sortNewestFirst(data || []), [data]); // newest -> oldest
 
   return (
     <section className="container-page py-14 sm:py-20" aria-labelledby="live-heading">
@@ -234,14 +272,17 @@ export function LiveSessionsSection() {
         </Link>
       </div>
       <div className="mt-8">
-        {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : picks.length === 0 ? <LiveEmpty /> : (
-          <div className="grid items-stretch gap-5 md:grid-cols-3">
-            {picks.map(({ s, mobile }) => (
-              <div key={s.id} className={mobile ? "" : "hidden md:block"}>
-                <LiveSessionCompactCard session={s} now={now} />
-              </div>
-            ))}
-          </div>
+        {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : ordered.length === 0 ? <LiveEmpty /> : (
+          <>
+            {/* Phones: auto-sliding single card, latest first. */}
+            <div className="md:hidden"><MobileLiveCarousel sessions={ordered} now={now} /></div>
+            {/* Desktop: the three latest, newest on the left. */}
+            <div className="hidden items-stretch gap-5 md:grid md:grid-cols-3">
+              {ordered.slice(0, 3).map((s) => (
+                <div key={s.id}><LiveSessionCompactCard session={s} now={now} /></div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </section>
