@@ -380,6 +380,17 @@ export async function listPublicArticles(config, { categoryIds, topicId, general
   return { articles: rows.slice(0, paging.limit).map(toListArticle), hasMore: rows.length > paging.limit, page: paging.page, limit: paging.limit };
 }
 
+/** Published article count per folder (direct articles only): Map(topicId string -> count). Limited to the given public categories. */
+export async function countPublishedByTopic(config, categoryIds) {
+  const valid = (categoryIds || []).filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (!valid.length) return new Map();
+  const collection = await getArticlesCollection(config);
+  const rows = await collection
+    .aggregate([{ $match: { status: "published", categoryId: { $in: valid }, topicId: { $ne: null } } }, { $group: { _id: "$topicId", n: { $sum: 1 } } }])
+    .toArray();
+  return new Map(rows.map((r) => [String(r._id), r.n]));
+}
+
 /**
  * Public search. Every token must appear in the article's normalised searchText (title, body in every script
  * version, excerpt, SEO text, captions, reference book/author), OR the article sits in one of `folderIds`

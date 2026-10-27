@@ -11,6 +11,7 @@ import {
   findArticleBySlug,
   toSafeArticle,
   listPublicArticles,
+  countPublishedByTopic,
   searchPublicArticles,
   backfillSearchFields,
 } from "../services/db/article.service.js";
@@ -23,8 +24,8 @@ import { isValidObjectIdString } from "../utils/validate.js";
 
 /** The homepage "Latest Posts" card count. Unchanged from the original site (5); the homepage asks for exactly this many. */
 const HOME_LATEST_LIMIT = 5;
-/** Folders shown on the homepage "Folders" card. */
-const HOME_FOLDERS_LIMIT = 4;
+/** Folders shown on the homepage "Folders" card (newest first; the rest live under View All). */
+const HOME_FOLDERS_LIMIT = 10;
 /** Short browser cache for list endpoints that change rarely (admin edits show up within ~30 s). */
 const LIST_CACHE = { "Cache-Control": "public, max-age=30" };
 
@@ -79,7 +80,7 @@ export async function home(request, env) {
     {
       categories: ctx.categories.map(toSafeCategory),
       recentArticles: articles.map((a) => withTrail(ctx, a)),
-      folders: rootFolders(ctx).slice(0, HOME_FOLDERS_LIMIT),
+      folders: await homeFolders(config, ctx),
     },
     { allowedOrigin: config.allowedOrigin, headers: LIST_CACHE }
   );
@@ -136,6 +137,18 @@ function rootFolders(ctx) {
       const cat = ctx.categoryById.get(String(t.categoryId));
       return { ...toSafeTopic(t), section: cat?.type || null, categoryName: cat?.name || null };
     });
+}
+
+/** Newest root folders for the homepage card, each with `articleCount` = published articles in it and all its visible subfolders. */
+async function homeFolders(config, ctx) {
+  const newest = [...rootFolders(ctx)]
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0) || String(b.id).localeCompare(String(a.id)))
+    .slice(0, HOME_FOLDERS_LIMIT);
+  const direct = await countPublishedByTopic(config, ctx.categoryIds);
+  return newest.map((f) => ({
+    ...f,
+    articleCount: visibleSubtreeIds(ctx, f.id).reduce((sum, id) => sum + (direct.get(id) || 0), 0),
+  }));
 }
 
 /**
