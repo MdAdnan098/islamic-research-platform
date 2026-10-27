@@ -246,8 +246,8 @@
   .home-quote .script-urdu.home-urdu { line-height: 2.05 !important; }
   .script-urdu.quote-source { line-height: 1.9 !important; }
   /* Aqaid / Masail card Arabic title: Nastaleeq (same family as the reference calligraphy), clear letter shapes */
-  .cat-arabic { font-family: "FS Urdu", "Noto Nastaliq Urdu", serif; font-size: 2.35rem; line-height: 1.6; font-weight: 400; letter-spacing: 0; color: #0B3BA8; }
-  .dark .cat-arabic { color: var(--cat-color); } /* the light-mode blue is too dark on the dark card, so Dark mode keeps each card's own colour */
+  .cat-arabic { font-family: "FS Urdu", "Noto Nastaliq Urdu", serif; font-size: 2.35rem; line-height: 1.6; font-weight: 400; letter-spacing: 0; color: #04607F; }
+  .dark .cat-arabic { color: #F3F0E7; } /* Dark mode: the website's cream */
   @media (min-width: 640px) { .cat-arabic { font-size: 3rem; } }
 
   /* Phones: smaller, cleaner body text (Arabic / Urdu runs stay a little larger so they remain readable).
