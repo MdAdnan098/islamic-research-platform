@@ -25,9 +25,10 @@ export function HeroLive() {
   return (
     <section className="px-3 pb-2 pt-3 sm:px-8 sm:pt-5">
       <div className="mx-auto max-w-3xl">
-        <div className="relative mx-auto aspect-[700/467] w-full max-w-[700px] overflow-hidden rounded-xl shadow-[0_2px_10px_rgb(0_0_0/0.12)]">
+        {/* The photo keeps its natural height (same as HeroImage); the tint and glow are plain layers on top of it. */}
+        <div className="relative isolate mx-auto w-full max-w-[700px] overflow-hidden rounded-xl shadow-[0_2px_10px_rgb(0_0_0/0.12)]">
           <img src="/images/hero-gumbad.jpg" width="700" height="467" alt="مسجد نبوی ﷺ، گنبد خضریٰ" fetchpriority="high" decoding="async"
-            className={`absolute inset-0 block h-full w-full object-cover ${still ? "" : "hero-live-zoom"}`} />
+            className={`block h-auto w-full ${still ? "" : "hero-live-zoom"}`} />
           <div key={part} data-part={part} className="hero-live-tint pointer-events-none absolute inset-0" aria-hidden="true" />
           {!still && <div className="hero-live-glow pointer-events-none absolute inset-0" aria-hidden="true" />}
         </div>
