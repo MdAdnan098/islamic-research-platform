@@ -361,7 +361,7 @@ export function LiveSessionsSection() {
     <section className="container-page py-14 sm:py-20" aria-labelledby="live-heading">
       <div className="flex items-end justify-between gap-4">
         <SectionHeading title={<span id="live-heading">Live Sessions</span>} />
-        <Link to="/live" className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-accent/30 px-4 py-1.5 text-sm font-medium text-accent transition hover:bg-btn hover:text-white">
+        <Link to="/live" className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium view-all transition hover:bg-btn hover:text-white">
           View all <Icon name="arrow" size={15} className="rtl:rotate-180" />
         </Link>
       </div>

@@ -242,11 +242,15 @@
   /* Arabic in the Ayat/Hadith cards: Quranic Naskh (Amiri Quran). Size measured from the reference screenshot:
      one full line of the verse fills 86.3% of the screen width -> 4.85vw for this font. Capped on big screens.
      To make it bigger/smaller change only the 4.85vw / 1.9rem numbers. */
-  .home-quote .script-arabic.home-arabic { font-family: "FS Arabic", "FS Quran", "Amiri", serif !important; font-size: min(5.3vw, 2.1rem) !important; line-height: 2.35 !important; word-spacing: .06em; color: rgb(var(--hero-ink)); }
+  .home-quote .script-arabic.home-arabic { font-family: "FS Arabic", "FS Quran", "Amiri", serif !important; font-size: min(5.3vw, 2.1rem) !important; line-height: 2.35 !important; word-spacing: .06em; color: #04607F; }
+  .dark .home-quote .script-arabic.home-arabic { color: rgb(var(--hero-ink)); } /* Dark keeps the old teal-grey */
   .home-quote .script-urdu.home-urdu { line-height: 2.05 !important; }
   .script-urdu.quote-source { line-height: 1.9 !important; }
   /* Aqaid / Masail card Arabic title: Nastaleeq (same family as the reference calligraphy), clear letter shapes */
   .cat-arabic { font-family: "FS Urdu", "Noto Nastaliq Urdu", serif; font-size: 2.35rem; line-height: 1.6; font-weight: 400; letter-spacing: 0; color: #04607F; }
+  /* "View all ..." pill links: #04607F in Light / Sepia / Islamic, the theme's own accent in Dark. */
+  .view-all { color: #04607F; border-color: rgb(4 96 127 / .3); }
+  .dark .view-all { color: rgb(var(--accent)); border-color: rgb(var(--accent) / .3); }
   .dark .cat-arabic { color: #F3F0E7; } /* Dark mode: the website's cream */
   @media (min-width: 640px) { .cat-arabic { font-size: 3rem; } }
 

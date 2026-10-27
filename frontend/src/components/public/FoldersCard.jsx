@@ -23,7 +23,7 @@ export function FoldersCard({ folders: list, loading, error, onRetry }) {
       <div className="rounded-2xl border border-rule bg-card p-4 shadow-soft sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-xl font-bold sm:text-2xl">{t.home.folders}</h2>
-          <Link to="/folders" className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-accent/30 px-3.5 py-1.5 text-sm font-medium text-accent transition hover:bg-btn hover:text-white">
+          <Link to="/folders" className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium view-all transition hover:bg-btn hover:text-white">
             {t.home.viewAllFolders} <Icon name="arrow" size={15} className="rtl:rotate-180" />
           </Link>
         </div>
