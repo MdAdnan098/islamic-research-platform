@@ -46,7 +46,7 @@ function VerseBlock({ label, item, big }) {
 /** One compact card for the Ayat (larger) and the Hadith (smaller, below it). Colours/sizes: .verse-card in index.css. */
 function VerseCard({ ayatLabel, hadithLabel, ayat, hadith }) {
   return (
-    <figure className="verse-card mx-auto w-full max-w-[640px] px-4 py-4 text-center sm:px-8 sm:py-6">
+    <figure className="verse-card mx-auto w-full max-w-[700px] px-4 py-4 text-center sm:px-8 sm:py-6">
       <VerseBlock label={ayatLabel} item={ayat} big />
       <div className="v-dv mx-auto my-3 h-px w-8 sm:my-4 sm:w-11" aria-hidden="true" />
       <VerseBlock label={hadithLabel} item={hadith} />
