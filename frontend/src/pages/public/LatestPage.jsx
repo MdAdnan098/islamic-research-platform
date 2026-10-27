@@ -22,7 +22,7 @@ export default function LatestPage() {
           <EmptyState>{t.home.noPosts}</EmptyState>
         ) : (
           <>
-            <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid items-stretch gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
               {list.items.map((a) => <ArticleCard key={a.id} article={a} showPath />)}
             </div>
             {list.error && <div className="mt-6"><ErrorState error={list.error} onRetry={list.retryMore} /></div>}

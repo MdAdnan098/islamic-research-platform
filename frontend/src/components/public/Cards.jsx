@@ -13,25 +13,19 @@ export function trailLabel(t, article) {
   return [sectionLabel(t, article.section), ...(article.folders || []).map((f) => f.title)].filter(Boolean).join(" › ");
 }
 
-export function ArticleCard({ article, category, showCategory = false, showPath = false }) {
-  const { t, contentLang } = useI18n();
-  const label = showPath ? trailLabel(t, article) : showCategory && category ? sectionLabel(t, category.type) : null;
+export function ArticleCard({ article }) {
+  const { contentLang } = useI18n();
   const cover = mediaUrl(article.coverKey);
   const title = pickVersion(article.title, article.titleTr, article.language, contentLang);
   return (
-    <Link to={`/article/${article.slug}`} className="card-lift group flex h-full flex-col rounded-2xl border border-rule bg-card p-3">
-      {/* Cover image on top of the card; corners rounded to sit inside the card's own radius */}
-      <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-tint">
+    <Link to={`/article/${article.slug}`} className="group flex h-full flex-col">
+      {/* Flat style: sharp-corner cover image, then just the article title below it. No card box, border, shadow or path text. */}
+      <div className="aspect-[16/9] w-full overflow-hidden bg-tint">
         {cover && (
-          <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]" />
+          <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
         )}
       </div>
-      <div className="flex flex-1 items-start px-3 pb-3 pt-4">
-        <div className="min-w-0">
-          <Text as="h3" className="line-clamp-2 font-display text-lg font-bold leading-snug sm:text-xl">{title}</Text>
-          {label && <Text as="span" className="mt-2 block text-xs text-mute">{label}</Text>}
-        </div>
-      </div>
+      <Text as="h3" className="mt-4 line-clamp-2 font-display text-lg font-bold leading-snug group-hover:text-accent sm:text-xl">{title}</Text>
     </Link>
   );
 }

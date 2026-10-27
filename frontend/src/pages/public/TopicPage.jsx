@@ -65,7 +65,7 @@ export default function TopicPage({ section }) {
         {arts.loading ? <div className="mt-8"><CardSkeletons count={2} /></div> : arts.error && !arts.items.length ? <div className="mt-8"><ErrorState error={arts.error} onRetry={arts.reload} /></div> : arts.items.length > 0 && (
           <>
             {children.length > 0 && <h2 className="mt-10 font-display text-xl font-bold sm:text-2xl">{t.topic.tahreer}</h2>}
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">{arts.items.map((a) => <ArticleCard key={a.id} article={a} />)}</div>
+            <div className="mt-6 grid gap-x-5 gap-y-10 sm:grid-cols-2">{arts.items.map((a) => <ArticleCard key={a.id} article={a} />)}</div>
             {arts.hasMore && <div className="mt-8 text-center"><button onClick={arts.loadMore} disabled={arts.more} className="btn-outline">{arts.more ? t.common.loading : t.home.loadMore}</button></div>}
           </>
         )}

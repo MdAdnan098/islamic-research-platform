@@ -60,7 +60,7 @@ export default function SearchPage() {
                 </section>
               )}
               {list.items.length > 0 && <h2 className="mb-3 font-display text-lg font-bold">{t.search.articles}</h2>}
-              <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">{list.items.map((a) => <ArticleCard key={a.id} article={a} showPath />)}</div>
+              <div className="grid items-stretch gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">{list.items.map((a) => <ArticleCard key={a.id} article={a} showPath />)}</div>
               {list.error && <div className="mt-6"><ErrorState error={{ message: t.search.error }} onRetry={list.retryMore} /></div>}
               {list.hasMore && <div className="mt-8 text-center"><button onClick={list.loadMore} disabled={list.more} className="btn-outline">{list.more ? t.common.loading : t.home.loadMore}</button></div>}
             </>

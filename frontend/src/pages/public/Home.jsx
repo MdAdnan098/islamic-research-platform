@@ -98,7 +98,7 @@ export default function Home() {
           {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : data.articles.length === 0 ? (
             <EmptyState>{t.home.noPosts}</EmptyState>
           ) : (
-            <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid items-stretch gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
               {data.articles.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} showPath />)}
             </div>
           )}

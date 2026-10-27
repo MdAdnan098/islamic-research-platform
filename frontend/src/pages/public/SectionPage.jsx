@@ -50,7 +50,7 @@ export default function SectionPage({ section }) {
           <>
             <hr className="mt-10 border-rule" />
             <h2 className="mt-6 font-display text-xl font-bold sm:text-2xl">{t.home.generalArticles}</h2>
-            <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-5 grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
               {general.items.map((a) => <ArticleCard key={a.id} article={a} />)}
             </div>
             {general.hasMore && <div className="mt-8 text-center"><button onClick={general.loadMore} disabled={general.more} className="btn-outline">{general.more ? t.common.loading : t.home.loadMore}</button></div>}
