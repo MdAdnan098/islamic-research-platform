@@ -1,4 +1,5 @@
 import { MongoClient } from "mongodb";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 /**
  * MongoDB Atlas connection service.
@@ -21,6 +22,28 @@ import { MongoClient } from "mongodb";
 const clientsByConfig = new WeakMap();
 
 /**
+ * Per-request scope. Every MongoClient opened while a request is being handled is remembered here and
+ * closed as soon as the response is ready (see closeRequestClients, called from index.js). Before this,
+ * clients were never closed: each request left a connection open on Atlas, the cluster's connection
+ * limit filled up under load and every new request failed with 503 "Failed to connect to MongoDB".
+ */
+const requestScope = new AsyncLocalStorage();
+
+/** Runs `fn` inside a fresh scope that tracks the Mongo clients opened by that request. */
+export function runWithMongoScope(fn) {
+  return requestScope.run({ clients: new Set() }, fn);
+}
+
+/** Closes (and forgets) every client opened in the current scope. Safe to call more than once. */
+export async function closeRequestClients() {
+  const scope = requestScope.getStore();
+  if (!scope) return;
+  const clients = [...scope.clients];
+  scope.clients.clear();
+  await Promise.allSettled(clients.map((c) => c.close()));
+}
+
+/**
  * Atlas can be slow to answer the very first connection of a cold Worker (or briefly refuse it).
  * One failed attempt used to surface straight away as a 503 to whoever happened to be signing in.
  * Now a failed attempt is retried a couple of times (with a short pause) before giving up, so a
@@ -39,7 +62,9 @@ async function connectWithRetry(config) {
       connectTimeoutMS: ATTEMPT_TIMEOUT_MS,
     });
     try {
-      return await client.connect();
+      const connected = await client.connect();
+      requestScope.getStore()?.clients.add(connected);
+      return connected;
     } catch (err) {
       lastErr = err;
       try { await client.close(); } catch { /* already closed */ }

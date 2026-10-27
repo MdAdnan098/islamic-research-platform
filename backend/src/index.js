@@ -22,6 +22,7 @@ import { runScheduledSync } from "./services/youtube/youtube.service.js";
 import { archiveExpiredCourses } from "./services/db/course.service.js";
 import { loadConfig, resolveAllowedOrigin } from "./config/env.js";
 import { requireAdmin } from "./middleware/adminAuth.js";
+import { runWithMongoScope, closeRequestClients } from "./services/db/mongo.service.js";
 
 /**
  * Route table: [method, pattern, handler]. Patterns support ":param"
@@ -114,8 +115,17 @@ async function handle(request, env, ctx) {
 
 export default {
   async fetch(request, env, ctx) {
-    const response = await handle(request, env, ctx);
-    return withSecurityHeaders(request, response, new URL(request.url).pathname);
+    // Every Mongo connection this request opens is closed right after the response is built
+    // (in the background, so the visitor does not wait for it). Prevents connection build-up on Atlas.
+    return runWithMongoScope(async () => {
+      try {
+        const response = await handle(request, env, ctx);
+        return withSecurityHeaders(request, response, new URL(request.url).pathname);
+      } finally {
+        const closing = closeRequestClients();
+        if (ctx?.waitUntil) ctx.waitUntil(closing); else await closing;
+      }
+    });
   },
 
   /**
