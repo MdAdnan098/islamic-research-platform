@@ -74,13 +74,13 @@ export default function Home() {
 
       <section className="pb-4 pt-14 sm:pt-20">
         <div className="container-page">
-          <SectionHeading eyebrow={t.home.sections} title={`${t.nav.aqaid} & ${t.nav.masail}`} />
+          <SectionHeading className="sm:text-center" eyebrow={t.home.sections} title={`${t.nav.aqaid} & ${t.nav.masail}`} />
         </div>
         {/* Always two cards side by side (Aqaid first, then Masail) — phone gap ~8px at the sides, ~16px between */}
         <div className="mx-auto mt-6 w-full max-w-6xl px-2 sm:mt-8 sm:px-8">
-         <div className="grid w-full max-w-[36rem] grid-cols-2 gap-4">
+         <div className="mx-auto grid w-full max-w-[36rem] grid-cols-2 gap-4 sm:max-w-[44rem] sm:gap-3 lg:max-w-[50rem]">
           <CategoryCard to="/aqaid" arabic="عقائد" title="Aqaid" color="#F5B000" />
-          <CategoryCard to="/masail" arabic="مسائل" title="Masail" color="#C0492F" />
+          <CategoryCard to="/masail" arabic="فروعی مسائل" title="Furu'i Masa'il" color="#C0492F" long />
          </div>
         </div>
       </section>

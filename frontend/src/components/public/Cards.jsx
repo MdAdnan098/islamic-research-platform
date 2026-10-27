@@ -77,15 +77,15 @@ const CORNERS = [
 
 /** Home page card for Aqaid / Masail: coloured Arabic title on top, English title below, flourish in all four corners.
  *  Same proportions, shadow and corner design as the reference app cards; two fit side by side on a phone. */
-export function CategoryCard({ to, arabic, title, color }) {
+export function CategoryCard({ to, arabic, title, color, long = false }) {
   return (
     <Link to={to} className="cat-card card-lift group relative flex aspect-[494/366] min-w-0 flex-col items-center justify-center rounded-md border border-rule bg-card px-3 text-center shadow-[0_2px_8px_rgb(0_0_0/0.16)]">
       {CORNERS.map(({ key, pos }) => (
         <span key={key} aria-hidden="true" className="pointer-events-none absolute block w-[13.56%]"
           style={{ ...pos, aspectRatio: `${ORNAMENTS[key].w} / ${ORNAMENTS[key].h}`, backgroundImage: `url(${ORNAMENTS[key].src})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }} />
       ))}
-      <span dir="rtl" lang="ar" className="cat-arabic" style={{ "--cat-color": color }}>{arabic}</span>
-      <span className="mt-1 font-sans text-[1.05rem] font-medium leading-tight text-ink sm:mt-2 sm:text-xl">{title}</span>
+      <span dir="rtl" lang="ar" className={`cat-arabic whitespace-nowrap${long ? " cat-arabic-long" : ""}`} style={{ "--cat-color": color }}>{arabic}</span>
+      <span className="mt-1 whitespace-nowrap font-sans text-[1.05rem] font-medium leading-tight text-ink sm:mt-2 sm:text-xl lg:text-2xl">{title}</span>
     </Link>
   );
 }
