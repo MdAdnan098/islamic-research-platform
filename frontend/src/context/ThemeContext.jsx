@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 /** Theme modes: "auto" follows the device; the rest are fixed. Same set as Quran.com. */
 export const THEME_MODES = ["auto", "light", "sepia", "dark", "islamic"];
 const STORAGE_KEY = "fs_theme";
-const BAR = { light: "#77a9aa", sepia: "#fff7ea", islamic: "#ffffff", dark: "#15191B" };
+const BAR = { light: "#77a9aa", sepia: "#fff7ea", islamic: "#ffffff", dark: "#000000" };
 const ThemeContext = createContext(null);
 
 const systemTheme = () => (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
