@@ -25,7 +25,7 @@ export function ArticleCard({ article }) {
           <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
         )}
       </div>
-      <Text as="h3" className="mt-4 line-clamp-2 font-display text-lg font-bold leading-snug group-hover:text-accent sm:text-xl">{title}</Text>
+      <Text as="h3" className="mt-3 line-clamp-2 font-sans text-base font-semibold leading-snug tracking-normal group-hover:text-accent sm:text-[1.05rem]">{title}</Text>
     </Link>
   );
 }
