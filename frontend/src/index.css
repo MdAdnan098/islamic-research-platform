@@ -382,3 +382,29 @@ body.no-pattern, body.no-pattern .admin-root, body.no-pattern .paper-pattern, bo
 }
 @keyframes search-ring-spin { to { --ring-a: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .search-ring::before { animation: none; } }
+
+/* Home Ayat + Hadith in ONE compact card: Midnight + gold. Ayat larger on top, Hadith smaller below.
+   Light and Dark have their own shade; text colours are the same in both. Unlayered on purpose (wins over the generic script line-heights). */
+.verse-card { background: #14213D; border: 1px solid #14213D; border-radius: 1rem; box-shadow: 0 2px 12px rgb(0 0 0 / .18); }
+.dark .verse-card { background: #1A2848; border-color: #34456C; }
+.verse-card .v-label { color: #C2A25A; font-size: .72rem; font-weight: 500; letter-spacing: .02em; margin: 0; }
+.verse-card .v-ar { color: #F3F0E7; margin: .1rem 0 0; }
+.verse-card .v-ur { color: #D9D6CC; margin: 0; }
+.verse-card .v-src { color: #9AA3B5; margin: .15rem 0 0; font-size: .74rem; }
+.verse-card .v-dv { background: #4A5878; }
+.dark .verse-card .v-dv { background: #4F6089; }
+.verse-card .v-big .v-ar { font-size: clamp(1.4rem, 5.6vw, 1.75rem); }
+.verse-card .v-big .v-ur { font-size: .95rem; }
+.verse-card .v-small .v-ar { font-size: clamp(1.1rem, 4.4vw, 1.3rem); }
+.verse-card .v-small .v-ur { font-size: .85rem; }
+.verse-card .script-arabic { line-height: 1.85 !important; }
+.verse-card .script-urdu { line-height: 1.95 !important; }
+.verse-card .script-deva { line-height: 1.7 !important; }
+@media (min-width: 640px) {
+  .verse-card .v-label { font-size: .8rem; }
+  .verse-card .v-big .v-ar { font-size: 2rem; }
+  .verse-card .v-big .v-ur { font-size: 1.05rem; }
+  .verse-card .v-small .v-ar { font-size: 1.5rem; }
+  .verse-card .v-small .v-ur { font-size: .95rem; }
+  .verse-card .v-src { font-size: .8rem; }
+}

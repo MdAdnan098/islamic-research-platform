@@ -26,15 +26,30 @@ function HeroCalligraphy() {
   );
 }
 
-function QuoteCard({ label, item }) {
+/** Reference line is shown inside square brackets, exactly as written (Arabic / Urdu); brackets already in the text are not doubled. */
+function bracketed(src) {
+  const t = String(src ?? "").trim().replace(/^[\[［【]\s*/, "").replace(/\s*[\]］】]$/, "");
+  return t ? `[ ${t} ]` : "";
+}
+
+function VerseBlock({ label, item, big }) {
   return (
-    <figure className="home-quote card-lift flex h-full flex-col items-center rounded-2xl border border-rule bg-soft px-3 py-5 text-center sm:px-8 sm:py-9">
-      <figcaption className="quote-pill rounded-full bg-card px-3.5 py-0.5 text-xs font-semibold text-accent sm:px-4 sm:py-1 sm:text-sm">{label}</figcaption>
-      <Text as="blockquote" force="arabic" className="home-arabic mt-3 sm:mt-5">{item.text}</Text>
-      <Text as="p" className="home-urdu mt-2 max-w-3xl text-[0.92rem] text-mute sm:mt-3 sm:text-[1.05rem]">{item.translation}</Text>
-      <div className="mt-auto pt-4 sm:pt-5">
-        <Text as="p" className="quote-pill-gold quote-source rounded-full bg-card px-3.5 py-0.5 text-[0.8rem] font-medium text-accent sm:px-4 sm:py-1 sm:text-sm">{item.source}</Text>
-      </div>
+    <div className={big ? "v-big" : "v-small"}>
+      <Text as="p" className="v-label">{label}</Text>
+      <Text as="blockquote" force="arabic" className="v-ar">{item.text}</Text>
+      <Text as="p" className="v-ur">{item.translation}</Text>
+      <Text as="p" className="v-src">{bracketed(item.source)}</Text>
+    </div>
+  );
+}
+
+/** One compact card for the Ayat (larger) and the Hadith (smaller, below it). Colours/sizes: .verse-card in index.css. */
+function VerseCard({ ayatLabel, hadithLabel, ayat, hadith }) {
+  return (
+    <figure className="verse-card mx-auto w-full max-w-[640px] px-4 py-4 text-center sm:px-8 sm:py-6">
+      <VerseBlock label={ayatLabel} item={ayat} big />
+      <div className="v-dv mx-auto my-3 h-px w-8 sm:my-4 sm:w-11" aria-hidden="true" />
+      <VerseBlock label={hadithLabel} item={hadith} />
     </figure>
   );
 }
@@ -83,10 +98,7 @@ export default function Home() {
       <section className="border-b border-rule">
        <div className="mx-auto w-full max-w-6xl px-2 py-10 sm:px-8 sm:py-20">
         <Text as="p" force="arabic" className="home-arabic mb-6 text-center text-[2rem] text-ink sm:mb-8 sm:text-[2.6rem]">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
-        <div className="mx-auto grid max-w-5xl items-stretch gap-4 sm:gap-5 lg:grid-cols-2">
-          <QuoteCard label={t.home.ayat} item={FEATURED.ayat} />
-          <QuoteCard label={t.home.hadith} item={FEATURED.hadith} />
-        </div>
+        <VerseCard ayatLabel={t.home.ayat} hadithLabel={t.home.hadith} ayat={FEATURED.ayat} hadith={FEATURED.hadith} />
       </div>
       </section>
 
