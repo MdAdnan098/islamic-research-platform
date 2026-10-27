@@ -366,13 +366,18 @@
    The class is put on <body> by useNoPattern(). */
 body.no-pattern, body.no-pattern .admin-root, body.no-pattern .paper-pattern, body.no-pattern .bar-teal { background-image: none !important; }
 
-/* Hero search field: a thin gradient ring (violet, pink, blue, cyan) that slowly rotates around it.
+/* Hero search field: a thin gradient ring (violet, pink, blue, cyan) that slowly rotates around its BORDER only.
+   The gradient is masked so just the 3px edge shows and the field itself is never covered.
    Outside @layer on purpose so the keyframes/@property are never dropped by the build. Without @property support the ring simply stays still. */
 @property --ring-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-.search-ring { isolation: isolate; border-color: transparent; }
+.search-ring { border-color: transparent; }
 .search-ring::before {
-  content: ""; position: absolute; inset: -3px; z-index: -1; border-radius: inherit;
+  content: ""; position: absolute; inset: -3px; padding: 3px; border-radius: inherit; pointer-events: none;
   background: conic-gradient(from var(--ring-a), #8B5CF6, #EC4899, #2563EB, #06B6D4, #8B5CF6);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
   animation: search-ring-spin 4s linear infinite;
 }
 @keyframes search-ring-spin { to { --ring-a: 360deg; } }
