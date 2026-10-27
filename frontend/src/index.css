@@ -288,6 +288,19 @@
   .reading .ref-line p + p, .ref-line p + p { margin-top: 0; }
   .ref-line p { line-height: 1.45 !important; }
   .ref-line p.script-urdu, .ref-line p.script-arabic { line-height: 1.8 !important; }
+
+  /* Live hero (HeroLive): slow zoom + soft glow + time-of-day wash on the same photo. Only transform/opacity animate. */
+  .hero-live-zoom { transform-origin: 50% 45%; animation: hero-live-zoom 25s ease-in-out infinite alternate; }
+  .hero-live-glow { mix-blend-mode: screen; background: radial-gradient(ellipse at 50% 30%, rgb(255 236 190 / .45), transparent 60%); animation: hero-live-glow 8s ease-in-out infinite; }
+  .hero-live-tint { animation: hero-live-fade 2s ease-out both; }
+  .hero-live-tint[data-part="morning"] { background: linear-gradient(to bottom, rgb(255 214 150 / .20), transparent 70%); }
+  .hero-live-tint[data-part="noon"] { background: transparent; }
+  .hero-live-tint[data-part="evening"] { background: linear-gradient(to bottom, rgb(255 120 60 / .20), rgb(40 20 80 / .22)); }
+  .hero-live-tint[data-part="night"] { background: linear-gradient(to bottom, rgb(10 20 60 / .40), rgb(0 0 0 / .30)); }
+  @keyframes hero-live-zoom { from { transform: scale(1); } to { transform: scale(1.08); } }
+  @keyframes hero-live-glow { 0%, 100% { opacity: .25; } 50% { opacity: .55; } }
+  @keyframes hero-live-fade { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .hero-live-zoom, .hero-live-glow, .hero-live-tint { animation: none; } }
   .hl-editing [data-hl-block] { cursor: text; }
   .hl-editing .hl-mark { cursor: pointer; }
   .card-lift { @apply shadow-elev transition duration-300 ease-out hover:-translate-y-1 hover:border-accent/40 hover:shadow-soft motion-reduce:transition-none motion-reduce:hover:translate-y-0; }
