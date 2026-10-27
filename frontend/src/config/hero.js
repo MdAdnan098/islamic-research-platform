@@ -5,7 +5,7 @@
  *   "banner"  - desert + mosque banner, sky follows the time of day                          (keyword: dynamic-hero-banner)
  *   "classic" - OLD: calligraphy band with title, description and the Aqaid / Masail buttons
  */
-export const HERO_VARIANT = "live";
+export const HERO_VARIANT = "image";
 
 /** Text under the banner (Urdu). */
 export const HERO_TEXT = "قرآن، سنت اور مستند حوالوں کی بنیاد پر اسلامی عقائد، مسائل اور تحقیقی مضامین";
