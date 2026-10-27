@@ -365,3 +365,15 @@
 /* Post pages (reading, preview, admin writing): no geometric pattern anywhere, only the plain page colour.
    The class is put on <body> by useNoPattern(). */
 body.no-pattern, body.no-pattern .admin-root, body.no-pattern .paper-pattern, body.no-pattern .bar-teal { background-image: none !important; }
+
+/* Hero search field: a thin gradient ring (violet, pink, blue, cyan) that slowly rotates around it.
+   Outside @layer on purpose so the keyframes/@property are never dropped by the build. Without @property support the ring simply stays still. */
+@property --ring-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.search-ring { isolation: isolate; border-color: transparent; }
+.search-ring::before {
+  content: ""; position: absolute; inset: -3px; z-index: -1; border-radius: inherit;
+  background: conic-gradient(from var(--ring-a), #8B5CF6, #EC4899, #2563EB, #06B6D4, #8B5CF6);
+  animation: search-ring-spin 4s linear infinite;
+}
+@keyframes search-ring-spin { to { --ring-a: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .search-ring::before { animation: none; } }
