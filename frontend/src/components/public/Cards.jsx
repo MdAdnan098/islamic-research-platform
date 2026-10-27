@@ -84,7 +84,7 @@ export function CategoryCard({ to, arabic, title, color }) {
         <span key={key} aria-hidden="true" className="pointer-events-none absolute block w-[13.56%]"
           style={{ ...pos, aspectRatio: `${ORNAMENTS[key].w} / ${ORNAMENTS[key].h}`, backgroundImage: `url(${ORNAMENTS[key].src})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }} />
       ))}
-      <span dir="rtl" lang="ar" className="cat-arabic" style={{ color }}>{arabic}</span>
+      <span dir="rtl" lang="ar" className="cat-arabic" style={{ "--cat-color": color }}>{arabic}</span>
       <span className="mt-1 font-sans text-[1.05rem] font-medium leading-tight text-ink sm:mt-2 sm:text-xl">{title}</span>
     </Link>
   );
