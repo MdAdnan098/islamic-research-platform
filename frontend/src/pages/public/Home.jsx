@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { FEATURED } from "../../config/featured.js";
 import { useI18n } from "../../i18n/index.jsx";
 import { publicApi } from "../../services/public.js";
 import { useAsync } from "../../lib/useAsync.js";
@@ -23,34 +22,6 @@ function HeroCalligraphy() {
       <span style={{ bottom: "-6%", insetInlineEnd: "-4%", fontSize: "clamp(4rem, 13vw, 9rem)", transform: "rotate(-3deg)" }}>وَقُل رَّبِّ زِدْنِى عِلْمًا</span>
       <span style={{ top: "34%", insetInlineStart: "18%", fontSize: "clamp(3rem, 9vw, 6.5rem)", transform: "rotate(2deg)" }}>بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span>
     </div>
-  );
-}
-
-/** Reference line is shown inside square brackets, exactly as written (Arabic / Urdu); brackets already in the text are not doubled. */
-function bracketed(src) {
-  const t = String(src ?? "").trim().replace(/^[\[［【]\s*/, "").replace(/\s*[\]］】]$/, "");
-  return t ? `[ ${t} ]` : "";
-}
-
-function VerseBlock({ label, item, big }) {
-  return (
-    <div className={big ? "v-big" : "v-small"}>
-      <Text as="p" className="v-label">{label}</Text>
-      <Text as="blockquote" force="arabic" className="v-ar">{item.text}</Text>
-      <Text as="p" className="v-ur">{item.translation}</Text>
-      <Text as="p" className="v-src">{bracketed(item.source)}</Text>
-    </div>
-  );
-}
-
-/** One compact card for the Ayat (larger) and the Hadith (smaller, below it). Colours/sizes: .verse-card in index.css. */
-function VerseCard({ ayatLabel, hadithLabel, ayat, hadith }) {
-  return (
-    <figure className="verse-card mx-auto w-full max-w-[700px] px-4 py-4 text-center sm:px-8 sm:py-6">
-      <VerseBlock label={ayatLabel} item={ayat} big />
-      <div className="v-dv mx-auto my-3 h-px w-8 sm:my-4 sm:w-11" aria-hidden="true" />
-      <VerseBlock label={hadithLabel} item={hadith} />
-    </figure>
   );
 }
 
@@ -96,9 +67,8 @@ export default function Home() {
       {HERO_VARIANT === "classic" ? <ClassicHero t={t} heroA={heroA} heroB={heroB} /> : HERO_VARIANT === "banner" ? <HeroBanner /> : <HeroImage />}
 
       <section className="border-b border-rule">
-       <div className="mx-auto w-full max-w-6xl px-2 py-10 sm:px-8 sm:py-20">
-        <Text as="p" force="arabic" className="home-arabic mb-6 text-center text-[2rem] text-ink sm:mb-8 sm:text-[2.6rem]">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
-        <VerseCard ayatLabel={t.home.ayat} hadithLabel={t.home.hadith} ayat={FEATURED.ayat} hadith={FEATURED.hadith} />
+       <div className="mx-auto w-full max-w-6xl px-2 py-8 sm:px-8 sm:py-12">
+        <Text as="p" force="arabic" className="home-arabic text-center text-[2rem] text-ink sm:text-[2.6rem]">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
       </div>
       </section>
 
