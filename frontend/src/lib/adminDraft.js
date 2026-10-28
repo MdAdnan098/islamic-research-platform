@@ -32,15 +32,17 @@ export function useAdminDraft({ article, references, enabled = true, initial = n
 
   useEffect(() => { setRefs(references || NONE); }, [references]);
 
+  useEffect(() => { if (initial && !copyRef.current) setCopy(toCopy(initial)); }, [initial]);
+
   useEffect(() => {
-    if (!enabled || !id || copy) return undefined;
+    if (!enabled || !id || copy || initial) return undefined;
     const ctrl = new AbortController();
     import("../services/admin.js")
       .then((m) => m.adminApi.articles.get(id, ctrl.signal))
       .then((a) => { if (!ctrl.signal.aborted) setCopy(toCopy(a)); })
       .catch(() => { /* not an admin / demo post: the page simply keeps the published copy */ });
     return () => ctrl.abort();
-  }, [enabled, id, copy]);
+  }, [enabled, id, copy, initial]);
 
   /** One change at a time, in order, so two quick taps can never collide on the version check. */
   const run = useCallback((fn) => {
@@ -48,13 +50,6 @@ export function useAdminDraft({ article, references, enabled = true, initial = n
     chain.current = p.catch(() => {});
     return p;
   }, []);
-
-  async function loadRefs(blocks) {
-    const { adminApi } = await import("../services/admin.js");
-    const known = new Map(refsRef.current.map((r) => [r.id, r]));
-    const list = await Promise.all(referenceIdsOf(blocks).map((rid) => adminApi.references.get(rid).catch(() => known.get(rid) || null)));
-    setRefs(list.filter(Boolean));
-  }
 
   /** updater(blocks) -> new blocks (or null for "nothing to do"); the result is auto-saved as the draft. */
   const change = useCallback((updater) => run(async () => {
@@ -64,10 +59,10 @@ export function useAdminDraft({ article, references, enabled = true, initial = n
     if (!next) return;
     const { adminApi } = await import("../services/admin.js");
     const blocks = cleanBlocksHl(next, cur.language || article.language || "en");
-    const saved = await adminApi.articles.saveDraft(id, { blocks, references: referenceIdsOf(blocks), baseRev: cur.rev });
-    setCopy(toCopy(saved));
-    await loadRefs(saved.pending?.blocks ?? saved.blocks);
-  }), [run, id]); // eslint-disable-line react-hooks/exhaustive-deps
+    const res = await adminApi.articles.saveDraft(id, { blocks, references: referenceIdsOf(blocks), baseRev: cur.rev });
+    setCopy(toCopy(res.article));
+    setRefs(res.references || []); // the server sends the references of these blocks with the save: no extra requests
+  }), [run, id]);
 
   const indexOf = (blocks, i, blockId) => {
     const at = blockId ? blocks.findIndex((b) => b.id === blockId) : -1;
@@ -111,10 +106,10 @@ export function useAdminDraft({ article, references, enabled = true, initial = n
 
   const discard = useCallback(() => run(async () => {
     const { adminApi } = await import("../services/admin.js");
-    const saved = await adminApi.articles.discardDraft(id);
-    setCopy(toCopy(saved));
-    await loadRefs(saved.blocks);
-  }), [run, id]); // eslint-disable-line react-hooks/exhaustive-deps
+    const res = await adminApi.articles.discardDraft(id);
+    setCopy(toCopy(res.article));
+    setRefs(res.references || []);
+  }), [run, id]);
 
   return {
     ready: !!copy,

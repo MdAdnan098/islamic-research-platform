@@ -22,7 +22,8 @@ const RETRY_DELAYS_MS = [1200, 2500];
 export async function request(path, { method = "GET", body, form, signal } = {}) {
   // Reads and sign-in are safe to repeat, so a momentary 503 / network blip is retried quietly instead of
   // showing "Request failed (503)". Other writes are never repeated automatically.
-  const retryable = method === "GET" || path.endsWith("/api/admin/login");
+  // The draft auto-save and publish are safe to repeat (version-checked / idempotent), so they are retried too.
+  const retryable = method === "GET" || path.endsWith("/api/admin/login") || (method === "PUT" && path.endsWith("/draft")) || path.endsWith("/publish");
 
   for (let attempt = 0; ; attempt += 1) {
     const last = attempt >= RETRY_DELAYS_MS.length || !retryable;

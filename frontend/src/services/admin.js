@@ -34,8 +34,8 @@ export const adminApi = {
     remove: (id) => request(`/api/admin/articles/${id}`, { method: "DELETE" }),
     removeAll: () => request("/api/admin/articles", { method: "DELETE" }),
     highlights: (id, body) => request(`/api/admin/articles/${id}/highlights`, json("PATCH", body)).then((d) => d.article),
-    saveDraft: (id, body) => request(`/api/admin/articles/${id}/draft`, json("PUT", body)).then((d) => d.article), // auto-save: { blocks, references, baseRev }
-    discardDraft: (id) => request(`/api/admin/articles/${id}/draft`, { method: "DELETE" }).then((d) => d.article),
+    saveDraft: (id, body) => request(`/api/admin/articles/${id}/draft`, json("PUT", body)), // auto-save: { blocks, references, baseRev } -> { article, references }
+    discardDraft: (id) => request(`/api/admin/articles/${id}/draft`, { method: "DELETE" }), // -> { article, references }
     action: (id, name) => request(`/api/admin/articles/${id}/${name}`, json("POST", {})).then((d) => d.article), // publish | unpublish | archive
   },
   references: {

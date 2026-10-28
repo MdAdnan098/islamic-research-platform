@@ -79,17 +79,23 @@ async function connectWithRetry(config) {
  * @returns {Promise<import("mongodb").Db>}
  */
 export async function getDb(config) {
-  let clientPromise = clientsByConfig.get(config);
+  // Inside a request every caller shares ONE client (keyed by URI): the router-level admin check, the controller and
+  // the services each build their own config object, and keying on the object used to open 2-3 connections per request.
+  // Outside a request (maintenance scripts) the old per-config cache is used.
+  const scope = requestScope.getStore();
+  const cache = scope ? (scope.byUri ||= new Map()) : clientsByConfig;
+  const key = scope ? `${config.mongodbUri}` : config;
+  let clientPromise = cache.get(key);
   if (!clientPromise) {
     clientPromise = connectWithRetry(config);
-    clientsByConfig.set(config, clientPromise);
+    cache.set(key, clientPromise);
   }
 
   try {
     const client = await clientPromise;
     return client.db(config.mongodbDbName);
   } catch (err) {
-    clientsByConfig.delete(config);
+    cache.delete(key);
     const wrapped = new Error(`Failed to connect to MongoDB: ${err.message}`);
     wrapped.status = 503;
     wrapped.code = "DB_CONNECTION_ERROR";

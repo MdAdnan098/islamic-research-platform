@@ -16,7 +16,7 @@ import {
   saveArticleDraft,
   discardArticleDraft,
 } from "../services/db/article.service.js";
-import { findReferencesByIds } from "../services/db/reference.service.js";
+import { findReferencesByIds, toSafeReference } from "../services/db/reference.service.js";
 
 function throwInvalidInput(message, code = "INVALID_INPUT") {
   const err = new Error(message);
@@ -196,6 +196,13 @@ export async function highlights(request, env, ctx, params) {
   return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }
 
+/** The references used by the blocks the admin screens show (the unpublished copy when there is one), in ONE query. */
+async function workingReferences(config, article) {
+  const ids = (article.pending ? article.pending.references : article.references) || [];
+  const list = await findReferencesByIds(config, ids.map(String));
+  return list.map(toSafeReference);
+}
+
 /**
  * PUT /api/admin/articles/:id/draft
  * Body: { blocks, references, baseRev }. Auto-save for "View site" editing - see saveArticleDraft.
@@ -211,7 +218,7 @@ export async function saveDraft(request, env, ctx, params) {
   await assertReferencesExist(config, body.references);
 
   const article = await saveArticleDraft(config, params.id, { blocks: body.blocks, references: body.references, baseRev: body.baseRev });
-  return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ article: toAdminArticle(article), references: await workingReferences(config, article) }, { allowedOrigin: config.allowedOrigin });
 }
 
 /** DELETE /api/admin/articles/:id/draft - drops the unpublished copy. */
@@ -219,5 +226,5 @@ export async function discardDraft(request, env, ctx, params) {
   const config = loadConfig(env);
   await requireAdmin(request, env);
   const article = await discardArticleDraft(config, params.id);
-  return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ article: toAdminArticle(article), references: await workingReferences(config, article) }, { allowedOrigin: config.allowedOrigin });
 }
