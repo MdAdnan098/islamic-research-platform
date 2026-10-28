@@ -9,7 +9,8 @@ mode = "smart"
 # compatibility_date of 2026-08-04 or later, so no explicit
 # `nodejs_compat` compatibility flag is needed or accepted here.
 # Keep this set to today's date when you touch this file.
-compatibility_date = "2026-09-27"
+compatibility_date = "2026-07-01"
+compatibility_flags = ["nodejs_compat"]
 
 # Keep variables that were added in the Cloudflare dashboard (e.g.
 # IMAGEKIT_URL_ENDPOINT) instead of deleting them on every deploy.
