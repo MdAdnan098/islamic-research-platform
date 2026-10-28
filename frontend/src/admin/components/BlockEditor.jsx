@@ -52,7 +52,7 @@ export function Fields({ block, set }) {
         <div className="grid gap-3 sm:grid-cols-[1fr_120px]">
           <Field label="Heading text"><I value={block.text} onChange={(text) => set({ text })} /></Field>
           <Field label="Level">
-            <select className="a-input" value={block.level || 2} onChange={(e) => set({ level: Number(e.target.value) })}><option value={2}>H2 (section)</option><option value={3}>H3 (sub)</option></select>
+            <select className="a-input" value={block.level || 2} onChange={(e) => set({ level: Number(e.target.value) })}><option value={1}>H1 (bada)</option><option value={2}>H2 (section)</option><option value={3}>H3 (sub)</option></select>
           </Field>
         </div>
       );

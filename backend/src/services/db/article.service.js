@@ -272,7 +272,9 @@ export async function updateArticle(config, id, updates) {
     // With baseUpdatedAt the write only applies if nobody saved in between (compare-and-swap).
     const filter = { _id: new ObjectId(id) };
     if (baseUpdatedAt && existing.updatedAt) filter.updatedAt = existing.updatedAt;
-    const res = await collection.updateOne(filter, { $set });
+    // A full save with blocks replaces everything, so any unpublished copy ("pending") is dropped with it.
+    const update = data.blocks !== undefined ? { $set, $unset: { pending: "" } } : { $set };
+    const res = await collection.updateOne(filter, update);
     if (baseUpdatedAt && res.matchedCount === 0) throwConflict();
   } catch (err) {
     if (err.code === 11000) {
@@ -550,4 +552,60 @@ export function toSafeArticle(article) {
     updatedAt: article.updatedAt,
     publishedAt: article.publishedAt || null,
   };
+}
+
+/**
+ * Admin-only shape: toSafeArticle + the unpublished copy of a live post (`pending`) and `rev`, the version token the
+ * admin screens send back as baseRev (the pending copy's save time, else updatedAt). Never used for public responses.
+ */
+export function toAdminArticle(article) {
+  const safe = toSafeArticle(article);
+  if (!safe) return null;
+  const p = article.pending;
+  return {
+    ...safe,
+    pending: p ? { blocks: p.blocks || [], references: (p.references || []).map((r) => String(r)), savedAt: p.savedAt } : null,
+    rev: (p && p.savedAt) || article.updatedAt,
+  };
+}
+
+/**
+ * Auto-save used by the "View site" / Preview editing: stores the edited blocks WITHOUT touching what visitors see.
+ * - published post: the blocks go into `pending` (an unpublished copy); the live `blocks` stay as they are until publish.
+ * - draft / archived post: nobody sees it anyway, so the blocks are saved straight into the post.
+ * Compare-and-swap on `baseRev` means a stale page can never overwrite a newer save (409 instead).
+ */
+export async function saveArticleDraft(config, id, { blocks, references, baseRev }) {
+  const existing = await findArticleById(config, id);
+  if (!existing) throwNotFound();
+  const refs = Array.isArray(references) ? references : [];
+
+  const errors = validateArticleInput({ blocks, references: refs, language: existing.language }, { partial: true });
+  if (errors.length > 0) throwValidationError(errors);
+
+  if (existing.status !== "published") {
+    return updateArticle(config, id, { blocks, references: refs, baseUpdatedAt: baseRev });
+  }
+
+  const base = parseBaseUpdatedAt(baseRev);
+  const currentRev = (existing.pending && existing.pending.savedAt) || existing.updatedAt;
+  if (base && currentRev && new Date(currentRev).getTime() !== base.getTime()) throwConflict();
+
+  const collection = await getArticlesCollection(config);
+  const savedAt = nextUpdatedAt(currentRev);
+  const res = await collection.updateOne(
+    { _id: existing._id, updatedAt: existing.updatedAt, "pending.savedAt": (existing.pending && existing.pending.savedAt) ?? null },
+    { $set: { pending: { blocks, references: refs.map((r) => new ObjectId(r)), savedAt } } }
+  );
+  if (res.matchedCount === 0) throwConflict();
+  return findArticleById(config, id);
+}
+
+/** Throws the unpublished copy away; the live post is untouched. */
+export async function discardArticleDraft(config, id) {
+  const existing = await findArticleById(config, id);
+  if (!existing) throwNotFound();
+  const collection = await getArticlesCollection(config);
+  await collection.updateOne({ _id: existing._id }, { $unset: { pending: "" } });
+  return findArticleById(config, id);
 }

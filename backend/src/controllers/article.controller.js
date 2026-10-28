@@ -12,7 +12,9 @@ import {
   deleteArticle,
   deleteAllArticles,
   updateBlockHighlights,
-  toSafeArticle,
+  toAdminArticle,
+  saveArticleDraft,
+  discardArticleDraft,
 } from "../services/db/article.service.js";
 import { findReferencesByIds } from "../services/db/reference.service.js";
 
@@ -64,7 +66,7 @@ export async function create(request, env) {
     status: "draft",
   });
 
-  return jsonSuccess({ article: toSafeArticle(article) }, { status: 201, allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ article: toAdminArticle(article) }, { status: 201, allowedOrigin: config.allowedOrigin });
 }
 
 export async function list(request, env) {
@@ -85,7 +87,7 @@ export async function list(request, env) {
   };
 
   const articles = await listArticles(config, filters);
-  return jsonSuccess({ articles: articles.map(toSafeArticle), page, limit }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ articles: articles.map(toAdminArticle), page, limit }, { allowedOrigin: config.allowedOrigin });
 }
 
 export async function getOne(request, env, ctx, params) {
@@ -95,7 +97,7 @@ export async function getOne(request, env, ctx, params) {
   const article = await findArticleById(config, params.id);
   if (!article) throwNotFound();
 
-  return jsonSuccess({ article: toSafeArticle(article) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }
 
 /**
@@ -117,7 +119,7 @@ export async function update(request, env, ctx, params) {
   await assertReferencesExist(config, body.references);
 
   const article = await updateArticle(config, params.id, body);
-  return jsonSuccess({ article: toSafeArticle(article) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }
 
 export async function archive(request, env, ctx, params) {
@@ -125,7 +127,7 @@ export async function archive(request, env, ctx, params) {
   await requireAdmin(request, env);
 
   const article = await archiveArticle(config, params.id);
-  return jsonSuccess({ article: toSafeArticle(article) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }
 
 /** Only non-empty, structurally valid content may be published. */
@@ -136,12 +138,17 @@ export async function publish(request, env, ctx, params) {
   const existing = await findArticleById(config, params.id);
   if (!existing) throwNotFound();
 
-  if (!Array.isArray(existing.blocks) || existing.blocks.length === 0) {
+  // Publishing also makes the unpublished copy (edits made from "View site") the live post.
+  const pending = existing.pending;
+  const blocks = pending ? pending.blocks : existing.blocks;
+  if (!Array.isArray(blocks) || blocks.length === 0) {
     throwInvalidInput("Cannot publish an article with no content blocks.");
   }
 
-  const article = await updateArticle(config, params.id, { status: "published" });
-  return jsonSuccess({ article: toSafeArticle(article) }, { allowedOrigin: config.allowedOrigin });
+  const article = pending
+    ? await updateArticle(config, params.id, { blocks, references: (pending.references || []).map(String), status: "published" })
+    : await updateArticle(config, params.id, { status: "published" });
+  return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }
 
 /** Reverts a published article to draft. publishedAt is kept as a historical record. */
@@ -150,7 +157,7 @@ export async function unpublish(request, env, ctx, params) {
   await requireAdmin(request, env);
 
   const article = await updateArticle(config, params.id, { status: "draft" });
-  return jsonSuccess({ article: toSafeArticle(article) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }
 
 /** DELETE /api/admin/articles/:id — permanent. */
@@ -186,5 +193,31 @@ export async function highlights(request, env, ctx, params) {
   if (!body || typeof body !== "object") throwInvalidInput("Request body must be valid JSON.");
 
   const article = await updateBlockHighlights(config, params.id, { baseUpdatedAt: body.baseUpdatedAt, edits: body.edits });
-  return jsonSuccess({ article: toSafeArticle(article) }, { allowedOrigin: config.allowedOrigin });
+  return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
+}
+
+/**
+ * PUT /api/admin/articles/:id/draft
+ * Body: { blocks, references, baseRev }. Auto-save for "View site" editing - see saveArticleDraft.
+ */
+export async function saveDraft(request, env, ctx, params) {
+  const config = loadConfig(env);
+  await requireAdmin(request, env);
+
+  const body = await safeParseJson(request);
+  if (!body || typeof body !== "object") throwInvalidInput("Request body must be valid JSON.");
+  if (!Array.isArray(body.blocks)) throwInvalidInput("blocks must be an array.", "INVALID_BLOCK");
+
+  await assertReferencesExist(config, body.references);
+
+  const article = await saveArticleDraft(config, params.id, { blocks: body.blocks, references: body.references, baseRev: body.baseRev });
+  return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
+}
+
+/** DELETE /api/admin/articles/:id/draft - drops the unpublished copy. */
+export async function discardDraft(request, env, ctx, params) {
+  const config = loadConfig(env);
+  await requireAdmin(request, env);
+  const article = await discardArticleDraft(config, params.id);
+  return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }

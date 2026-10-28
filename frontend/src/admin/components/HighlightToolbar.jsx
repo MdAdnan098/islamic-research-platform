@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { addRange, AR_FIELD, arabicSpans, COLOR_FIELDS, covered, overlaps, rangesOf, removeRange, syncSpans, trimRange, unitMap } from "../../lib/highlights.js";
+import { addRange, AR_FIELD, arabicSpans, BOLD_FIELD, COLOR_FIELDS, covered, FORMAT_FIELDS, TEXT_COLORS, TEXT_COLOR_FIELDS, overlaps, rangesOf, removeRange, syncSpans, trimRange, unitMap } from "../../lib/highlights.js";
 
 /**
  * Admin-only floating toolbar for the current text selection: four highlight colours (yellow, pink, blue, green),
@@ -37,7 +37,7 @@ function readSelection(container) {
   return { pieces, rect: range.getBoundingClientRect() };
 }
 
-export default function HighlightToolbar({ containerRef, blocks, baseLang, onApply }) {
+export default function HighlightToolbar({ containerRef, blocks, baseLang, onApply, onTransform }) {
   const [sel, setSel] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -96,6 +96,16 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
   }, { any: false, missing: [] });
   // Some block of the selection has versions whose line count differs: highlight then stays in this script only.
   const unsyncedMap = sel.pieces.map((p) => unitMap(blocksRef.current.find((x) => x.id === p.blockId), baseLang)).find((m) => m?.aligned === false);
+  // Bold / text colours: is all of the selection already bold / this colour, and is any formatting present?
+  const fmt = sel.pieces.reduce((acc, p) => {
+    const next = { any: acc.any, full: { ...acc.full } };
+    for (const f of FORMAT_FIELDS) {
+      const r = currentRanges(p.blockId, p.lang, f);
+      if (overlaps(r, [p.start, p.end])) next.any = true;
+      next.full[f] = next.full[f] && covered(r, [p.start, p.end]);
+    }
+    return next;
+  }, { any: false, full: Object.fromEntries(FORMAT_FIELDS.map((f) => [f, true])) });
   const NAMES = { en: "Roman", hi: "Hindi", ur: "Urdu" };
   const unsynced = unsyncedMap ? Object.entries(unsyncedMap.counts).map(([l, n]) => `${NAMES[l]} ${n}`).join(", ") : "";
   const arMissing = ar.missing.map((l) => NAMES[l]).join(", ");
@@ -109,6 +119,14 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
       edits.set(key, { blockId, lang, field: f, ranges: change(base) });
     };
     for (const p of sel.pieces) {
+      // Bold / text colour act on exactly the selected words of the version on screen (colours exclude each other).
+      if (FORMAT_FIELDS.includes(field) || field === "format-none") {
+        const range = [p.start, p.end];
+        const targets = field === "format-none" ? FORMAT_FIELDS : [field];
+        for (const f of targets) put(p.blockId, p.lang, f, (r) => (mode === "add" ? addRange(r, range) : removeRange(r, range)));
+        if (mode === "add" && TEXT_COLOR_FIELDS.includes(field)) for (const o of TEXT_COLOR_FIELDS) if (o !== field) put(p.blockId, p.lang, o, (r) => removeRange(r, range));
+        continue;
+      }
       if (field === AR_FIELD) {
         for (const { lang, range } of arabicOf(p).spans) put(p.blockId, lang, AR_FIELD, (r) => (mode === "add" ? addRange(r, range) : removeRange(r, range)));
         continue;
@@ -127,6 +145,19 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     setBusy(true); setError("");
     try {
       await onApply([...edits.values()]);
+      window.getSelection()?.removeAllRanges();
+      setSel(null);
+    } catch (e) { setError(e?.message || "Save nahi hua"); }
+    finally { setBusy(false); }
+  }
+
+  /** Makes the selected line(s) H1 / H2 / H3, or back to a normal paragraph (level 0). */
+  async function heading(level) {
+    if (!onTransform) return;
+    setBusy(true); setError("");
+    try {
+      const msg = await onTransform(sel.pieces.map(({ blockId, lang, start, end }) => ({ blockId, lang, start, end })), level);
+      if (msg) { setError(msg); return; }
       window.getSelection()?.removeAllRanges();
       setSel(null);
     } catch (e) { setError(e?.message || "Save nahi hua"); }
@@ -162,6 +193,19 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
           className={`${btn} border border-rule bg-card`}><span style={{ color: "#e60000" }}>Arabic</span> {ar.any ? "– Remove red" : "red"}</button>
         {state.anyMarked && <button type="button" disabled={busy} onClick={() => run("remove", null)} className={`${btn} border border-rule bg-card`}>Remove highlight</button>}
         <button type="button" aria-label="Close" onClick={() => { window.getSelection()?.removeAllRanges(); setSel(null); }} className="grid h-9 w-9 place-items-center rounded-full text-mute hover:bg-tint">✕</button>
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-1.5 border-t border-rule pt-1.5">
+        <button type="button" disabled={busy} title={fmt.full[BOLD_FIELD] ? "Bold hatao" : "Bold"} aria-label="Bold" onClick={() => run(fmt.full[BOLD_FIELD] ? "remove" : "add", BOLD_FIELD)}
+          className={`${btn} border border-rule bg-card font-extrabold ${fmt.full[BOLD_FIELD] ? "ring-2 ring-ink/60" : ""}`}>B</button>
+        {TEXT_COLORS.map((c) => (
+          <button key={c.field} type="button" disabled={busy} title={`Text color ${c.label}`} aria-label={`Text color ${c.label}`} onClick={() => run(fmt.full[c.field] ? "remove" : "add", c.field)}
+            className={`${btn} border border-rule bg-card font-bold ${fmt.full[c.field] ? "ring-2 ring-ink/60" : ""}`} style={{ color: c.swatch }}>A</button>
+        ))}
+        {onTransform && [1, 2, 3].map((n) => (
+          <button key={n} type="button" disabled={busy} title={`Line ko H${n} banao`} aria-label={`H${n}`} onClick={() => heading(n)} className={`${btn} border border-rule bg-card`}>H{n}</button>
+        ))}
+        {onTransform && <button type="button" disabled={busy} title="Heading hatakar normal paragraph" onClick={() => heading(0)} className={`${btn} border border-rule bg-card`}>¶</button>}
+        {fmt.any && <button type="button" disabled={busy} onClick={() => run("remove", "format-none")} className={`${btn} border border-rule bg-card`}>Remove bold/color</button>}
       </div>
       {unsynced && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">Lines teeno zabaan mein barabar nahi ({unsynced}), isliye highlight sirf isi zabaan mein lagega.</p>}
       {arMissing && !ar.any && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{arMissing} version mein ye Arabic text same nahi mila, wahan red nahi lagega.</p>}

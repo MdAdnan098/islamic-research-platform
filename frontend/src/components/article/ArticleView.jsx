@@ -71,7 +71,7 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
       </div>
       {editor?.enabled && (
         <Suspense fallback={null}>
-          <HighlightToolbar containerRef={bodyRef} blocks={article.blocks} baseLang={article.language} onApply={editor.onApply} />
+          <HighlightToolbar containerRef={bodyRef} blocks={article.blocks} baseLang={article.language} onApply={editor.onApply} onTransform={editor.onTransform} />
         </Suspense>
       )}
       <FloatingReaderControls />

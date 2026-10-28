@@ -2,11 +2,15 @@ import { useParams } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
 import { SECTION_PATH, publicApi } from "../../services/public.js";
 import { useAsync } from "../../lib/useAsync.js";
-import { useState } from "react";
-import { insertBlockInto, saveBlockEdit, saveHighlights, useIsAdmin } from "../../lib/adminHint.js";
+import { lazy, Suspense, useState } from "react";
+import { useIsAdmin } from "../../lib/adminHint.js";
+import { useAdminDraft } from "../../lib/adminDraft.js";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { Skeleton, ErrorState, NotFoundState } from "../../components/ui/feedback.jsx";
 import { DEMO_ARTICLE_PAYLOAD } from "../../config/demoArticle.js";
+
+// Admin-only "Save & Publish" block of the admin panel: loaded on demand.
+const PublishBar = lazy(() => import("../../admin/components/PublishBar.jsx"));
 
 export default function ArticlePage() {
   const { slug } = useParams();
@@ -51,42 +55,30 @@ export default function ArticlePage() {
     }
   }, [slug]);
 
+  // Admin only: every change is auto-saved as a draft; "Save & Publish" makes it the live post.
+  const draft = useAdminDraft({ article: data?.article, references: data?.references, enabled: isAdmin && !!data });
+
   if (loading && !data) {
     return <div className="container-read space-y-4 py-16"><Skeleton className="h-10 w-4/5" /><Skeleton className="h-4 w-1/3" /><Skeleton className="mt-8 h-40 w-full" /></div>;
   }
   if (error && !data) {
     return error.status === 404 ? <NotFoundState message={t.article.notFound} /> : <div className="container-read py-16"><ErrorState error={error} onRetry={reload} /></div>;
   }
-  const editor = isAdmin && editing ? {
-    enabled: true,
-    onApply: async (edits) => {
-      const saved = await saveHighlights(data.article, edits);
-      setData((d) => ({ ...d, article: { ...d.article, blocks: saved.blocks, updatedAt: saved.updatedAt } }));
-    },
-  } : undefined;
-  // Admin only: small "+ Add" under every block, saved straight into this post (no trip back to the dashboard).
-  const inline = isAdmin && addOn ? {
-    scope: data.article.id,
-    onInsert: async (index, block, afterId) => {
-      const next = await insertBlockInto(data.article, data.references, index, afterId, block);
-      setData((d) => ({ ...d, ...next }));
-    },
-  } : undefined;
-  // Admin only: a pencil under every block; "Save & Publish" there stores the whole post and publishes it.
-  const edit = isAdmin && editOn ? {
-    onSave: async (index, block) => {
-      const next = await saveBlockEdit(data.article, data.references, index, block);
-      setData((d) => ({ ...d, ...next }));
-    },
-  } : undefined;
-  const missingIds = (data.article.blocks || []).some((b) => ["heading", "text", "quote"].includes(b.type) && !b.id);
+  const shown = isAdmin && draft.blocks ? { ...data.article, blocks: draft.blocks } : data.article;
+  const shownRefs = isAdmin && draft.ready ? draft.references : data.references;
+  const editor = isAdmin && editing ? { enabled: true, onApply: draft.ops.onApply, onTransform: draft.ops.onTransform } : undefined;
+  // Admin only: small "+ Add" under every block, auto-saved into the draft (no trip back to the dashboard).
+  const inline = isAdmin && addOn ? { scope: data.article.id, onInsert: draft.ops.onInsert } : undefined;
+  // Admin only: Edit + Delete under every block. Edit "Save" stores the draft; "Save & Publish" in the panel publishes it.
+  const edit = isAdmin && editOn ? { saveLabel: "Save", onSave: draft.ops.onSave, onRemove: draft.ops.onRemove } : undefined;
+  const missingIds = (shown.blocks || []).some((b) => ["heading", "text", "quote"].includes(b.type) && !b.id);
   return (
     <>
-      <ArticleView {...data} editor={editor} inline={inline} edit={edit} />
+      <ArticleView {...data} article={shown} references={shownRefs} editor={editor} inline={inline} edit={edit} />
       {isAdmin && (
         <div dir="ltr" className="fixed bottom-4 start-4 z-[60] flex max-w-[80vw] flex-col gap-1 rounded-xl border border-rule bg-paper px-3 py-2 text-xs text-ink shadow-elev">
           <button type="button" aria-pressed={editing} onClick={() => setEditing((v) => !v)} className="font-semibold">
-            Admin · Highlight mode: {editing ? "ON" : "OFF"}
+            Admin · Highlight / Format mode: {editing ? "ON" : "OFF"}
           </button>
           <button type="button" aria-pressed={addOn} onClick={() => setAddOn((v) => !v)} className="text-start font-semibold">
             Admin · Add buttons: {addOn ? "ON" : "OFF"}
@@ -95,7 +87,8 @@ export default function ArticlePage() {
             Admin · Edit buttons: {editOn ? "ON" : "OFF"}
           </button>
           {editing && missingIds && <span className="text-mute">Is article ko ek baar editor mein kholkar Save karein, tab highlight chalega.</span>}
-          {editing && !missingIds && <span className="text-mute">Text select karein, phir Highlight dabayein.</span>}
+          {editing && !missingIds && <span className="text-mute">Text select karein: Highlight, Bold, Color ya H1/H2/H3 lagayein.</span>}
+          <Suspense fallback={null}><PublishBar draft={draft} /></Suspense>
         </div>
       )}
     </>

@@ -4,7 +4,7 @@ import { mediaUrl } from "../../lib/media.js";
 import { isRtl, scriptOf, splitScriptRuns } from "../../lib/script.js";
 import { pickRef, pickVersion } from "../../lib/versions.js";
 import { Text, cleanText } from "../ui/Text.jsx";
-import { layersOf, markClass, segmentsOf, shownLang, sliceLayers, splitParagraphs } from "../../lib/highlights.js";
+import { TEXT_COLORS, layersOf, markClass, segmentsOf, shownLang, sliceLayers, splitParagraphs } from "../../lib/highlights.js";
 import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
@@ -49,6 +49,8 @@ function marked(text, layers, host) {
   return segmentsOf(text, layers).map((p, i) => {
     let node = iso(p.text);
     if (p.ar) node = <span className="ar-red">{node}</span>;
+    if (p.tc) node = <span className={TEXT_COLORS.find((c) => c.field === p.tc)?.cls}>{node}</span>;
+    if (p.bold) node = <strong className="font-bold">{node}</strong>;
     if (p.field) return <mark key={i} className={markClass(p.field)}>{node}</mark>;
     return <Fragment key={i}>{node}</Fragment>;
   });
@@ -133,6 +135,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
             const text = cleanText(txt(b));
             const attrs = hlAttrs(hlEdit, b, lang);
             const host = scriptOf(text);
+            if (b.level === 1) return <Text key={key} as="h2" src={text} {...attrs} className="mb-5 mt-14 font-display text-[1.75em] sm:text-[2.1em] font-bold leading-tight">{marked(text, layers, host)}</Text>;
             return b.level === 3
               ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-10 font-display text-[1.25em] sm:text-[1.38em] font-semibold">{marked(text, layers, host)}</Text>
               : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-8 font-display text-[1.45em] sm:text-[1.65em] font-semibold">{marked(text, layers, host)}</Text>;

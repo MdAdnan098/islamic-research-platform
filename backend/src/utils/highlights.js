@@ -11,9 +11,10 @@
 export const HL_LANGS = ["en", "hi", "ur", "ar"];
 /**
  * Mark layers - each has the same `{ lang: [[start, end], ...] }` shape as `hl`:
- *   hl (yellow), hlPink, hlBlue, hlGreen (background colours) and arRed (red Arabic text colour).
+ *   hl (yellow), hlPink, hlBlue, hlGreen (background colours), arRed (red Arabic text colour),
+ *   bold (bold text) and tcRed / tcBlue / tcGreen / tcGold (text colours chosen by the admin).
  */
-export const MARK_FIELDS = ["hl", "hlPink", "hlBlue", "hlGreen", "arRed"];
+export const MARK_FIELDS = ["hl", "hlPink", "hlBlue", "hlGreen", "arRed", "bold", "tcRed", "tcBlue", "tcGreen", "tcGold"];
 export const MAX_HL_RANGES_PER_VERSION = 500;
 const HL_BLOCK_TYPES = new Set(["heading", "text", "quote"]);
 

@@ -88,7 +88,7 @@ export default function InlineEdit({ block, baseLang, lang, onSave, onCancel, sa
             </Field>
             {block.type === "heading" && (
               <Field label="Level">
-                <select className="a-input" value={draft.level || 2} onChange={(e) => set({ level: Number(e.target.value) })}><option value={2}>H2 (section)</option><option value={3}>H3 (sub)</option></select>
+                <select className="a-input" value={draft.level || 2} onChange={(e) => set({ level: Number(e.target.value) })}><option value={1}>H1 (bada)</option><option value={2}>H2 (section)</option><option value={3}>H3 (sub)</option></select>
               </Field>
             )}
             {block.type === "quote" && <Field label="Source"><input className="a-input" dir="auto" value={draft.source || ""} onChange={(e) => set({ source: e.target.value })} /></Field>}

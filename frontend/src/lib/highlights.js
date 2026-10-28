@@ -31,7 +31,17 @@ export function shownLang(b, baseLang, want) {
  */
 export const COLOR_FIELDS = ["hl", "hlPink", "hlBlue", "hlGreen"];
 export const AR_FIELD = "arRed";
-export const MARK_FIELDS = [...COLOR_FIELDS, AR_FIELD];
+/** Text formatting layers (same shape as the colour layers): bold, and one text colour each. They never exclude the background colours. */
+export const BOLD_FIELD = "bold";
+export const TEXT_COLORS = [
+  { field: "tcRed", label: "Red", cls: "tc-red", swatch: "#dc2626" },
+  { field: "tcBlue", label: "Blue", cls: "tc-blue", swatch: "#2563eb" },
+  { field: "tcGreen", label: "Green", cls: "tc-green", swatch: "#16a34a" },
+  { field: "tcGold", label: "Gold", cls: "tc-gold", swatch: "#b45309" },
+];
+export const TEXT_COLOR_FIELDS = TEXT_COLORS.map((c) => c.field);
+export const FORMAT_FIELDS = [BOLD_FIELD, ...TEXT_COLOR_FIELDS];
+export const MARK_FIELDS = [...COLOR_FIELDS, AR_FIELD, ...FORMAT_FIELDS];
 const COLOR_CLASS = { hl: "hl-mark hl-yellow", hlPink: "hl-mark hl-pink", hlBlue: "hl-mark hl-blue", hlGreen: "hl-mark hl-green" };
 export const markClass = (field) => COLOR_CLASS[field] || "hl-mark";
 
@@ -56,12 +66,15 @@ export function segmentsOf(text, layers) {
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i], z = points[i + 1];
     if (z <= a) continue;
-    let field = null, ar = false;
+    let field = null, ar = false, bold = false, tc = null;
     for (const l of norm) {
       if (!overlaps(l.ranges, [a, z])) continue;
-      if (l.field === AR_FIELD) ar = true; else if (!field) field = l.field;
+      if (l.field === AR_FIELD) ar = true;
+      else if (l.field === BOLD_FIELD) bold = true;
+      else if (TEXT_COLOR_FIELDS.includes(l.field)) { if (!tc) tc = l.field; }
+      else if (!field) field = l.field;
     }
-    out.push({ text: text.slice(a, z), field, ar });
+    out.push({ text: text.slice(a, z), field, ar, bold, tc });
   }
   return out;
 }

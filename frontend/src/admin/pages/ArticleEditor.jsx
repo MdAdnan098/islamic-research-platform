@@ -6,6 +6,7 @@ import { useAsync } from "../../lib/useAsync.js";
 import { isSlug, slugify } from "../../lib/format.js";
 import { newBlock, referenceIdsOf, withIds } from "../../lib/blocks.js";
 import { applyEdits, cleanBlocksHl } from "../../lib/highlights.js";
+import { setLineHeading } from "../../lib/lineHeading.js";
 import { flattenTree, folderLabel } from "../../lib/folders.js";
 import { FolderForm } from "../components/FolderForm.jsx";
 import { BlockEditor } from "../components/BlockEditor.jsx";
@@ -47,8 +48,10 @@ export default function ArticleEditor() {
   const loaded = useAsync(async (s) => {
     if (isNew) return null;
     const a = await adminApi.articles.get(id, s);
-    setF(pick(a)); setBlocks(withIds(a.blocks));
-    saved.current = JSON.stringify([pick(a), withIds(a.blocks)]);
+    // The working copy: edits made from "View site" that are not published yet come first.
+    const work = withIds(a.pending?.blocks ?? a.blocks);
+    setF(pick(a)); setBlocks(work);
+    saved.current = JSON.stringify([pick(a), a.pending ? [] : work]);
     rev.current = a.updatedAt;
     return a;
   }, [id]);
@@ -201,7 +204,7 @@ export default function ArticleEditor() {
           <ArticleView article={{ ...f, language: lang || "en", title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs}
             inline={addOn ? { onInsert: async (index, block) => { setBlocks((bs) => [...bs.slice(0, index + 1), block, ...bs.slice(index + 1)]); if (block.type === "reference" && block.referenceId) { const r = await adminApi.references.get(block.referenceId).catch(() => null); if (r) setPreview((p) => ({ ...p, refs: [...p.refs.filter((x) => x.id !== r.id), r] })); } } } : undefined}
             edit={editOn ? { saveLabel: "Apply", onSave: async (index, nb) => { setBlocks((bs) => bs.map((b, j) => (j === index ? { ...nb, id: b.id } : b))); if (nb.type === "reference" && nb.referenceId) { const r = await adminApi.references.get(nb.referenceId).catch(() => null); if (r) setPreview((p) => ({ ...p, refs: [...p.refs.filter((x) => x.id !== r.id), r] })); } } } : undefined}
-            editor={hlOn ? { enabled: true, onApply: async (edits) => setBlocks((bs) => applyEdits(bs, edits)) } : undefined} />
+            editor={hlOn ? { enabled: true, onApply: async (edits) => setBlocks((bs) => applyEdits(bs, edits)), onTransform: async (pieces, level) => { const res = setLineHeading(blocks, lang || "en", pieces, level); if (!res.error) setBlocks(res.blocks); return res.error; } } : undefined} />
           <div dir="ltr" className="fixed bottom-4 start-4 z-[80] flex flex-col gap-1 rounded-xl border border-rule bg-paper px-3 py-2 text-xs text-ink shadow-elev">
             <button type="button" aria-pressed={hlOn} onClick={() => setHlOn((v) => !v)} className="text-start font-semibold">Admin · Highlight mode: {hlOn ? "ON" : "OFF"}</button>
             <button type="button" aria-pressed={addOn} onClick={() => setAddOn((v) => !v)} className="text-start font-semibold">Admin · Add buttons: {addOn ? "ON" : "OFF"}</button>

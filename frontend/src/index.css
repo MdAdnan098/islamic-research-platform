@@ -280,6 +280,10 @@
   /* Arabic text the admin turned red by hand (text colour only). Inside a coloured highlight the highlight's own colours win. */
   .ar-red { color: var(--ar-red, #ee0000); }
   .hl-mark .ar-red { color: inherit; }
+  /* Text colours / bold chosen by the admin (text only, no background). */
+  .tc-red { color: #dc2626; } .tc-blue { color: #2563eb; } .tc-green { color: #16a34a; } .tc-gold { color: #b45309; }
+  .dark .tc-red { color: #ff8a80; } .dark .tc-blue { color: #7db4ff; } .dark .tc-green { color: #6fdc8c; } .dark .tc-gold { color: #f0c060; }
+  .hl-mark .tc-red, .hl-mark .tc-blue, .hl-mark .tc-green, .hl-mark .tc-gold { color: inherit; }
   /* Dark: the same four highlight colours, a little calmer so they do not glare at night. */
   .dark .hl-mark.hl-yellow { background: #d8bf4a; color: #8a1c1c; }
   .dark .hl-mark.hl-pink { background: #d4609f; color: #0b0b0b; }
