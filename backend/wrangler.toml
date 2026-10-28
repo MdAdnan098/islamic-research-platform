@@ -1,6 +1,9 @@
 name = "atharitvbackend"
 main = "src/index.js"
 
+[placement]
+mode = "smart"
+
 # Node.js compatibility (needed by the MongoDB Node.js driver for
 # `cloudflare:sockets` support) is enabled by default for any
 # compatibility_date of 2026-08-04 or later, so no explicit
