@@ -51,7 +51,9 @@ function marked(text, layers, host) {
     if (p.ar) node = <span className="ar-red">{node}</span>;
     if (p.tc) node = <span className={TEXT_COLORS.find((c) => c.field === p.tc)?.cls}>{node}</span>;
     if (p.bold) node = <strong className="font-bold">{node}</strong>;
-    if (p.field) return <mark key={i} className={markClass(p.field)}>{node}</mark>;
+    if (p.field) node = <mark className={markClass(p.field)}>{node}</mark>;
+    // Size (percent of the surrounding text) is the OUTERMOST wrapper, so a highlight's background grows with its text.
+    if (p.size) return <span key={i} style={{ fontSize: `${p.size}%` }}>{node}</span>;
     return <Fragment key={i}>{node}</Fragment>;
   });
 }

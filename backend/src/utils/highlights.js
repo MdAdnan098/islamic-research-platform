@@ -12,9 +12,11 @@ export const HL_LANGS = ["en", "hi", "ur", "ar"];
 /**
  * Mark layers - each has the same `{ lang: [[start, end], ...] }` shape as `hl`:
  *   hl (yellow), hlPink, hlBlue, hlGreen (background colours), arRed (red Arabic text colour),
- *   bold (bold text) and tcRed / tcBlue / tcGreen / tcGold (text colours chosen by the admin).
+ *   bold (bold text), tcRed / tcBlue / tcGreen / tcGold (text colours chosen by the admin) and
+ *   sz50 ... sz300 (text size in percent of the surrounding text; 100% = normal has no layer).
  */
-export const MARK_FIELDS = ["hl", "hlPink", "hlBlue", "hlGreen", "arRed", "bold", "tcRed", "tcBlue", "tcGreen", "tcGold"];
+export const SIZE_STEPS = [50, 60, 70, 80, 90, 110, 125, 150, 175, 200, 250, 300];
+export const MARK_FIELDS = ["hl", "hlPink", "hlBlue", "hlGreen", "arRed", "bold", "tcRed", "tcBlue", "tcGreen", "tcGold", ...SIZE_STEPS.map((p) => `sz${p}`)];
 export const MAX_HL_RANGES_PER_VERSION = 500;
 const HL_BLOCK_TYPES = new Set(["heading", "text", "quote"]);
 

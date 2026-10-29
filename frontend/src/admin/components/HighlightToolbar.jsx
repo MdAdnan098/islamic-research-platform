@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { addRange, AR_FIELD, arabicSpans, BOLD_FIELD, COLOR_FIELDS, covered, FORMAT_FIELDS, TEXT_COLORS, TEXT_COLOR_FIELDS, overlaps, rangesOf, removeRange, syncSpans, trimRange, unitMap } from "../../lib/highlights.js";
+import { addRange, AR_FIELD, arabicSpans, BOLD_FIELD, COLOR_FIELDS, covered, FORMAT_FIELDS, SIZE_FIELDS, SIZE_LADDER, sizeOf, stepSize, TEXT_COLORS, TEXT_COLOR_FIELDS, overlaps, rangesOf, removeRange, syncSpans, trimRange, unitMap } from "../../lib/highlights.js";
 
 /**
  * Admin-only floating toolbar for the current text selection: four highlight colours (yellow, pink, blue, green),
- * "Arabic red" (red text colour, set by hand) and the matching Remove buttons.
+ * "Arabic red" (red text colour, set by hand) and the matching Remove buttons, plus bold / text colours / H1-H3 and
+ * the text-size stepper (A- / % / A+) that makes the selected words bigger or smaller for readers too.
  * The selection is mapped to (block id, script version, character offsets) through the data-hl-* attributes
  * the renderer puts on each text element - never by searching for the selected string - so repeated words
  * and sentences are unambiguous. `onApply(edits)` receives [{ blockId, lang, ranges }] (full replacement ranges).
@@ -106,11 +107,26 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     }
     return next;
   }, { any: false, full: Object.fromEntries(FORMAT_FIELDS.map((f) => [f, true])) });
+  // Text size of the selection in percent (100 = normal). `mixed` = the selected words do not all share one size;
+  // then the +/- buttons start from the size of the first selected word.
+  const sizeAt = (p, range) => {
+    const hit = SIZE_FIELDS.find((f) => covered(currentRanges(p.blockId, p.lang, f), range));
+    return hit ? sizeOf(hit) : null;
+  };
+  const sizePieces = sel.pieces.map((p) => {
+    const whole = sizeAt(p, [p.start, p.end]);
+    if (whole) return whole;
+    const anySize = SIZE_FIELDS.some((f) => overlaps(currentRanges(p.blockId, p.lang, f), [p.start, p.end]));
+    return anySize ? null : 100; // null = a mix of sizes inside this piece
+  });
+  const sizeMixed = sizePieces.some((v) => v === null || v !== sizePieces[0]);
+  const sizeNow = sizeMixed ? (sizeAt(sel.pieces[0], [sel.pieces[0].start, sel.pieces[0].start + 1]) || 100) : sizePieces[0];
   const NAMES = { en: "Roman", hi: "Hindi", ur: "Urdu" };
   const unsynced = unsyncedMap ? Object.entries(unsyncedMap.counts).map(([l, n]) => `${NAMES[l]} ${n}`).join(", ") : "";
   const arMissing = ar.missing.map((l) => NAMES[l]).join(", ");
 
-  /** mode "add" | "remove"; field = one of COLOR_FIELDS (a colour), or AR_FIELD, or null for "remove every colour". */
+  /** mode "add" | "remove" | "size"; field = one of COLOR_FIELDS (a colour), or AR_FIELD, or null for "remove every colour";
+   *  for mode "size", field = the wanted size in percent (100 = back to normal). */
   async function run(mode, field) {
     const edits = new Map();
     const put = (blockId, lang, f, change) => {
@@ -119,6 +135,15 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
       edits.set(key, { blockId, lang, field: f, ranges: change(base) });
     };
     for (const p of sel.pieces) {
+      // Size: exactly the selected words of the version on screen get this one size (the other sizes step aside).
+      if (mode === "size") {
+        const range = [p.start, p.end];
+        for (const f of SIZE_FIELDS) {
+          if (sizeOf(f) === field) put(p.blockId, p.lang, f, (r) => addRange(r, range));
+          else if (overlaps(edits.get(`${p.blockId}|${p.lang}|${f}`)?.ranges ?? currentRanges(p.blockId, p.lang, f), range)) put(p.blockId, p.lang, f, (r) => removeRange(r, range));
+        }
+        continue;
+      }
       // Bold / text colour act on exactly the selected words of the version on screen (colours exclude each other).
       if (FORMAT_FIELDS.includes(field) || field === "format-none") {
         const range = [p.start, p.end];
@@ -141,12 +166,12 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
         }
       }
     }
-    if (!edits.size) { window.getSelection()?.removeAllRanges(); setSel(null); return; }
+    if (!edits.size) { if (mode !== "size") { window.getSelection()?.removeAllRanges(); setSel(null); } return; }
     setBusy(true); setError("");
     try {
       await onApply([...edits.values()]);
-      window.getSelection()?.removeAllRanges();
-      setSel(null);
+      // Size stays open (offsets do not change), so + / - can be pressed again and again on the same words.
+      if (mode !== "size") { window.getSelection()?.removeAllRanges(); setSel(null); }
     } catch (e) { setError(e?.message || "Save nahi hua"); }
     finally { setBusy(false); }
   }
@@ -206,6 +231,16 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
         ))}
         {onTransform && <button type="button" disabled={busy} title="Heading hatakar normal paragraph" onClick={() => heading(0)} className={`${btn} border border-rule bg-card`}>¶</button>}
         {fmt.any && <button type="button" disabled={busy} onClick={() => run("remove", "format-none")} className={`${btn} border border-rule bg-card`}>Remove bold/color</button>}
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-1.5 border-t border-rule pt-1.5">
+        <button type="button" disabled={busy || sizeNow <= SIZE_LADDER[0]} title="Text chhota karo" aria-label="Text size ghatao" onClick={() => run("size", stepSize(sizeNow, -1))}
+          className={`${btn} border border-rule bg-card font-bold`}>A−</button>
+        <span aria-live="polite" title={sizeMixed ? "Alag-alag size hain; pehle shabd ka size dikh raha hai" : "Selected text ka size"} className="min-w-[4.5rem] text-center text-sm font-semibold tabular-nums">
+          {sizeNow}%{sizeMixed ? " *" : ""}
+        </span>
+        <button type="button" disabled={busy || sizeNow >= SIZE_LADDER[SIZE_LADDER.length - 1]} title="Text bada karo" aria-label="Text size badhao" onClick={() => run("size", stepSize(sizeNow, 1))}
+          className={`${btn} border border-rule bg-card font-bold`}>A+</button>
+        {(sizeNow !== 100 || sizeMixed) && <button type="button" disabled={busy} title="Normal size (100%)" onClick={() => run("size", 100)} className={`${btn} border border-rule bg-card`}>100%</button>}
       </div>
       {unsynced && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">Lines teeno zabaan mein barabar nahi ({unsynced}), isliye highlight sirf isi zabaan mein lagega.</p>}
       {arMissing && !ar.any && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{arMissing} version mein ye Arabic text same nahi mila, wahan red nahi lagega.</p>}

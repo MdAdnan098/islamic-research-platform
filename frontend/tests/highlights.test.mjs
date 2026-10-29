@@ -59,3 +59,25 @@ test("sync falls back to lines when sentence counts differ", () => {
   const sp = h.syncSpans(c, "en", "en", [0, 10]);
   assert.deepEqual(sp.find((x) => x.lang === "hi").range, [0, 16]);
 });
+
+test("text size layers", () => {
+  // + / - walk the ladder: 100 -> 110 -> 125 ... and back, clamped at both ends
+  assert.equal(h.stepSize(100, 1), 110);
+  assert.equal(h.stepSize(110, 1), 125);
+  assert.equal(h.stepSize(100, -1), 90);
+  assert.equal(h.stepSize(110, -1), 100);
+  assert.equal(h.stepSize(50, -1), 50);
+  assert.equal(h.stepSize(300, 1), 300);
+  assert.equal(h.stepSize(105, 1), 110);
+  assert.equal(h.stepSize(105, -1), 100);
+  assert.equal(h.sizeOf("sz150"), 150);
+  assert.ok(h.MARK_FIELDS.includes("sz150") && !h.MARK_FIELDS.includes("sz100"));
+  // a size range is stored like any other layer and reaches the renderer as segment.size
+  const b = h.applyEdits([{ id: "x", type: "text", text: "hello big world" }], [{ blockId: "x", lang: "en", field: "sz150", ranges: [[6, 9]] }]);
+  assert.deepEqual(b[0].sz150, { en: [[6, 9]] });
+  const segs = h.segmentsOf("hello big world", h.layersOf(b[0], "en"));
+  assert.deepEqual(segs.map((p) => [p.text, p.size]), [["hello ", null], ["big", 150], [" world", null]]);
+  // size follows the words when the text before them is edited, and a stale size is dropped on clean
+  assert.deepEqual(h.withTextEdit(b[0], "en", "oh hello big world").sz150, { en: [[9, 12]] });
+  assert.equal("sz150" in h.cleanBlocksHl([{ id: "y", type: "text", text: "ab", sz150: { en: [[5, 9]] } }], "en")[0], false);
+});

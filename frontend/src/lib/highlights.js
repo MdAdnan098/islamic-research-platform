@@ -41,7 +41,26 @@ export const TEXT_COLORS = [
 ];
 export const TEXT_COLOR_FIELDS = TEXT_COLORS.map((c) => c.field);
 export const FORMAT_FIELDS = [BOLD_FIELD, ...TEXT_COLOR_FIELDS];
-export const MARK_FIELDS = [...COLOR_FIELDS, AR_FIELD, ...FORMAT_FIELDS];
+/**
+ * Text size layers: one layer per size step, named "sz<percent>" (sz150 = 150% of the surrounding text). 100% is the
+ * normal size and has no layer. Same shape as every other layer, so storage, validation and re-mapping on edit work
+ * unchanged. A character has at most one size (setting a new size removes the others on those characters).
+ * The percentage is relative to the text around it, so the reader's own font-size control still scales everything.
+ */
+export const SIZE_STEPS = [50, 60, 70, 80, 90, 110, 125, 150, 175, 200, 250, 300];
+export const SIZE_FIELDS = SIZE_STEPS.map((p) => `sz${p}`);
+export const sizeOf = (field) => Number(String(field).slice(2));
+/** Every size the + / - buttons walk through, normal (100) included. */
+export const SIZE_LADDER = [...SIZE_STEPS.filter((p) => p < 100), 100, ...SIZE_STEPS.filter((p) => p > 100)];
+/** The next size up (dir = 1) or down (dir = -1) from `current`, clamped to the ends of the ladder. */
+export function stepSize(current, dir) {
+  let i = SIZE_LADDER.findIndex((p) => p >= current);
+  if (i < 0) i = SIZE_LADDER.length - 1;
+  if (dir > 0) i = SIZE_LADDER[i] > current ? i : i + 1;
+  else i -= 1;
+  return SIZE_LADDER[Math.min(SIZE_LADDER.length - 1, Math.max(0, i))];
+}
+export const MARK_FIELDS = [...COLOR_FIELDS, AR_FIELD, ...FORMAT_FIELDS, ...SIZE_FIELDS];
 const COLOR_CLASS = { hl: "hl-mark hl-yellow", hlPink: "hl-mark hl-pink", hlBlue: "hl-mark hl-blue", hlGreen: "hl-mark hl-green" };
 export const markClass = (field) => COLOR_CLASS[field] || "hl-mark";
 
@@ -54,8 +73,9 @@ export const layersOf = (b, lang) => MARK_FIELDS.map((field) => ({ field, ranges
 export const sliceLayers = (layers, start, end) => layers.map((l) => ({ field: l.field, ranges: sliceRanges(l.ranges, start, end) })).filter((l) => l.ranges.length);
 
 /**
- * Cuts `text` into [{ text, field, ar }] pieces: `field` = the background colour layer covering the piece (or null),
- * `ar` = true when the piece is in the Arabic-red layer. Colour layers: the first layer in COLOR_FIELDS order wins.
+ * Cuts `text` into [{ text, field, ar, bold, tc, size }] pieces: `field` = the background colour layer covering the piece
+ * (or null), `ar` = true when the piece is in the Arabic-red layer, `size` = its size in percent (null = normal).
+ * Colour layers: the first layer in COLOR_FIELDS order wins.
  */
 export function segmentsOf(text, layers) {
   const cuts = new Set([0, text.length]);
@@ -66,15 +86,16 @@ export function segmentsOf(text, layers) {
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i], z = points[i + 1];
     if (z <= a) continue;
-    let field = null, ar = false, bold = false, tc = null;
+    let field = null, ar = false, bold = false, tc = null, size = null;
     for (const l of norm) {
       if (!overlaps(l.ranges, [a, z])) continue;
       if (l.field === AR_FIELD) ar = true;
       else if (l.field === BOLD_FIELD) bold = true;
       else if (TEXT_COLOR_FIELDS.includes(l.field)) { if (!tc) tc = l.field; }
+      else if (SIZE_FIELDS.includes(l.field)) { if (!size) size = sizeOf(l.field); }
       else if (!field) field = l.field;
     }
-    out.push({ text: text.slice(a, z), field, ar, bold, tc });
+    out.push({ text: text.slice(a, z), field, ar, bold, tc, size });
   }
   return out;
 }
