@@ -136,10 +136,10 @@
 
   /* Dark = deep teal-slate (same family as the brand teal), soft layers, warm parchment text instead of stark white. */
   .dark {
-    --paper: 20 24 27;         /* page + navbar            #14181B (soft charcoal, not pure black) */
+    --paper: 14 16 19;         /* page + navbar            #0E1013 */
     --paper-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72' fill='none' stroke='%23ffffff' stroke-opacity='.045' stroke-width='1'%3E%3Crect x='20' y='20' width='32' height='32'/%3E%3Crect x='20' y='20' width='32' height='32' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='7'/%3E%3C/svg%3E");
     --hero-ink: 116 160 159;   /* hero text, same teal-grey as Light */
-    --card: 30 35 39;          /* cards                    #1E2327 */
+    --card: 0 0 0;             /* cards                    #000000 (full black) */
     --ink: 248 245 238;        /* body / headings: warm off-white  #F8F5EE */
     --mute: 190 195 193;       /* secondary text           #BEC3C1 */
     --rule: 56 64 69;          /* borders / dividers       #384045 */
@@ -151,7 +151,7 @@
     --field: 34 40 44;         /* search / inputs          #22282C */
     --footer: 15 18 20;         /* footer band              #0F1214 */
     --shadow-soft: 0 2px 16px rgb(0 0 0 / .4), 0 0 0 6px rgb(0 0 0 / .1);
-    --ad-bg: 24 29 32; --ad-card: 36 42 46; --ad-ink: 225 220 207; --ad-mute: 168 173 171;
+    --ad-bg: 14 16 19; --ad-card: 0 0 0; --ad-ink: 225 220 207; --ad-mute: 168 173 171;
     --ad-rule: 64 73 78; --ad-brand: 43 164 172;
     --ad-danger: 232 106 92; --ad-ok: 80 190 140; --ad-warn: 226 168 70;
     --ar-red: #f07c74;         /* Arabic marked red: soft coral on dark */
