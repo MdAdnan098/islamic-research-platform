@@ -59,8 +59,8 @@
      Light = default, [data-theme="sepia"] = Sepia, .dark = Dark.
      ------------------------------------------------------------------ */
   :root {
-    --paper: 243 240 231;      /* page + navbar: soft cream, like sunnah.com  #F3F0E7 */
-    --paper-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72' fill='none' stroke='%238a7a4a' stroke-opacity='.07' stroke-width='1'%3E%3Crect x='20' y='20' width='32' height='32'/%3E%3Crect x='20' y='20' width='32' height='32' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='7'/%3E%3C/svg%3E");   /* very faint geometric pattern on the page */
+    --paper: 253 251 247;      /* page + navbar: soft cream  #FDFBF7 */
+    --paper-pattern: none;   /* geometric pattern removed */
     --hero-ink: 116 160 159;   /* hero text (teal-grey, sunnah.com)  #74A09F */
     --card: 247 246 241;       /* cards: soft off-white, like sunnah.com  #F7F6F1 */
     --ink: 38 38 38;           /* headings / body          #262626 */
@@ -137,7 +137,7 @@
   /* Dark = deep teal-slate (same family as the brand teal), soft layers, warm parchment text instead of stark white. */
   .dark {
     --paper: 14 16 19;         /* page + navbar            #0E1013 */
-    --paper-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72' fill='none' stroke='%23ffffff' stroke-opacity='.045' stroke-width='1'%3E%3Crect x='20' y='20' width='32' height='32'/%3E%3Crect x='20' y='20' width='32' height='32' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='7'/%3E%3C/svg%3E");
+    --paper-pattern: none;   /* geometric pattern removed */
     --hero-ink: 116 160 159;   /* hero text, same teal-grey as Light */
     --card: 0 0 0;             /* cards                    #000000 (full black) */
     --ink: 248 245 238;        /* body / headings: warm off-white  #F8F5EE */
@@ -337,7 +337,6 @@
    Inside the bars the text variables flip to black; dropdown lists keep normal dark-on-light text. */
 :root:not(.dark):not([data-theme]) .bar-teal {
   background-color: #77a9aa;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72' fill='none' stroke='%23ffffff' stroke-opacity='.05' stroke-width='1'%3E%3Crect x='20' y='20' width='32' height='32'/%3E%3Crect x='20' y='20' width='32' height='32' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='7'/%3E%3C/svg%3E");
   color: #000;
   --ink: 0 0 0; --mute: 0 0 0; --rule: 150 192 192; --tint: 99 146 147;
   --ad-ink: 0 0 0; --ad-mute: 0 0 0; --ad-rule: 150 192 192; --ad-bg: 99 146 147; --ad-brand: 255 255 255; --on-accent: 0 0 0;   /* admin sidebar / top bar */
