@@ -136,23 +136,23 @@
 
   /* Dark = deep teal-slate (same family as the brand teal), soft layers, warm parchment text instead of stark white. */
   .dark {
-    --paper: 0 0 0;            /* page + navbar            #000000 (pure black: 19.3:1 with --ink) */
+    --paper: 20 24 27;         /* page + navbar            #14181B (soft charcoal, not pure black) */
     --paper-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72' fill='none' stroke='%23ffffff' stroke-opacity='.045' stroke-width='1'%3E%3Crect x='20' y='20' width='32' height='32'/%3E%3Crect x='20' y='20' width='32' height='32' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='7'/%3E%3C/svg%3E");
     --hero-ink: 116 160 159;   /* hero text, same teal-grey as Light */
-    --card: 10 12 13;          /* cards                    #0A0C0D */
+    --card: 30 35 39;          /* cards                    #1E2327 */
     --ink: 248 245 238;        /* body / headings: warm off-white  #F8F5EE */
     --mute: 190 195 193;       /* secondary text           #BEC3C1 */
-    --rule: 40 46 50;          /* borders / dividers       #282E32 */
+    --rule: 56 64 69;          /* borders / dividers       #384045 */
     --accent: 43 164 172;      /* #2BA4AC */
-    --tint: 18 21 23;          /* chips / pills            #121517 */
-    --soft: 14 17 18;          /* Ayat / Hadith panels     #0E1112 */
-    --hero: 5 7 8;             /* hero band                #050708 */
-    --calli: 20 26 28;         /* hero calligraphy         #141A1C */
-    --field: 16 19 21;         /* search / inputs          #101315 */
-    --footer: 0 0 0;           /* footer band              #000000 */
+    --tint: 38 44 48;          /* chips / pills            #262C30 */
+    --soft: 33 39 43;          /* Ayat / Hadith panels     #21272B */
+    --hero: 24 29 32;          /* hero band                #181D20 */
+    --calli: 36 44 48;          /* hero calligraphy         #242C30 */
+    --field: 34 40 44;         /* search / inputs          #22282C */
+    --footer: 15 18 20;         /* footer band              #0F1214 */
     --shadow-soft: 0 2px 16px rgb(0 0 0 / .4), 0 0 0 6px rgb(0 0 0 / .1);
-    --ad-bg: 17 21 23; --ad-card: 28 33 36; --ad-ink: 220 215 202; --ad-mute: 160 165 163;
-    --ad-rule: 52 60 64; --ad-brand: 43 164 172;
+    --ad-bg: 24 29 32; --ad-card: 36 42 46; --ad-ink: 225 220 207; --ad-mute: 168 173 171;
+    --ad-rule: 64 73 78; --ad-brand: 43 164 172;
     --ad-danger: 232 106 92; --ad-ok: 80 190 140; --ad-warn: 226 168 70;
     --ar-red: #f07c74;         /* Arabic marked red: soft coral on dark */
     --ar-ink: 250 247 240;     /* Arabic text: warm ivory  #FAF7F0 */

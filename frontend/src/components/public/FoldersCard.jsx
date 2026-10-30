@@ -56,7 +56,7 @@ export function FoldersCard({ folders: list, loading, error, onRetry }) {
             <Icon name="folder" size={28} className="text-accent/60" />{t.home.noFolders}
           </div>
         ) : (
-          <div className="max-h-[19rem] overflow-y-auto overscroll-contain rounded-xl border border-rule bg-card px-3 sm:max-h-[22rem]">
+          <div className="max-h-[19rem] overflow-y-auto overscroll-auto rounded-xl border border-rule bg-card px-3 sm:max-h-[22rem]">
             {folders.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} />)}
           </div>
         )}
