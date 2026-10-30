@@ -111,7 +111,7 @@ export function AdminAccessDialog() {
         <p className="text-center text-lg font-bold">Admin Access खोलें?</p>
         <div className="mt-5 grid grid-cols-2 gap-3">
           <button type="button" className="btn-outline !px-4 !py-2" onClick={() => { if (settled()) setOpen(false); }}>Cancel</button>
-          <button ref={continueBtn} type="button" className="btn-primary !px-4 !py-2" onClick={() => { if (!settled()) return; setOpen(false); nav(ADMIN_LOGIN_PATH); }}>Continue</button>
+          <button ref={continueBtn} type="button" className="btn-primary brand-btn !px-4 !py-2" onClick={() => { if (!settled()) return; setOpen(false); nav(ADMIN_LOGIN_PATH); }}>Continue</button>
         </div>
       </div>
     </div>,
