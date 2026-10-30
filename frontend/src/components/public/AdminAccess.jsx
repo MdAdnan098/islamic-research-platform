@@ -108,7 +108,7 @@ export function AdminAccessDialog() {
   return createPortal(
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/50 p-4">
       <div role="dialog" aria-modal="true" aria-label="Admin Access" dir="ltr" className="animate-fade w-full max-w-xs rounded-2xl border border-rule bg-paper p-5 text-ink shadow-elev">
-        <p className="text-center text-lg font-bold">Admin Access खोलें?</p>
+        <p className="text-center text-lg font-bold">Open Admin Access</p>
         <div className="mt-5 grid grid-cols-2 gap-3">
           <button type="button" className="btn-outline !px-4 !py-2" onClick={() => { if (settled()) setOpen(false); }}>Cancel</button>
           <button ref={continueBtn} type="button" className="btn-primary btn-cta !px-4 !py-2" onClick={() => { if (!settled()) return; setOpen(false); nav(ADMIN_LOGIN_PATH); }}>Continue</button>

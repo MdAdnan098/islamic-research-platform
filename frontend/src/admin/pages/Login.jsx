@@ -24,7 +24,7 @@ export default function Login() {
       <AdminShell><HomeLink /><div className="grid min-h-screen place-items-center p-4">
         <div className="a-card w-full max-w-sm space-y-4 p-7 text-center">
           <h1 className="text-xl font-bold">Aap pehle se signed in hain</h1>
-          <button type="button" className="a-btn-primary w-full !py-2.5" onClick={() => nav(from, { replace: true })}>Dashboard par jayein</button>
+          <button type="button" className="a-btn-primary btn-cta w-full !py-2.5" onClick={() => nav(from, { replace: true })}>Go to Dashboard</button>
           <button type="button" className="a-btn w-full !py-2.5" onClick={() => logout()}>Sign out</button>
         </div>
       </div></AdminShell>

@@ -25,7 +25,7 @@ export function AdminLayout() {
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const link = ({ isActive }) => `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-semibold transition ${isActive ? "bg-ad-brand text-on-accent" : "text-ad-mute hover:bg-ad-bg hover:text-ad-ink"}`;
+  const link = ({ isActive }) => `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-semibold transition ${isActive ? "btn-cta" : "text-ad-mute hover:bg-ad-bg hover:text-ad-ink"}`;
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 px-4 py-5 text-ad-ink">
@@ -46,7 +46,7 @@ export function AdminLayout() {
   return (
     <AdminShell>
     <div className="select-text lg:grid lg:grid-cols-[232px_1fr]">
-      <aside className="bar-teal sticky top-0 hidden h-screen border-e border-ad-rule bg-ad-card lg:block">{sidebar}</aside>
+      <aside className="sticky top-0 hidden h-screen border-e border-ad-rule bg-paper lg:block">{sidebar}</aside>
       <div className="bar-teal sticky top-0 z-40 flex items-center justify-between border-b border-ad-rule bg-ad-card px-4 py-3 lg:hidden">
         <span className="text-sm font-semibold"><BrandName /> · Admin</span>
         <div className="flex items-center gap-2"><ThemeSwitcher compact /><button onClick={() => setOpen(true)} aria-label="Menu" className="a-btn !px-2"><Icon name="menu" size={18} /></button></div>
@@ -54,7 +54,7 @@ export function AdminLayout() {
       {open && (
         <div className="fixed inset-0 z-[120] lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <aside className="bar-teal animate-fade absolute inset-y-0 start-0 w-64 bg-ad-card">{sidebar}</aside>
+          <aside className="animate-fade absolute inset-y-0 start-0 w-64 bg-paper">{sidebar}</aside>
         </div>
       )}
       <main className="min-w-0 p-4 sm:p-6 lg:p-8"><Outlet /></main>
