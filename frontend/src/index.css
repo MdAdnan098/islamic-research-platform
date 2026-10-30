@@ -415,11 +415,12 @@ body.no-pattern, body.no-pattern .admin-root, body.no-pattern .paper-pattern, bo
   .verse-card .v-src { font-size: .8rem; }
 }
 
-/* Brand colour for "View all" links, the Admin Access "Continue" button, and the admin Sign in button + Forgot password link.
-   Light = #4B3B99, Dark = #3399CC. Outside @layer on purpose so it wins over the utility classes. */
-:root { --brand: 75 59 153; }
-.dark { --brand: 51 153 204; }
-.brand-btn { background-color: rgb(var(--brand)); color: #fff; }
+/* Brand colour for "View all" links and the admin "Forgot password?" link: Light = #4B3B99, Dark = #3399CC.
+   Main action buttons (.btn-cta: Admin Access Continue, admin Sign in, New article / category / folder, Add live session / course):
+   Light = #800020, Dark = #3399CC. Outside @layer on purpose so they win over the utility classes. */
+:root { --brand: 75 59 153; --cta: 128 0 32; }
+.dark { --brand: 51 153 204; --cta: 51 153 204; }
+.btn-cta { background-color: rgb(var(--cta)); color: #fff; }
 .brand-text { color: rgb(var(--brand)); }
 .view-all, .dark .view-all { color: rgb(var(--brand)); border-color: rgb(var(--brand) / .3); }
 .view-all:hover, .dark .view-all:hover { background-color: rgb(var(--brand)); color: #fff; }

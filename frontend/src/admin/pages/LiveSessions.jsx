@@ -104,7 +104,7 @@ export default function LiveSessions() {
     <>
       <PageHeader title="Live Sessions" desc="YouTube live streams shown on the homepage. Only links and details are stored — never the video.">
         <button className="a-btn" onClick={sync} disabled={syncing}>{syncing ? "Syncing…" : "Sync from YouTube"}</button>
-        <button className="a-btn-primary" onClick={() => setEditing("new")}><Icon name="plus" size={15} />Add live session</button>
+        <button className="a-btn-primary btn-cta" onClick={() => setEditing("new")}><Icon name="plus" size={15} />Add live session</button>
       </PageHeader>
       {data && !data.youtubeSync?.configured && (
         <p className="a-card mb-4 px-4 py-3 text-sm text-ad-mute">Automatic YouTube sync is off (no API key configured). Add sessions manually here.</p>

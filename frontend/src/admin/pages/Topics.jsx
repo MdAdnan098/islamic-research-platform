@@ -50,7 +50,7 @@ export default function Topics() {
   return (
     <>
       <PageHeader title="Folders" desc="Section → folder → subfolders → articles. Folders articles se alag banaye ja sakte hain.">
-        <button className="a-btn-primary" disabled={!activeCats.length} onClick={() => setEditing({})}><Icon name="plus" size={15} />New folder</button>
+        <button className="a-btn-primary btn-cta" disabled={!activeCats.length} onClick={() => setEditing({})}><Icon name="plus" size={15} />New folder</button>
       </PageHeader>
 
       {cats.loading && !cats.data ? <Spinner /> : !cats.data?.length ? <Empty>Create a category first.</Empty> : loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : (

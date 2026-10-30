@@ -52,7 +52,7 @@ export default function Categories() {
   return (
     <>
       <PageHeader title="Categories" desc="Top-level groups inside Aqaid and Masail.">
-        <button className="a-btn-primary" onClick={() => setEditing("new")}><Icon name="plus" size={15} />New category</button>
+        <button className="a-btn-primary btn-cta" onClick={() => setEditing("new")}><Icon name="plus" size={15} />New category</button>
       </PageHeader>
       {loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : data.length === 0 ? <Empty>No categories yet.</Empty> : (
         <ul className="a-card divide-y divide-ad-rule">

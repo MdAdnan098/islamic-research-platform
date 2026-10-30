@@ -189,7 +189,7 @@ export default function Courses() {
   return (
     <>
       <PageHeader title="Courses" desc="Courses shown in “Our Courses”. Enrollments and payments are under their own menu items.">
-        <button className="a-btn-primary" onClick={() => setEditing("new")}><Icon name="plus" size={15} />Add course</button>
+        <button className="a-btn-primary btn-cta" onClick={() => setEditing("new")}><Icon name="plus" size={15} />Add course</button>
       </PageHeader>
       {loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : data.length === 0 ? <Empty>No courses yet.</Empty> : (
         <ul className="a-card divide-y divide-ad-rule">

@@ -24,7 +24,7 @@ export default function Dashboard() {
   return (
     <>
       <PageHeader title="Dashboard" desc="Overview of your research library.">
-        <Link to="/admin/articles/new" className="a-btn-primary">New article</Link>
+        <Link to="/admin/articles/new" className="a-btn-primary btn-cta">New article</Link>
       </PageHeader>
       <div className="grid grid-cols-2 items-stretch gap-4 sm:grid-cols-3 xl:grid-cols-6">
         {stats.map(([l, v]) => <div key={l} className="a-card flex h-full min-h-[96px] flex-col justify-between p-4"><p className="text-sm text-ad-mute">{l}</p><p className="mt-1 text-3xl font-bold">{v}</p></div>)}

@@ -51,7 +51,7 @@ export default function Articles() {
     <>
       <PageHeader title="Articles" desc="Research articles, in every language.">
         <button className="a-btn-danger" onClick={removeAll}><Icon name="trash" size={15} />Delete all</button>
-        <Link to="/admin/articles/new" className="a-btn-primary"><Icon name="plus" size={15} />New article</Link>
+        <Link to="/admin/articles/new" className="a-btn-primary btn-cta"><Icon name="plus" size={15} />New article</Link>
       </PageHeader>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">

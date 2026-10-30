@@ -61,7 +61,7 @@ export default function Login() {
             <button type="button" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? "Hide password" : "Show password"} aria-pressed={showPw} title={showPw ? "Hide" : "Show"} className="absolute inset-y-0 right-0 grid w-10 place-items-center text-ad-mute hover:text-ad-ink"><Icon name={showPw ? "eyeOff" : "eye"} size={16} /></button>
           </div>
         </div>
-        <button type="button" onClick={submit} className="a-btn-primary brand-btn w-full !py-2.5" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+        <button type="button" onClick={submit} className="a-btn-primary btn-cta w-full !py-2.5" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
         <p className="text-center text-sm"><Link to="/admin/forgot-password" className="brand-text hover:underline">Forgot password?</Link></p>
       </form>
     </div></AdminShell>
