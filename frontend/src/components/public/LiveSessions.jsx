@@ -266,6 +266,20 @@ const SLIDE_MS = 3500;
  * `sessions` is newest -> oldest and is laid out left to right in that order.
  */
 function MobileLiveCarousel({ sessions, now }) {
+  // While the latest session is still upcoming (countdown running) or live, it stays pinned: only that card is shown,
+  // static, with no auto-slide and no swipe. The moment it ends it is simply the first card of the normal carousel.
+  const pinned = sessions.length > 0 && viewState(sessions[0], now) !== "ended";
+  if (pinned) {
+    return (
+      <div className="py-1">
+        <div className="px-0.5"><LiveSessionCompactCard session={sessions[0]} now={now} /></div>
+      </div>
+    );
+  }
+  return <SlidingLiveCarousel sessions={sessions} now={now} />;
+}
+
+function SlidingLiveCarousel({ sessions, now }) {
   const n = sessions.length;
   const [pos, setPos] = useState({ i: 0, anim: true });
   const [touching, setTouching] = useState(false);
@@ -356,6 +370,15 @@ export function LiveSessionsSection() {
   const needsTick = (data || []).some((s) => s.status === "scheduled");
   const now = useNow(needsTick);
   const ordered = useMemo(() => sortNewestFirst(data || []), [data]); // newest -> oldest
+
+  // While the latest session is upcoming/live the carousel is pinned; re-check the server every 30s so that when the
+  // admin ends it (or a new one is added) the page updates by itself, without a reload.
+  const latestOpen = ordered.length > 0 && viewState(ordered[0], now) !== "ended";
+  useEffect(() => {
+    if (!latestOpen) return undefined;
+    const id = setInterval(() => { if (!document.hidden) reload(); }, 30000);
+    return () => clearInterval(id);
+  }, [latestOpen, reload]);
 
   return (
     <section className="container-page py-14 sm:py-20" aria-labelledby="live-heading">

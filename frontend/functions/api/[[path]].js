@@ -10,10 +10,21 @@ const DEFAULT_API_ORIGIN = "https://atharitvbackend.debatermuhammadrazasalafi.wo
 //  2) Every other request (admin login, save, publish ...) is retried automatically when the Worker answers 502/503/504.
 // Errors are never stored in the cache. Admin, payment and media routes are never cached.
 const FRESH_MS = 120_000;
+// Live sessions change quickly (countdown -> live -> ended), so their edge copy is refreshed much sooner.
+const FRESH_MS_LIVE = 15_000;
 const STALE_MAX_SECONDS = 86_400;
 const RETRY_DELAYS_MS = [250, 700];
 const RETRY_STATUSES = new Set([502, 503, 504]);
 const EDGE_CACHEABLE = /^\/api\/public\/(home|categories|topics|folders|folders\/by-slug|latest|search|articles|articles\/[^/]+|references|live-sessions|live-sessions\/[^/]+|courses|courses\/[^/]+)\/?$/;
+
+// The stored edge copy carries a long max-age (so the Cache API keeps it as a fallback), but the browser must never
+// reuse it: otherwise a newly added item stays invisible on a page for up to a day. Browsers always revalidate with the edge.
+function forBrowser(res) {
+  const headers = new Headers(res.headers);
+  headers.set("cache-control", "no-cache");
+  headers.delete("x-cached-at");
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -51,7 +62,8 @@ export async function onRequest({ request, env, waitUntil }) {
     const key = new Request(url.origin + url.pathname + url.search, { method: "GET" });
     const hit = await cache.match(key);
     const age = hit ? Date.now() - Number(hit.headers.get("x-cached-at") || 0) : Infinity;
-    if (hit && age < FRESH_MS) return hit;
+    const freshMs = url.pathname.startsWith("/api/public/live-sessions") ? FRESH_MS_LIVE : FRESH_MS;
+    if (hit && age < freshMs) return forBrowser(hit);
 
     let res = null;
     try {
@@ -68,12 +80,13 @@ export async function onRequest({ request, env, waitUntil }) {
       const copy = res.clone();
       const stored = new Response(copy.body, { status: copy.status, headers });
       waitUntil(cache.put(key, stored).catch(() => {}));
-      return res;
+      return forBrowser(res);
     }
 
     if (hit && (!res || res.status >= 500)) {
       const headers = new Headers(hit.headers);
       headers.set("x-stale", "1");
+      headers.set("cache-control", "no-cache");
       return new Response(hit.body, { status: hit.status, headers });
     }
     return res || unavailable();
