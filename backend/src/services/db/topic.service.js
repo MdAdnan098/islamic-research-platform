@@ -23,6 +23,8 @@ import { checkParentChange, hasSiblingWithTitle, indexFolders, descendantIds, de
  */
 
 const COLLECTION = "topics";
+/** How many folders can be pinned to the homepage at once. */
+export const HOME_PIN_LIMIT = 3;
 
 function throwValidationError(errors) {
   const first = errors[0];
@@ -199,6 +201,20 @@ export async function updateTopic(config, id, updates) {
   }
   if (data.parentId !== undefined) $set.parentId = data.parentId ? new ObjectId(data.parentId) : null;
 
+  // Pins: a date = pinned since then (keeps the pin order stable), null = not pinned. Top-level folders only,
+  // and the homepage holds at most HOME_PIN_LIMIT of them.
+  for (const key of ["pinHome", "pinAll", "pinSection"]) {
+    if (data[key] === undefined) continue;
+    if (!data[key]) { $set[key] = null; continue; }
+    if (existing[key]) continue; // already pinned: keep its original pin time
+    if (existing.parentId) throwValidationError([{ message: "Only a top-level folder can be pinned.", code: "PIN_NOT_ROOT" }]);
+    if (key === "pinHome") {
+      const others = await collection.countDocuments({ pinHome: { $type: "date" }, status: { $ne: "archived" }, _id: { $ne: new ObjectId(id) } });
+      if (others >= HOME_PIN_LIMIT) throwConflict(`Homepage par maximum ${HOME_PIN_LIMIT} folders pin ho sakte hain. Pehle kisi aur folder ko unpin karein.`, "PIN_LIMIT");
+    }
+    $set[key] = new Date();
+  }
+
   try {
     await collection.updateOne({ _id: new ObjectId(id) }, { $set });
   } catch (err) {
@@ -309,6 +325,10 @@ export function toSafeTopic(topic) {
     ordering: topic.ordering,
     intro: topic.intro || null,
     coverKey: topic.coverKey || null,
+    // Admin pins: shown first on the homepage (max 3), on "View all folders", and on the Aqaid / Masail pages.
+    pinHome: !!topic.pinHome,
+    pinAll: !!topic.pinAll,
+    pinSection: !!topic.pinSection,
     createdAt: topic.createdAt,
     updatedAt: topic.updatedAt,
   };

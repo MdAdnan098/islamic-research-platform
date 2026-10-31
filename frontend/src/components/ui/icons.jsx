@@ -28,6 +28,7 @@ const P = {
   book: "M4 5c3-1 6-1 8 1v14c-2-2-5-2-8-1zM20 5c-3-1-6-1-8 1v14c2-2 5-2 8-1z",
   grid: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   folder: "M3 6h6l2 2h10v11H3z",
+  pin: "M9 3h6l-1 6 3 3H7l3-3-1-6zM12 15v6",
   doc: "M6 3h9l4 4v14H6zM9 12h7M9 16h7",
   tag: "M3 12V4h8l10 10-8 8z",
   sunrise: "M4 18h16M7 18a5 5 0 0 1 10 0M12 6v3M5.6 10.6l1.6 1.6M18.4 10.6l-1.6 1.6M2 14h2m16 0h2",

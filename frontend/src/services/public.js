@@ -10,11 +10,16 @@ function cached(key, ttl, loader) {
   return promise;
 }
 
+/** After an admin pins/unpins a folder the lists must show it at once, so for a short while list requests skip the browser's 30 s cache. */
+let freshUntil = 0;
+export const bustPublicLists = () => { freshUntil = Date.now() + 40_000; };
+const listCache = () => (Date.now() < freshUntil ? "reload" : undefined);
+
 export const SECTION_PATH = { aqeedah: "aqaid", masail: "masail" };
 export const PATH_TYPE = { aqaid: "aqeedah", masail: "masail" };
 
 export const publicApi = {
-  home: (signal) => request("/api/public/home", { signal }),
+  home: (signal) => request("/api/public/home", { signal, cache: listCache() }),
   categories: (signal) => cached("categories", 60_000, () => request("/api/public/categories", { signal }).then((d) => d.categories)),
   topics: (categoryId, signal) =>
     cached(`topics:${categoryId}`, 60_000, () => request(`/api/public/topics${qs({ categoryId })}`, { signal }).then((d) => d.topics)),
@@ -22,7 +27,7 @@ export const publicApi = {
   /** Paged listing: { articles, hasMore, page }. params: { type, general, topicId, page, limit } */
   articlePage: (params, signal) => request(`/api/public/articles${qs(params)}`, { signal }),
   /** Root folders (top level only): { folders, total, hasMore }. params: { type, page, limit } */
-  folders: (params, signal) => request(`/api/public/folders${qs(params)}`, { signal }),
+  folders: (params, signal) => request(`/api/public/folders${qs(params)}`, { signal, cache: listCache() }),
   folder: (type, slug, signal) => request(`/api/public/folders/by-slug${qs({ type, slug })}`, { signal }),
   /** One combined newest-first feed (any section / folder depth). { articles, hasMore, page } */
   latest: (params, signal) => request(`/api/public/latest${qs(params)}`, { signal }),

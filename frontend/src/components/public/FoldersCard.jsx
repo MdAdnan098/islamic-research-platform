@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
 import { FolderIcon } from "../ui/FolderIcon.jsx";
+import { PinButton } from "./PinButton.jsx";
+import { useIsAdmin } from "../../lib/adminHint.js";
+import { togglePin } from "../../lib/pins.js";
 import { useI18n } from "../../i18n/index.jsx";
 import { SECTION_PATH } from "../../services/public.js";
 import { Icon } from "../ui/icons.jsx";
@@ -14,7 +17,7 @@ export const folderPath = (folder) => `/${SECTION_PATH[folder.section] || "aqaid
 const sectionLabel = (t, type) => (type === "aqeedah" ? t.nav.aqaid : type === "masail" ? t.nav.masail : null);
 
 /** One row: folder icon, full folder name (with a small Aqaid / Masail label under it), article count on the right. */
-function FolderRow({ folder, to, label }) {
+function FolderRow({ folder, to, label, pin }) {
   const count = folder.articleCount;
   return (
     <Link to={to} className="group flex items-center gap-3 border-t border-rule px-1 py-3 transition first:border-t-0 hover:bg-tint/60">
@@ -26,15 +29,22 @@ function FolderRow({ folder, to, label }) {
       {typeof count === "number" && (
         <span className="shrink-0 rounded-full bg-tint px-2.5 py-0.5 text-xs font-medium text-mute">{count}</span>
       )}
+      {pin && <PinButton active={folder.pinHome} onToggle={pin} />}
     </Link>
   );
 }
 
 /** Homepage "Folders" list: title + "View All Folders", then the newest folders (up to 10) in a vertically scrolling list.
  *  Data comes from the homepage's single request (props), so the card adds no request of its own. */
-export function FoldersCard({ folders: list, loading, error, onRetry }) {
+export function FoldersCard({ folders: list, total, loading, error, onRetry, onChanged }) {
   const { t } = useI18n();
+  const isAdmin = useIsAdmin();
   const folders = (list || []).slice(0, HOME_FOLDERS);
+  // Pinned folders stay fixed on top; only the rest scrolls underneath.
+  const pinned = folders.filter((f) => f.pinHome);
+  const rest = folders.filter((f) => !f.pinHome);
+  const pinFor = (f) => (isAdmin ? async () => { if (await togglePin(f, "home")) onChanged?.(); } : null);
+  const countText = typeof total === "number" ? t.home.foldersCount.replace("{n}", folders.length).replace("{total}", total) : null;
   const data = list;
   const reload = onRetry;
 
@@ -42,6 +52,7 @@ export function FoldersCard({ folders: list, loading, error, onRetry }) {
     <section className="container-page pb-4 pt-6 sm:pt-10">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-display text-xl font-bold sm:text-2xl">{t.home.folders}</h2>
+        {countText && <span className="min-w-0 flex-1 text-center text-xs font-medium tabular-nums text-mute sm:text-sm" aria-label={`${folders.length} / ${total}`}>{countText}</span>}
         <Link to="/folders" className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium view-all transition hover:bg-btn hover:text-white">
           {t.home.viewAllFolders} <Icon name="arrow" size={15} className="rtl:rotate-180" />
         </Link>
@@ -57,8 +68,15 @@ export function FoldersCard({ folders: list, loading, error, onRetry }) {
             <FolderIcon size={28} />{t.home.noFolders}
           </div>
         ) : (
-          <div className="max-h-[19rem] overflow-y-auto overscroll-auto rounded-xl border border-rule bg-card px-3 sm:max-h-[22rem]">
-            {folders.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} />)}
+          <div className="overflow-hidden rounded-xl border border-rule bg-card px-3">
+            {pinned.length > 0 && (
+              <div className="border-b border-rule">
+                {pinned.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />)}
+              </div>
+            )}
+            <div style={{ "--ph": `${pinned.length * 3.6}rem` }} className="max-h-[max(9rem,calc(19rem_-_var(--ph)))] overflow-y-auto overscroll-auto sm:max-h-[max(9rem,calc(22rem_-_var(--ph)))]">
+              {rest.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />)}
+            </div>
           </div>
         )}
       </div>

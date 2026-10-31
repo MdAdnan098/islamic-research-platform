@@ -19,7 +19,7 @@ const TRANSIENT = new Set([502, 503, 504]);
 const RETRY_DELAYS_MS = [1200, 2500];
 
 /** Thin fetch wrapper around the backend's `{ success, data | error }` envelope. */
-export async function request(path, { method = "GET", body, form, signal } = {}) {
+export async function request(path, { method = "GET", body, form, signal, cache } = {}) {
   // Reads and sign-in are safe to repeat, so a momentary 503 / network blip is retried quietly instead of
   // showing "Request failed (503)". Other writes are never repeated automatically.
   // The draft auto-save and publish are safe to repeat (version-checked / idempotent), so they are retried too.
@@ -32,6 +32,7 @@ export async function request(path, { method = "GET", body, form, signal } = {})
       res = await fetch(API_BASE + path, {
         method,
         signal,
+        cache,
         credentials: "include",
         headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
         body: form ?? (body !== undefined ? JSON.stringify(body) : undefined),

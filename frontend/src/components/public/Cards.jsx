@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { FolderIcon } from "../ui/FolderIcon.jsx";
+import { PinButton } from "./PinButton.jsx";
 import { useI18n } from "../../i18n/index.jsx";
 import { mediaUrl } from "../../lib/media.js";
 import { pickVersion } from "../../lib/versions.js";
@@ -32,11 +33,12 @@ export function ArticleCard({ article }) {
 }
 
 /** Topic = "folder": compact folder-tab + tile with a folder icon; the topic name sits below the card. Sized for 3 per row on mobile. */
-export function TopicCard({ topic, to, label }) {
+export function TopicCard({ topic, to, label, pin }) {
   return (
     <Link to={to} className="group block min-w-0">
-      <div className="transition duration-300 ease-out group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
+      <div className="relative transition duration-300 ease-out group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
         <FolderIcon fluid />
+        {pin && <PinButton active={pin.active} onToggle={pin.onToggle} className="absolute end-1.5 top-[30%] !h-7 !w-7" />}
       </div>
       <Text as="h3" className="mt-2 line-clamp-2 px-0.5 text-center font-display text-xs font-bold leading-snug sm:text-sm">{topic.title}</Text>
       {label && <span className="mt-0.5 block text-center text-[11px] text-mute">{label}</span>}

@@ -5,7 +5,7 @@ import {
   findCategoryById,
   toSafeCategory,
 } from "../services/db/category.service.js";
-import { toSafeTopic } from "../services/db/topic.service.js";
+import { toSafeTopic, HOME_PIN_LIMIT } from "../services/db/topic.service.js";
 import {
   listArticles,
   findArticleBySlug,
@@ -81,6 +81,7 @@ export async function home(request, env) {
       categories: ctx.categories.map(toSafeCategory),
       recentArticles: articles.map((a) => withTrail(ctx, a)),
       folders: await homeFolders(config, ctx),
+      foldersTotal: rootFolders(ctx).length, // every visible top-level folder, so the page can say "10 of N"
     },
     { allowedOrigin: config.allowedOrigin, headers: LIST_CACHE }
   );
@@ -123,11 +124,19 @@ export async function topics(request, env) {
 }
 
 /** Root (top-level) visible folders in the public order, with section label data. Used by the homepage and /folders. */
-function rootFolders(ctx) {
+function rootFolders(ctx, pinKey = null) {
   const catOrder = (t) => ctx.categoryById.get(String(t.categoryId))?.ordering ?? 0;
+  // Pinned folders (pinKey = "pinHome" | "pinAll" | "pinSection") come first, in the order they were pinned.
+  const pinTime = (t) => (pinKey && t[pinKey] ? new Date(t[pinKey]).getTime() : null);
+  const pinCmp = (a, b) => {
+    const ta = pinTime(a), tb = pinTime(b);
+    if (ta !== null && tb !== null) return ta - tb;
+    return ta !== null ? -1 : tb !== null ? 1 : 0;
+  };
   return ctx.topics
     .filter((t) => !t.parentId && ctx.visible.has(String(t._id)))
     .sort((a, b) =>
+      pinCmp(a, b) ||
       (a.ordering ?? 0) - (b.ordering ?? 0) ||
       catOrder(a) - catOrder(b) ||
       new Date(a.createdAt || 0) - new Date(b.createdAt || 0) ||
@@ -141,11 +150,17 @@ function rootFolders(ctx) {
 
 /** Newest root folders for the homepage card, each with `articleCount` = published articles in it and all its visible subfolders. */
 async function homeFolders(config, ctx) {
-  const newest = [...rootFolders(ctx)]
+  // Up to HOME_PIN_LIMIT pinned folders first (fixed on top, whatever their age), then the newest of the rest.
+  const all = rootFolders(ctx, "pinHome");
+  const pinned = all.filter((f) => f.pinHome).slice(0, HOME_PIN_LIMIT);
+  const pinnedIds = new Set(pinned.map((f) => f.id));
+  const newest = all
+    .filter((f) => !pinnedIds.has(f.id))
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0) || String(b.id).localeCompare(String(a.id)))
-    .slice(0, HOME_FOLDERS_LIMIT);
+    .slice(0, Math.max(HOME_FOLDERS_LIMIT - pinned.length, 0))
+    .map((f) => ({ ...f, pinHome: false }));
   const direct = await countPublishedByTopic(config, ctx.categoryIds);
-  return newest.map((f) => ({
+  return [...pinned, ...newest].map((f) => ({
     ...f,
     articleCount: visibleSubtreeIds(ctx, f.id).reduce((sum, id) => sum + (direct.get(id) || 0), 0),
   }));
@@ -165,8 +180,12 @@ export async function folders(request, env) {
   const limit = Math.min(Math.max(intParam(url, "limit", 12), 1), 100);
   const page = Math.min(Math.max(intParam(url, "page", 1), 1), 10_000);
 
+  // ?pin=all (View all folders) or ?pin=section (Aqaid / Masail pages) puts that page's pinned folders first.
+  const pinParam = url.searchParams.get("pin");
+  const pinKey = pinParam === "all" ? "pinAll" : pinParam === "section" ? "pinSection" : null;
+
   const ctx = await loadPublicContext(config, { type });
-  const roots = rootFolders(ctx);
+  const roots = rootFolders(ctx, pinKey);
   const slice = roots.slice((page - 1) * limit, page * limit);
   return jsonSuccess({ folders: slice, total: roots.length, hasMore: page * limit < roots.length, page, limit }, { allowedOrigin: config.allowedOrigin, headers: LIST_CACHE });
 }

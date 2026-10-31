@@ -5,10 +5,13 @@ import { usePaged } from "../../lib/usePaged.js";
 import { useMeta } from "../../lib/useMeta.js";
 import { CardSkeletons, ErrorState } from "../../components/ui/feedback.jsx";
 import { ArticleCard, TopicCard } from "../../components/public/Cards.jsx";
+import { useIsAdmin } from "../../lib/adminHint.js";
+import { togglePin } from "../../lib/pins.js";
 
 /** /aqaid and /masail - two separate areas: root Folders, and General Articles (articles with no folder). */
 export default function SectionPage({ section }) {
   const { t } = useI18n();
+  const isAdmin = useIsAdmin();
   const type = PATH_TYPE[section];
   const title = section === "aqaid" ? t.nav.aqaid : t.nav.masail;
   useMeta({ title, description: `${title}: AthariTV ke folders aur mazameen, Quran, Sunnat aur salaf ke fahm ki roshni mein.` });
@@ -16,7 +19,7 @@ export default function SectionPage({ section }) {
   const folders = useAsync(async (signal) => {
     const all = [];
     for (let page = 1; page <= 20; page++) {
-      const r = await publicApi.folders({ type, page, limit: 100 }, signal);
+      const r = await publicApi.folders({ type, page, limit: 100, pin: "section" }, signal);
       all.push(...r.folders);
       if (!r.hasMore) break;
     }
@@ -39,7 +42,7 @@ export default function SectionPage({ section }) {
             <hr className="mt-8 border-rule" />
             <h2 className="mt-6 font-display text-xl font-bold sm:text-2xl">{t.home.folders}</h2>
             <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-4">
-              {folders.data.map((f) => <TopicCard key={f.id} topic={f} to={`/${section}/${f.slug}`} />)}
+              {folders.data.map((f) => <TopicCard key={f.id} topic={f} to={`/${section}/${f.slug}`} pin={isAdmin ? { active: f.pinSection, onToggle: async () => { if (await togglePin(f, "section")) folders.reload(); } } : undefined} />)}
             </div>
           </>
         )}

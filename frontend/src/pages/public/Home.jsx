@@ -53,7 +53,7 @@ export default function Home() {
     // ONE request for the whole homepage: categories, latest posts (exactly HOME_LATEST_LIMIT, set server-side) and folders.
     async (signal) => {
       const h = await publicApi.home(signal);
-      return { categories: h.categories, articles: h.recentArticles, folders: h.folders };
+      return { categories: h.categories, articles: h.recentArticles, folders: h.folders, foldersTotal: h.foldersTotal };
     },
     []
   );
@@ -85,7 +85,7 @@ export default function Home() {
         </div>
       </section>
 
-      <FoldersCard folders={data?.folders} loading={loading} error={error} onRetry={reload} />
+      <FoldersCard folders={data?.folders} total={data?.foldersTotal} loading={loading} error={error} onRetry={reload} onChanged={reload} />
 
       <section className="container-page py-16 sm:py-20">
         <div className="flex items-end justify-between gap-4">

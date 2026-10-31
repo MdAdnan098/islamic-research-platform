@@ -179,6 +179,10 @@ export function validateTopicInput(data, { partial = false } = {}) {
     errors.push(err("ordering must be a number."));
   }
 
+  for (const k of ["pinHome", "pinAll", "pinSection"]) {
+    if (data[k] !== undefined && typeof data[k] !== "boolean") errors.push(err(`${k} must be true or false.`));
+  }
+
   for (const [k, max] of [["intro", 5000], ["coverKey", 500]]) {
     if (data[k] !== undefined && data[k] !== null && (typeof data[k] !== "string" || data[k].length > max)) {
       errors.push(err(`${k} must be a string up to ${max} characters.`));

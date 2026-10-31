@@ -7,6 +7,7 @@ export default {
     cta1: "عقائد پڑھیں", cta2: "مسائل دیکھیں",
   },
   home: {
+    foldersCount: "{total} میں سے {n}",
     ayat: "آیتِ قرآنی", hadith: "حدیثِ نبوی", sections: "تحقیقی شعبے",
     aqaidDesc: "اسلامی عقائد کی بنیادی تحقیق، قرآن و سنت کے دلائل کے ساتھ۔",
     aqeedahCard: "عقائد", masailCard: "مسائل", explore: "دیکھیں",

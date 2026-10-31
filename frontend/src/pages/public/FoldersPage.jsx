@@ -5,15 +5,18 @@ import { useMeta } from "../../lib/useMeta.js";
 import { CardSkeletons, EmptyState, ErrorState } from "../../components/ui/feedback.jsx";
 import { TopicCard } from "../../components/public/Cards.jsx";
 import { folderPath } from "../../components/public/FoldersCard.jsx";
+import { useIsAdmin } from "../../lib/adminHint.js";
+import { togglePin } from "../../lib/pins.js";
 
 const SECTIONS = [["aqeedah", "aqaid"], ["masail", "masail"]];
 
 /** /folders - every ROOT folder, grouped by section (Aqaid, Masail). Subfolders live inside their folder. */
 export default function FoldersPage() {
   const { t } = useI18n();
+  const isAdmin = useIsAdmin();
   useMeta({ title: t.home.allFolders, description: "AthariTV ke saare folders: Aqaid aur Masail ke mazameen mauzu ke mutabiq." });
   const list = usePaged(async (page, signal) => {
-    const r = await publicApi.folders({ page, limit: 24 }, signal);
+    const r = await publicApi.folders({ page, limit: 24, pin: "all" }, signal);
     return { items: r.folders, hasMore: r.hasMore };
   }, []);
 
@@ -33,7 +36,7 @@ export default function FoldersPage() {
                 <h2 className="font-display text-xl font-bold sm:text-2xl">{g.label}</h2>
                 <hr className="mt-3 border-rule" />
                 <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-4">
-                  {g.items.map((f) => <TopicCard key={f.id} topic={f} to={folderPath(f)} label={t.nav[f.section === "aqeedah" ? "aqaid" : "masail"]} />)}
+                  {g.items.map((f) => <TopicCard key={f.id} topic={f} to={folderPath(f)} label={t.nav[f.section === "aqeedah" ? "aqaid" : "masail"]} pin={isAdmin ? { active: f.pinAll, onToggle: async () => { if (await togglePin(f, "all")) list.reload(); } } : undefined} />)}
                 </div>
               </section>
             ))}

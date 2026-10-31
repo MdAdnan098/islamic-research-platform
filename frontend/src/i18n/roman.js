@@ -7,6 +7,7 @@ export default {
     cta1: "Aqaid padhein", cta2: "Masail dekhein",
   },
   home: {
+    foldersCount: "{n} of {total}",
     ayat: "Ayat-e-Quraani", hadith: "Hadees-e-Nabawi", sections: "Research Sections",
     aqaidDesc: "Islami aqaid ki bunyaadi tahqeeq, Quran o Sunnat ke dalail ke saath.",
     aqeedahCard: "Aqaid", masailCard: "Masail", explore: "Explore",
