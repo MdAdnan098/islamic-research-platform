@@ -7,7 +7,7 @@ import { useIsAdmin } from "../../lib/adminHint.js";
 import { togglePin } from "../../lib/pins.js";
 import { CardSkeletons, EmptyState, ErrorState } from "../../components/ui/feedback.jsx";
 import { folderPath } from "../../components/public/FoldersCard.jsx";
-import { FolderSet, ViewAllLink, CountText } from "../../components/public/FolderGroups.jsx";
+import { FolderSet, ViewAllLink, ViewAllText, CountText, FolderSearchBox } from "../../components/public/FolderGroups.jsx";
 
 const SECTIONS = [["aqeedah", "aqaid"], ["masail", "masail"]];
 /** Folders shown per section here (pinned first); the rest are one tap away under "View all". */
@@ -42,8 +42,7 @@ export default function FoldersPage() {
     <div className="container-page py-12 sm:py-16">
       <h1 className="text-3xl font-bold sm:text-4xl">{t.home.allFolders}</h1>
 
-      <input type="search" value={text} onChange={(e) => setText(e.target.value)} maxLength={100} dir="auto" placeholder={t.home.searchFolders} aria-label={t.home.searchFolders}
-        className="mt-6 w-full rounded-full border border-rule bg-field px-5 py-2.5 text-base text-ink placeholder:text-mute focus:border-accent focus:outline-none" />
+      <FolderSearchBox value={text} onChange={setText} onSubmit={(e) => { e.preventDefault(); setQ(text.trim()); }} placeholder={t.home.searchFolders} />
 
       <div className="mt-8">
         {q ? (
@@ -66,8 +65,10 @@ export default function FoldersPage() {
                   {visible.map((s) => <button key={s.key} type="button" onClick={() => jump(s.key)} className="btn-outline !px-4 !py-1.5 text-sm">{t.nav[s.key]}</button>)}
                 </div>
               )}
-              {visible.map((s) => (
-                <section key={s.type} id={s.key} className="mb-12 scroll-mt-20">
+              {visible.map((s, idx) => (
+                <div key={s.type}>
+                {idx > 0 && <hr className="mb-12 border-rule" />}
+                <section id={s.key} className="mb-12 scroll-mt-20">
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="font-display text-xl font-bold sm:text-2xl">{t.nav[s.key]}</h2>
                     <ViewAllLink to={`/${SECTION_PATH[s.type]}`} t={t} />
@@ -76,9 +77,10 @@ export default function FoldersPage() {
                   <FolderSet folders={s.folders} t={t} hrefFor={folderPath} labelFor={(f) => t.nav[sectionKeyOf(f)]} pinFor={pinFor} />
                   <div className="mt-6 flex items-center justify-between gap-3">
                     <CountText shown={s.folders.length} total={s.total} t={t} />
-                    <ViewAllLink to={`/${SECTION_PATH[s.type]}`} t={t} />
+                    <ViewAllText to={`/${SECTION_PATH[s.type]}`} t={t} />
                   </div>
                 </section>
+                </div>
               ))}
             </>
           )}

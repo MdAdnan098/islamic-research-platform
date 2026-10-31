@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "../../i18n/index.jsx";
 import { PATH_TYPE, publicApi } from "../../services/public.js";
 import { usePaged } from "../../lib/usePaged.js";
 import { useMeta } from "../../lib/useMeta.js";
-import { CardSkeletons, ErrorState } from "../../components/ui/feedback.jsx";
+import { CardSkeletons, EmptyState, ErrorState } from "../../components/ui/feedback.jsx";
 import { ArticleCard } from "../../components/public/Cards.jsx";
-import { FolderSet, CountText } from "../../components/public/FolderGroups.jsx";
+import { FolderSet, CountText, FolderSearchBox } from "../../components/public/FolderGroups.jsx";
 import { useIsAdmin } from "../../lib/adminHint.js";
 import { togglePin } from "../../lib/pins.js";
 
@@ -17,12 +17,16 @@ export default function SectionPage({ section }) {
   const title = section === "aqaid" ? t.nav.aqaid : t.nav.masail;
   useMeta({ title, description: `${title}: AthariTV ke folders aur mazameen, Quran, Sunnat aur salaf ke fahm ki roshni mein.` });
 
+  const [text, setText] = useState("");
+  const [q, setQ] = useState("");
+  useEffect(() => { setText(""); setQ(""); }, [type]);
+  useEffect(() => { const id = setTimeout(() => setQ(text.trim()), 300); return () => clearTimeout(id); }, [text]);
   const [total, setTotal] = useState(null);
   const folders = usePaged(async (page, signal) => {
-    const r = await publicApi.folders({ type, page, limit: 24, pin: "all" }, signal);
+    const r = await publicApi.folders({ type, page, limit: 24, pin: "all", q: q || undefined }, signal);
     setTotal(r.total);
     return { items: r.folders, hasMore: r.hasMore };
-  }, [type]);
+  }, [type, q]);
   const pinFor = (f) => (isAdmin ? { active: f.pinAll, onToggle: async () => { if (await togglePin(f, "all")) folders.reload(); } } : undefined);
   const general = usePaged(async (page, signal) => {
     const r = await publicApi.articlePage({ type, general: 1, page, limit: 12 }, signal);
@@ -33,9 +37,11 @@ export default function SectionPage({ section }) {
     <div className="container-page py-12 sm:py-16">
       <p className="eyebrow cta-text">{t.home.sections}</p>
       <h1 className="mt-1 text-3xl font-bold sm:text-4xl">{title}</h1>
+      <FolderSearchBox value={text} onChange={setText} onSubmit={(e) => { e.preventDefault(); setQ(text.trim()); }} placeholder={t.home.searchFolders} />
 
       {folders.loading ? <div className="mt-10"><CardSkeletons count={3} /></div>
         : folders.error && !folders.items.length ? <div className="mt-10"><ErrorState error={folders.error} onRetry={folders.reload} /></div>
+        : q && folders.items.length === 0 ? <div className="mt-8"><EmptyState>{t.search.noResults}</EmptyState></div>
         : folders.items.length > 0 && (
           <>
             <hr className="mt-8 border-rule" />
@@ -49,7 +55,7 @@ export default function SectionPage({ section }) {
           </>
         )}
 
-      {general.loading ? <div className="mt-10"><CardSkeletons count={2} /></div>
+      {q ? null : general.loading ? <div className="mt-10"><CardSkeletons count={2} /></div>
         : general.error && !general.items.length ? <div className="mt-10"><ErrorState error={general.error} onRetry={general.reload} /></div>
         : general.items.length > 0 && (
           <>
@@ -62,7 +68,7 @@ export default function SectionPage({ section }) {
           </>
         )}
 
-      {!folders.loading && !general.loading && !folders.error && !folders.items.length && !general.items.length && (
+      {!q && !folders.loading && !general.loading && !folders.error && !folders.items.length && !general.items.length && (
         <div className="mt-10 rounded-xl border border-dashed border-rule px-6 py-10 text-center text-sm text-mute">{t.topic.noItems}</div>
       )}
     </div>
