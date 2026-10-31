@@ -36,7 +36,7 @@ export default function FoldersPage() {
                 <h2 className="font-display text-xl font-bold sm:text-2xl">{g.label}</h2>
                 <hr className="mt-3 border-rule" />
                 <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-4">
-                  {g.items.map((f) => <TopicCard key={f.id} topic={f} to={folderPath(f)} label={t.nav[f.section === "aqeedah" ? "aqaid" : "masail"]} pin={isAdmin ? { active: f.pinAll, onToggle: async () => { if (await togglePin(f, "all")) list.reload(); } } : undefined} />)}
+                  {g.items.map((f) => <TopicCard key={f.id} topic={f} to={folderPath(f)} label={t.nav[f.section === "aqeedah" ? "aqaid" : "masail"]} pinned={f.pinAll} pin={isAdmin ? { active: f.pinAll, onToggle: async () => { if (await togglePin(f, "all")) list.reload(); } } : undefined} />)}
                 </div>
               </section>
             ))}

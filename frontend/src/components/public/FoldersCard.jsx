@@ -70,11 +70,14 @@ export function FoldersCard({ folders: list, total, loading, error, onRetry, onC
         ) : (
           <div className="overflow-hidden rounded-xl border border-rule bg-card px-3">
             {pinned.length > 0 && (
-              <div className="border-b border-rule">
+              <div className="-mx-3 border-b border-rule bg-tint/40 px-3">
+                <p className="flex items-center gap-1.5 pb-0.5 pt-2 text-[11px] font-medium text-mute">
+                  <Icon name="pin" size={12} className="cta-text" />{t.home.pinnedByAdmin}
+                </p>
                 {pinned.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />)}
               </div>
             )}
-            <div style={{ "--ph": `${pinned.length * 3.6}rem` }} className="max-h-[max(9rem,calc(19rem_-_var(--ph)))] overflow-y-auto overscroll-auto sm:max-h-[max(9rem,calc(22rem_-_var(--ph)))]">
+            <div style={{ "--ph": `${pinned.length * 3.6 + (pinned.length ? 1.6 : 0)}rem` }} className="max-h-[max(9rem,calc(19rem_-_var(--ph)))] overflow-y-auto overscroll-auto sm:max-h-[max(9rem,calc(22rem_-_var(--ph)))]">
               {rest.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />)}
             </div>
           </div>

@@ -8,6 +8,7 @@ export default {
   },
   home: {
     foldersCount: "{total} में से {n}",
+    pinnedByAdmin: "एडमिन द्वारा पिन किया गया",
     ayat: "आयत-ए-क़ुरआनी", hadith: "हदीस-ए-नबवी", sections: "रिसर्च सेक्शन",
     aqaidDesc: "इस्लामी अक़ाइद की बुनियादी तहक़ीक़, क़ुरआन व सुन्नत के दलाइल के साथ।",
     aqeedahCard: "अक़ाइद", masailCard: "मसाइल", explore: "देखें",

@@ -42,7 +42,7 @@ export default function SectionPage({ section }) {
             <hr className="mt-8 border-rule" />
             <h2 className="mt-6 font-display text-xl font-bold sm:text-2xl">{t.home.folders}</h2>
             <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-4">
-              {folders.data.map((f) => <TopicCard key={f.id} topic={f} to={`/${section}/${f.slug}`} pin={isAdmin ? { active: f.pinSection, onToggle: async () => { if (await togglePin(f, "section")) folders.reload(); } } : undefined} />)}
+              {folders.data.map((f) => <TopicCard key={f.id} topic={f} to={`/${section}/${f.slug}`} pinned={f.pinSection} pin={isAdmin ? { active: f.pinSection, onToggle: async () => { if (await togglePin(f, "section")) folders.reload(); } } : undefined} />)}
             </div>
           </>
         )}
