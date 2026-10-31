@@ -59,7 +59,7 @@
      Light = default, [data-theme="sepia"] = Sepia, .dark = Dark.
      ------------------------------------------------------------------ */
   :root {
-    --paper: 253 251 247;      /* page + navbar: soft cream  #FDFBF7 */
+    --paper: 243 240 231;      /* page + navbar: soft cream  #F3F0E7 (same as admin sign-in page) */
     --paper-pattern: none;   /* geometric pattern removed */
     --hero-ink: 116 160 159;   /* hero text (teal-grey, sunnah.com)  #74A09F */
     --card: 247 246 241;       /* cards: soft off-white, like sunnah.com  #F7F6F1 */
