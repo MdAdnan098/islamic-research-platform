@@ -97,11 +97,11 @@ export function ArticleLanguage({ className = "" }) {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="btn-cta inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition hover:opacity-90"
+        className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-field px-3 py-1.5 text-sm text-ink transition-colors hover:border-accent/50"
       >
-        <span className="opacity-80">{t.article.changeLang}</span>
-        <span className="font-semibold">{CONTENT_LANGS[lang].label}</span>
-        <Icon name="down" size={14} className="shrink-0 opacity-80" />
+        <span className="text-ink">{t.article.changeLang}</span>
+        <span className="cta-text font-semibold">{CONTENT_LANGS[lang].label}</span>
+        <Icon name="down" size={14} className="cta-text shrink-0" />
       </button>
       {open && (
         <ul role="listbox" aria-label={t.nav.language} className="absolute start-0 top-full z-40 mt-2 w-44 animate-fade overflow-hidden rounded-lg border border-rule bg-card p-1 shadow-soft">
