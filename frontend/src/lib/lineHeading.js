@@ -1,78 +1,83 @@
 import { uid } from "./blocks.js";
-import { MARK_FIELDS, isHighlightable, sliceRanges } from "./highlights.js";
+import { MARK_FIELDS, isHighlightable, lengthsOf, sliceRanges, splitUnits, unitMap, versionTexts } from "./highlights.js";
 
 /**
- * Turns the selected LINE(S) of a paragraph into a heading (level 1 / 2 / 3), or a heading back into a paragraph (level 0).
- * The paragraph is split around the line: [text before] [heading] [text after]. Every script version (Roman / Hindi / Urdu)
- * is split at the same line, and the highlight / bold / colour marks of each piece are re-based, so nothing shifts.
+ * Turns the selected line(s) / sentence(s) of a paragraph into a heading (level 2 / 3; level 1 still works for old posts), or a
+ * heading back into a paragraph (level 0). The paragraph is split around the selection: [text before] [heading] [text after].
+ *
+ * The same logical unit is cut in every script through the block's stored unit mapping (lib/blockAlign.js) - never by comparing line
+ * counts or positions. So the selected sentence (and only that) becomes the heading in Roman, Hindi and Urdu alike, the highlight /
+ * bold / colour / size marks of every piece are re-based, and nothing shifts.
+ *
+ * The original (source) script is the only formatting source: a heading can only be made from the source version on screen.
+ * A block with several scripts whose mapping is missing or flagged is never split by guessing: the admin is asked to pair the lines first.
  *
  * pieces: [{ blockId, lang, start, end }] - offsets into the version that is on screen (what the toolbar reads).
- * Returns { blocks, error }; `error` is a message when nothing could be changed.
+ * Returns { blocks, error }; `error` is a message when nothing could be changed (the change is all-or-nothing).
  */
 const SYNC = ["en", "hi", "ur"];
 const isSacred = (b) => b.type === "quote" && (b.kind === "ayat" || b.kind === "hadith");
+const NOT_SOURCE = "Heading sirf original (source) zabaan mein lagti hai. Post ko apni original zabaan mein kholkar H2/H3 lagayein; baaki zabaanon mein wo apne aap lag jayegi.";
+const NEEDS_PAIRING = "Is paragraph ki lines Roman / Hindi / Urdu mein pakki tarah match nahi hain, isliye andaze se heading nahi lagayi. Pehle \"Lines match karein\" se lines jodein.";
 
-function versionsOf(b, baseLang) {
-  const v = { [baseLang]: typeof b.text === "string" ? b.text : "" };
-  for (const l of SYNC) if (l !== baseLang && typeof b.tr?.[l] === "string" && b.tr[l].trim()) v[l] = b.tr[l];
-  return v;
+/** The units of a block in reading order: [{ id, en?: [s, e], hi?: ..., ur?: ... }], or { error }. */
+function unitsOf(b, baseLang) {
+  const texts = versionTexts(b, baseLang);
+  const langs = Object.keys(texts);
+  if (langs.length >= 2) {
+    const m = unitMap(b, baseLang);
+    if (!m?.aligned) return { error: NEEDS_PAIRING };
+    return { langs, units: m.versions[baseLang].map((_, i) => Object.fromEntries([["id", m.ids?.[i] || `t${i}`], ...langs.map((l) => [l, m.versions[l][i]])])) };
+  }
+  const only = langs[0] || baseLang;
+  return { langs: [only], units: splitUnits(texts[only] ?? "", "sentence").map((r, i) => ({ id: `t${i}`, [only]: r })) };
 }
 
-/** [{ a, z }] start/end (end excludes the line break) of every line of `str`. */
-function linesOf(str) {
-  const out = [];
-  let a = 0;
-  for (const part of str.split("\n")) { out.push({ a, z: a + part.length }); a += part.length + 1; }
-  return out;
+/** [a, z) of `str` without the whitespace at both ends. */
+function trimmed(str, a, z) {
+  while (a < z && /\s/.test(str[a])) a++;
+  while (z > a && /\s/.test(str[z - 1])) z--;
+  return [a, z];
 }
 
-function splitBlock(b, baseLang, lang, lo, hi, level) {
-  const versions = versionsOf(b, baseLang);
-  const cuts = Object.fromEntries(Object.entries(versions).map(([l, s]) => [l, linesOf(s)]));
-  const n = cuts[lang]?.length;
-  if (!n || Object.values(cuts).some((c) => c.length !== n)) {
-    return { error: "Is paragraph ke versions (Roman / Hindi / Urdu) mein lines barabar nahi hain, isliye line heading nahi ban sakti. Edit button se heading banayein." };
-  }
-  const base = cuts[baseLang];
-  const isBlank = (i) => !versions[baseLang].slice(base[i].a, base[i].z).trim();
-
-  // runs of lines: selected lines (non-blank) become one heading each, the rest stay text
-  const runs = [];
-  let i = 0;
-  while (i < n) {
-    if (i >= lo && i <= hi && !isBlank(i)) { runs.push({ from: i, to: i, head: true }); i += 1; continue; }
-    const from = i;
-    while (i < n && !(i >= lo && i <= hi && !isBlank(i))) i += 1;
-    runs.push({ from, to: i - 1, head: false });
-  }
-
+function splitBlock(b, baseLang, lo, hi, units, langs, level) {
+  const texts = versionTexts(b, baseLang);
+  const last = units.length - 1;
+  // [from, to) of each piece in every written script: before the selected units, the selected units, after them
+  const cut = (l, k) => ({ before: [0, units[lo][l][0]], head: [units[lo][l][0], units[hi][l][1]], after: [units[hi][l][1], texts[l].length] }[k]);
+  const kinds = [["before", 0, lo - 1], ["head", lo, hi], ["after", hi + 1, last]];
   const out = [];
-  for (const run of runs) {
-    // a text run is trimmed of blank lines at both ends; nothing left (in the base version) = no block
-    let { from, to } = run;
-    if (!run.head) {
-      while (from <= to && isBlank(from)) from += 1;
-      while (to >= from && isBlank(to)) to -= 1;
-      if (from > to) continue;
+  for (const [kind, from, to] of kinds) {
+    const range = Object.fromEntries(langs.map((l) => [l, trimmed(texts[l], ...cut(l, kind))]));
+    const blank = (l) => range[l][1] <= range[l][0];
+    if (blank(baseLang)) {
+      if (langs.some((l) => !blank(l))) return { error: NEEDS_PAIRING }; // text with no original counterpart: never dropped silently
+      continue;
     }
-    const { type, id, text, tr, kind, source, level: oldLevel, ...rest } = b;
+    const { type: _t, id, text: _x, tr, kind: _k, source: _s, level: _lv, align: _al, ...rest } = b;
     for (const f of MARK_FIELDS) delete rest[f]; // marks are re-built below, re-based to this piece
-    const nb = { ...rest, id: out.length ? uid() : id, type: run.head ? "heading" : "text" };
-    if (run.head) nb.level = level;
+    const nb = { ...rest, id: out.length ? uid() : id, type: kind === "head" ? "heading" : "text" };
+    if (kind === "head") nb.level = level;
     const trNew = {};
-    for (const [l, str] of Object.entries(versions)) {
-      const a = cuts[l][from].a, z = cuts[l][to].z;
-      const piece = str.slice(a, z);
+    for (const l of langs) {
+      if (blank(l)) continue;
+      const [a, z] = range[l];
+      const piece = texts[l].slice(a, z);
       if (l === baseLang) nb.text = piece; else trNew[l] = piece;
       for (const f of MARK_FIELDS) {
         const r = sliceRanges(b[f]?.[l] || [], a, z);
         if (r.length) nb[f] = { ...(nb[f] || {}), [l]: r };
       }
     }
-    // keep any other translation keys the block carried (e.g. non-text), replacing only the sliced ones
-    const keep = Object.fromEntries(Object.entries(b.tr || {}).filter(([l]) => !(l in versions) || !SYNC.includes(l)));
+    const keep = Object.fromEntries(Object.entries(b.tr || {}).filter(([l]) => !SYNC.includes(l)));
     const mergedTr = { ...keep, ...trNew };
     if (Object.keys(mergedTr).length) nb.tr = mergedTr;
+    // the mapping of the units that landed in this piece, re-based (ids stay the same)
+    if (langs.length > 1 && b.align?.v === 1) {
+      const mine = units.slice(from, to + 1).map((u) => Object.fromEntries([["id", u.id], ...langs.filter((l) => u[l] && !blank(l)).map((l) => [l, [u[l][0] - range[l][0], u[l][1] - range[l][0]]])]));
+      const { len: _len, ...restAlign } = b.align;
+      nb.align = { ...restAlign, units: mine, len: lengthsOf(nb, baseLang) };
+    }
     out.push(nb);
   }
   return { blocks: out };
@@ -84,11 +89,13 @@ export function setLineHeading(blocks, baseLang, pieces, level) {
     const cur = byBlock.get(p.blockId);
     byBlock.set(p.blockId, cur ? { ...cur, start: Math.min(cur.start, p.start), end: Math.max(cur.end, p.end) } : { ...p });
   }
+  if ([...byBlock.values()].some((p) => p.lang !== baseLang)) return { blocks, error: NOT_SOURCE };
+
   let error = "";
   let changed = false;
   const next = blocks.flatMap((b) => {
     const p = byBlock.get(b.id);
-    if (!p || !isHighlightable(b) || isSacred(b) || b.type === "quote") return [b];
+    if (error || !p || !isHighlightable(b) || isSacred(b) || b.type === "quote") return [b];
     if (b.type === "heading") {
       changed = true;
       if (level > 0) return [{ ...b, level }];
@@ -96,17 +103,17 @@ export function setLineHeading(blocks, baseLang, pieces, level) {
       return [{ ...rest, type: "text" }];
     }
     if (level === 0) return [b]; // already a paragraph
-    const text = (p.lang === baseLang ? b.text : b.tr?.[p.lang]) || "";
-    const lines = linesOf(text);
-    const lo = lines.findIndex((l) => p.start < l.z + 1 && p.end > l.a);
-    let hi = -1;
-    lines.forEach((l, i) => { if (p.start < l.z + 1 && p.end > l.a) hi = i; });
-    if (lo < 0 || hi < 0) return [b];
-    const res = splitBlock(b, baseLang, p.lang, lo, hi, level);
+    const found = unitsOf(b, baseLang);
+    if (found.error) { error = found.error; return [b]; }
+    const { units, langs } = found;
+    const idx = units.map((u, i) => (u[baseLang] && u[baseLang][0] < p.end && u[baseLang][1] > p.start ? i : -1)).filter((i) => i >= 0);
+    if (!idx.length) return [b];
+    const res = splitBlock(b, baseLang, idx[0], idx[idx.length - 1], units, langs, level);
     if (res.error) { error = res.error; return [b]; }
     changed = true;
     return res.blocks;
   });
-  if (!changed) return { blocks, error: error || "Is selection par heading lagane layak koi line nahi mili." };
+  if (error) return { blocks, error };
+  if (!changed) return { blocks, error: "Is selection par heading lagane layak koi line nahi mili." };
   return { blocks: next, error: "" };
 }

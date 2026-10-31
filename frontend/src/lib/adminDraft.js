@@ -81,6 +81,11 @@ export function useAdminDraft({ article, references, enabled = true, initial = n
       });
       return error;
     },
+    /** Stores a manually corrected cross-script mapping of one block (see lib/blockAlign.js pairUnits). */
+    onAlign: (blockId, align) => change((blocks) => {
+      if (!blocks.some((b) => b.id === blockId)) throw new Error("Ye hissa post mein nahi mila. Page refresh karke dobara koshish karein.");
+      return blocks.map((b) => (b.id === blockId ? { ...b, align } : b));
+    }),
     onInsert: (index, block, afterId) => change((blocks) => {
       const at = afterId && blocks.some((b) => b.id === afterId) ? blocks.findIndex((b) => b.id === afterId) : Math.min(index, blocks.length - 1);
       return [...blocks.slice(0, at + 1), block, ...blocks.slice(at + 1)];

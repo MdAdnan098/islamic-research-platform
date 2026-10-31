@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { addRange, AR_FIELD, arabicSpans, BOLD_FIELD, COLOR_FIELDS, covered, FORMAT_FIELDS, SIZE_FIELDS, SIZE_LADDER, sizeOf, stepSize, TEXT_COLORS, TEXT_COLOR_FIELDS, overlaps, rangesOf, removeRange, syncSpans, trimRange, unitMap } from "../../lib/highlights.js";
+import { AR_FIELD, arabicSpans, BOLD_FIELD, COLOR_FIELDS, covered, FORMAT_FIELDS, SIZE_FIELDS, sizeOf, TEXT_COLORS, overlaps, rangesOf, syncSpans, trimRange, unitMap } from "../../lib/highlights.js";
+import { planEdits } from "../../lib/formatPlan.js";
+import SizeSlider from "./SizeSlider.jsx";
+import AlignEditor from "./AlignEditor.jsx";
 
 /**
  * Admin-only floating toolbar for the current text selection: four highlight colours (yellow, pink, blue, green),
  * "Arabic red" (red text colour, set by hand) and the matching Remove buttons, plus bold / text colours / H1-H3 and
- * the text-size stepper (A- / % / A+) that makes the selected words bigger or smaller for readers too.
+ * the text-size slider that makes the selected words bigger or smaller for readers too.
+ * The original (source) script is the only formatting source: what is formatted on it also lands on the matching lines of the
+ * other scripts; formatting made on a translated version stays in that version (see lib/formatPlan.js).
  * The selection is mapped to (block id, script version, character offsets) through the data-hl-* attributes
  * the renderer puts on each text element - never by searching for the selected string - so repeated words
  * and sentences are unambiguous. `onApply(edits)` receives [{ blockId, lang, ranges }] (full replacement ranges).
@@ -38,10 +43,12 @@ function readSelection(container) {
   return { pieces, rect: range.getBoundingClientRect() };
 }
 
-export default function HighlightToolbar({ containerRef, blocks, baseLang, onApply, onTransform }) {
+export default function HighlightToolbar({ containerRef, blocks, baseLang, onApply, onTransform, onAlign }) {
   const [sel, setSel] = useState(null);
+  const [alignFor, setAlignFor] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const blocksRef = useRef(blocks);
   blocksRef.current = blocks;
 
@@ -75,7 +82,8 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     return () => { document.removeEventListener("selectionchange", update); container.removeEventListener("click", onClick); };
   }, [containerRef, busy]);
 
-  if (!sel) return null;
+  if (!sel && !alignFor) return null;
+  if (!sel) return <AlignEditor block={alignFor} baseLang={baseLang} onSave={(align) => onAlign(alignFor.id, align)} onClose={() => setAlignFor(null)} />;
 
   // Colours: is any part of the selection already coloured / is all of it already this colour?
   const state = sel.pieces.reduce((acc, p) => {
@@ -95,8 +103,12 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     const r = currentRanges(p.blockId, p.lang, AR_FIELD);
     return { any: acc.any || own.some((x) => overlaps(r, x)), missing: [...new Set([...acc.missing, ...a.missing])] };
   }, { any: false, missing: [] });
-  // Some block of the selection has versions whose line count differs: highlight then stays in this script only.
-  const unsyncedMap = sel.pieces.map((p) => unitMap(blocksRef.current.find((x) => x.id === p.blockId), baseLang)).find((m) => m?.aligned === false);
+  // Original script on screen? Only then does formatting reach the other scripts. A block of the selection whose lines are not
+  // matched with certainty (missing / flagged / stale mapping) is never guessed: its formatting stays in this script.
+  const fromSource = sel.pieces.every((p) => p.lang === baseLang);
+  const blockOf = (p) => blocksRef.current.find((x) => x.id === p.blockId);
+  const reviewBlock = fromSource ? sel.pieces.map(blockOf).find((b) => { const m = b && unitMap(b, baseLang); return m && !m.aligned; }) : null;
+  const translatedView = !fromSource && sel.pieces.some((p) => { const b = blockOf(p); return b && unitMap(b, baseLang); });
   // Bold / text colours: is all of the selection already bold / this colour, and is any formatting present?
   const fmt = sel.pieces.reduce((acc, p) => {
     const next = { any: acc.any, full: { ...acc.full } };
@@ -122,61 +134,30 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
   const sizeMixed = sizePieces.some((v) => v === null || v !== sizePieces[0]);
   const sizeNow = sizeMixed ? (sizeAt(sel.pieces[0], [sel.pieces[0].start, sel.pieces[0].start + 1]) || 100) : sizePieces[0];
   const NAMES = { en: "Roman", hi: "Hindi", ur: "Urdu" };
-  const unsynced = unsyncedMap ? Object.entries(unsyncedMap.counts).map(([l, n]) => `${NAMES[l]} ${n}`).join(", ") : "";
   const arMissing = ar.missing.map((l) => NAMES[l]).join(", ");
 
+  const NOTES = {
+    translated: `Aap translated version par format kar rahe hain: ye sirf isi zabaan mein lagega. Teeno zabaan mein ek saath lagane ke liye original (${NAMES[baseLang]}) version mein format karein.`,
+    review: "Is hisse ki lines teeno zabaan mein pakki tarah match nahi hain, isliye formatting sirf original zabaan mein lagi.",
+    partial: "Kuch shabd select kiye hain, isliye formatting sirf isi zabaan mein lagi. Poori line select karein to dusri zabaanon mein bhi lagegi.",
+  };
+
   /** mode "add" | "remove" | "size"; field = one of COLOR_FIELDS (a colour), or AR_FIELD, or null for "remove every colour";
-   *  for mode "size", field = the wanted size in percent (100 = back to normal). */
+   *  for mode "size", field = the wanted size in percent (100 = back to normal). What lands where is decided by planEdits. */
   async function run(mode, field) {
-    const edits = new Map();
-    const put = (blockId, lang, f, change) => {
-      const key = `${blockId}|${lang}|${f}`;
-      const base = edits.get(key)?.ranges ?? currentRanges(blockId, lang, f);
-      edits.set(key, { blockId, lang, field: f, ranges: change(base) });
-    };
-    for (const p of sel.pieces) {
-      // Size: exactly the selected words of the version on screen get this one size (the other sizes step aside).
-      if (mode === "size") {
-        const range = [p.start, p.end];
-        for (const f of SIZE_FIELDS) {
-          if (sizeOf(f) === field) put(p.blockId, p.lang, f, (r) => addRange(r, range));
-          else if (overlaps(edits.get(`${p.blockId}|${p.lang}|${f}`)?.ranges ?? currentRanges(p.blockId, p.lang, f), range)) put(p.blockId, p.lang, f, (r) => removeRange(r, range));
-        }
-        continue;
-      }
-      // Bold / text colour act on exactly the selected words of the version on screen (colours exclude each other).
-      if (FORMAT_FIELDS.includes(field) || field === "format-none") {
-        const range = [p.start, p.end];
-        const targets = field === "format-none" ? FORMAT_FIELDS : [field];
-        for (const f of targets) put(p.blockId, p.lang, f, (r) => (mode === "add" ? addRange(r, range) : removeRange(r, range)));
-        if (mode === "add" && TEXT_COLOR_FIELDS.includes(field)) for (const o of TEXT_COLOR_FIELDS) if (o !== field) put(p.blockId, p.lang, o, (r) => removeRange(r, range));
-        continue;
-      }
-      if (field === AR_FIELD) {
-        for (const { lang, range } of arabicOf(p).spans) put(p.blockId, lang, AR_FIELD, (r) => (mode === "add" ? addRange(r, range) : removeRange(r, range)));
-        continue;
-      }
-      for (const { lang, range } of spansOf(p)) {
-        if (mode === "add") {
-          put(p.blockId, lang, field, (r) => addRange(r, range));
-          // one background colour per character: the other colours step aside
-          for (const other of COLOR_FIELDS) if (other !== field && overlaps(edits.get(`${p.blockId}|${lang}|${other}`)?.ranges ?? currentRanges(p.blockId, lang, other), range)) put(p.blockId, lang, other, (r) => removeRange(r, range));
-        } else {
-          for (const f of COLOR_FIELDS) if (overlaps(edits.get(`${p.blockId}|${lang}|${f}`)?.ranges ?? currentRanges(p.blockId, lang, f), range)) put(p.blockId, lang, f, (r) => removeRange(r, range));
-        }
-      }
-    }
-    if (!edits.size) { if (mode !== "size") { window.getSelection()?.removeAllRanges(); setSel(null); } return; }
-    setBusy(true); setError("");
+    const { edits, notes } = planEdits({ blocks: blocksRef.current, baseLang, pieces: sel.pieces, mode, field });
+    if (!edits.length) { if (mode !== "size") { window.getSelection()?.removeAllRanges(); setSel(null); } return; }
+    setBusy(true); setError(""); setInfo("");
     try {
-      await onApply([...edits.values()]);
-      // Size stays open (offsets do not change), so + / - can be pressed again and again on the same words.
+      await onApply(edits);
+      // Size stays open (offsets do not change), so the slider can be moved again on the same words.
       if (mode !== "size") { window.getSelection()?.removeAllRanges(); setSel(null); }
+      else setInfo(notes.map((n) => NOTES[n.code]).filter(Boolean)[0] || "");
     } catch (e) { setError(e?.message || "Save nahi hua"); }
     finally { setBusy(false); }
   }
 
-  /** Makes the selected line(s) H1 / H2 / H3, or back to a normal paragraph (level 0). */
+  /** Makes the selected line(s) H2 / H3, or back to a normal paragraph (level 0). Original script only (lib/lineHeading.js). */
   async function heading(level) {
     if (!onTransform) return;
     setBusy(true); setError("");
@@ -201,6 +182,7 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     { field: "hlGreen", label: "Green", style: { background: "#16a34a", color: "#fff" } },
   ];
   return (
+    <>
     <div
       role="toolbar"
       aria-label="Highlight"
@@ -226,25 +208,26 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
           <button key={c.field} type="button" disabled={busy} title={`Text color ${c.label}`} aria-label={`Text color ${c.label}`} onClick={() => run(fmt.full[c.field] ? "remove" : "add", c.field)}
             className={`${btn} border border-rule bg-card font-bold ${fmt.full[c.field] ? "ring-2 ring-ink/60" : ""}`} style={{ color: c.swatch }}>A</button>
         ))}
-        {onTransform && [1, 2, 3].map((n) => (
-          <button key={n} type="button" disabled={busy} title={`Line ko H${n} banao`} aria-label={`H${n}`} onClick={() => heading(n)} className={`${btn} border border-rule bg-card`}>H{n}</button>
+        {onTransform && [2, 3].map((n) => (
+          <button key={n} type="button" disabled={busy || !fromSource} title={fromSource ? `Selected line ko H${n} banao` : `Heading sirf original (${NAMES[baseLang]}) version mein lagti hai`} aria-label={`H${n}`} onClick={() => heading(n)} className={`${btn} border border-rule bg-card`}>H{n}</button>
         ))}
-        {onTransform && <button type="button" disabled={busy} title="Heading hatakar normal paragraph" onClick={() => heading(0)} className={`${btn} border border-rule bg-card`}>¶</button>}
+        {onTransform && <button type="button" disabled={busy || !fromSource} title={fromSource ? "Heading hatakar normal paragraph" : `Sirf original (${NAMES[baseLang]}) version mein`} aria-label="Normal paragraph" onClick={() => heading(0)} className={`${btn} border border-rule bg-card`}>¶</button>}
         {fmt.any && <button type="button" disabled={busy} onClick={() => run("remove", "format-none")} className={`${btn} border border-rule bg-card`}>Remove bold/color</button>}
       </div>
-      <div className="flex flex-wrap items-center justify-center gap-1.5 border-t border-rule pt-1.5">
-        <button type="button" disabled={busy || sizeNow <= SIZE_LADDER[0]} title="Text chhota karo" aria-label="Text size ghatao" onClick={() => run("size", stepSize(sizeNow, -1))}
-          className={`${btn} border border-rule bg-card font-bold`}>A−</button>
-        <span aria-live="polite" title={sizeMixed ? "Alag-alag size hain; pehle shabd ka size dikh raha hai" : "Selected text ka size"} className="min-w-[4.5rem] text-center text-sm font-semibold tabular-nums">
-          {sizeNow}%{sizeMixed ? " *" : ""}
-        </span>
-        <button type="button" disabled={busy || sizeNow >= SIZE_LADDER[SIZE_LADDER.length - 1]} title="Text bada karo" aria-label="Text size badhao" onClick={() => run("size", stepSize(sizeNow, 1))}
-          className={`${btn} border border-rule bg-card font-bold`}>A+</button>
-        {(sizeNow !== 100 || sizeMixed) && <button type="button" disabled={busy} title="Normal size (100%)" onClick={() => run("size", 100)} className={`${btn} border border-rule bg-card`}>100%</button>}
+      <div className="flex items-center justify-center border-t border-rule pt-1.5">
+        <SizeSlider value={sizeNow} mixed={sizeMixed} disabled={busy} onCommit={(v) => run("size", v)} />
       </div>
-      {unsynced && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">Lines teeno zabaan mein barabar nahi ({unsynced}), isliye highlight sirf isi zabaan mein lagega.</p>}
+      {reviewBlock && (
+        <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">
+          {NOTES.review}{onAlign && <> <button type="button" className="font-semibold text-accent underline" onClick={() => setAlignFor(reviewBlock)}>Lines match karein</button></>}
+        </p>
+      )}
+      {translatedView && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{NOTES.translated}</p>}
+      {info && !reviewBlock && !translatedView && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{info}</p>}
       {arMissing && !ar.any && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{arMissing} version mein ye Arabic text same nahi mila, wahan red nahi lagega.</p>}
       {error && <p role="alert" className="max-w-xs px-2 pb-1 text-center text-xs text-red-600">{error}</p>}
     </div>
+    {alignFor && <AlignEditor block={alignFor} baseLang={baseLang} onSave={(align) => onAlign(alignFor.id, align)} onClose={() => setAlignFor(null)} />}
+    </>
   );
 }

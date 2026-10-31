@@ -6,6 +6,7 @@ import { normalizeSlug, slugify } from "../../utils/slug.js";
 import { validateArticleInput } from "../../utils/validate.js";
 import { buildArticleSearchFields, escapeRegex, phoneticFieldRegex, skeletonOf } from "../../utils/searchText.js";
 import { HL_LANGS, isHighlightable, MARK_FIELDS, normalizeRanges, versionText } from "../../utils/highlights.js";
+import { resolveSourceLanguage } from "../../utils/blockAlign.js";
 
 /**
  * Data access for the `articles` collection.
@@ -153,6 +154,8 @@ export async function createArticle(config, input) {
     slug: data.slug,
     blocks: data.blocks,
     language: data.language,
+    // the language the post was originally written in: permanent (see utils/blockAlign.js resolveSourceLanguage)
+    sourceLanguage: data.sourceLanguage || data.language,
     status,
     authorId: new ObjectId(data.authorId),
     references: (data.references || []).map((id) => new ObjectId(id)),
@@ -251,6 +254,9 @@ export async function updateArticle(config, id, updates) {
       $set[key] = typeof data[key] === "string" ? data[key].trim() : data[key];
     }
   }
+  // The original language is permanent once the post has text: a language re-detected from the text must never replace it.
+  delete $set.language;
+  Object.assign($set, resolveSourceLanguage(existing, data));
   if (data.categoryId !== undefined) $set.categoryId = new ObjectId(data.categoryId);
   if (data.topicId !== undefined) $set.topicId = data.topicId ? new ObjectId(data.topicId) : null;
   if (data.references !== undefined) $set.references = data.references.map((r) => new ObjectId(r));
@@ -541,6 +547,7 @@ export function toSafeArticle(article) {
     slug: article.slug,
     blocks: article.blocks,
     language: article.language,
+    sourceLanguage: article.sourceLanguage || article.language,
     status: article.status,
     authorId: String(article.authorId),
     references: (article.references || []).map((r) => String(r)),

@@ -10,6 +10,7 @@
 import { ObjectId } from "mongodb";
 import { isValidSlugFormat } from "./slug.js";
 import { validateBlockHighlights } from "./highlights.js";
+import { validateBlockAlign } from "./blockAlign.js";
 import {
   CATEGORY_TYPES,
   CATEGORY_STATUSES,
@@ -119,6 +120,8 @@ export function validateBlocks(blocks, language) {
     }
     const hlError = validateBlockHighlights(block, language);
     if (hlError) errors.push(err(`blocks[${index}]: ${hlError}`, "INVALID_BLOCK"));
+    const alignError = validateBlockAlign(block);
+    if (alignError) errors.push(err(`blocks[${index}]: ${alignError}`, "INVALID_BLOCK"));
   });
 
   return errors;
@@ -216,6 +219,13 @@ export function validateArticleInput(data, { partial = false } = {}) {
   if (!partial || data.language !== undefined) {
     if (!isValidEnumValue(data.language, LANGUAGES)) {
       errors.push(err(`language must be one of: ${LANGUAGES.join(", ")}.`, "INVALID_LANGUAGE"));
+    }
+  }
+  if (data.sourceLanguage !== undefined && data.sourceLanguage !== null) {
+    if (!isValidEnumValue(data.sourceLanguage, ["en", "hi", "ur"])) {
+      errors.push(err("sourceLanguage must be one of: en, hi, ur.", "INVALID_LANGUAGE"));
+    } else if (data.language !== undefined && data.language !== data.sourceLanguage) {
+      errors.push(err("sourceLanguage must equal language.", "INVALID_LANGUAGE"));
     }
   }
   if (data.status !== undefined && !isValidEnumValue(data.status, ARTICLE_STATUSES)) {

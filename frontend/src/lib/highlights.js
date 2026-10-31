@@ -201,9 +201,39 @@ export function remapRanges(oldText, newText, ranges) {
   return normalizeRanges(out, newText.length);
 }
 
+/**
+ * The stored cross-script mapping follows an edit of ONE version's text: the unit ranges of that version are re-mapped exactly
+ * like highlight ranges. A unit whose text was deleted in that version, or an edit that reaches across two units, flags the block
+ * for manual correction (`review`) instead of guessing. Other versions and all unit ids are untouched.
+ */
+export function remapAlignLang(block, lang, oldText, newText) {
+  const al = block.align;
+  if (!al || al.v !== 1 || oldText === newText) return block;
+  let review = al.review === true;
+  let p = 0;
+  const max = Math.min(oldText.length, newText.length);
+  while (p < max && oldText[p] === newText[p]) p++;
+  let oEnd = oldText.length, nEnd = newText.length;
+  while (oEnd > p && nEnd > p && oldText[oEnd - 1] === newText[nEnd - 1]) { oEnd--; nEnd--; }
+  const touched = (al.units || []).filter((u) => u[lang] && u[lang][0] < oEnd && u[lang][1] > p).length;
+  if (touched > 1) review = true; // one edit across two units = a merge: ask, do not guess
+  const units = (al.units || []).map((u) => {
+    if (!u[lang]) return u;
+    const [r] = remapRanges(oldText, newText, [u[lang]]);
+    const next = { ...u };
+    if (r) next[lang] = r; else { delete next[lang]; review = true; }
+    return next;
+  });
+  const len = { ...(al.len || {}) };
+  if (String(newText).trim()) len[lang] = newText.length; else delete len[lang];
+  const out = { ...al, units, len };
+  if (review) out.review = true;
+  return { ...block, align: out };
+}
+
 /** Block after its text changed: re-maps the marks (every layer) of the version that text belongs to. */
 export function withTextEdit(block, baseLang, newText) {
-  const next = { ...block, text: newText };
+  const next = remapAlignLang({ ...block, text: newText }, baseLang, block.text || "", newText);
   if (!baseLang) return next;
   for (const field of MARK_FIELDS) {
     if (!block[field]) continue;
@@ -227,13 +257,17 @@ export function withoutVersionMarks(block, lang) {
   return next;
 }
 
-/** Applies [{ blockId, lang, field?, ranges }] (ranges REPLACE that block+layer+version's ranges; field defaults to "hl") to a blocks array. */
+/**
+ * Applies [{ blockId, lang, field?, ranges }] (ranges REPLACE that block+layer+version's ranges; field defaults to "hl") to a
+ * blocks array. An entry { blockId, align } stores that block's explicit cross-script mapping (see lib/blockAlign.js).
+ */
 export function applyEdits(blocks, edits) {
   return blocks.map((b) => {
     const mine = edits.filter((x) => x.blockId === b.id);
     if (!mine.length) return b;
     const next = { ...b };
-    for (const { lang, field = "hl", ranges } of mine) {
+    for (const { lang, field = "hl", ranges, align } of mine) {
+      if (align) { next.align = align; continue; }
       if (!MARK_FIELDS.includes(field)) continue;
       const layer = { ...(next[field] || {}) };
       if (ranges.length) layer[lang] = ranges; else delete layer[lang];
@@ -244,11 +278,38 @@ export function applyEdits(blocks, edits) {
 }
 
 /**
+ * Keeps `align` only when it is well-formed (and only on blocks that can carry one). Range positions are NOT repaired here:
+ * a mapping that no longer fits its text is detected when it is read (persistedMap) and flagged, never silently "fixed".
+ */
+function shapeAlign(b) {
+  if (b.align === undefined) return b;
+  const { align, ...rest } = b;
+  if (!isHighlightable(b) || isSacred(b) || !align || align.v !== 1 || !Array.isArray(align.units) || align.units.length > 500) return rest;
+  const units = [];
+  for (const u of align.units) {
+    if (!u || typeof u.id !== "string" || !u.id || u.id.length > 64) return rest;
+    const n = { id: u.id };
+    for (const l of SYNC_LANGS) {
+      if (u[l] === undefined) continue;
+      if (!Array.isArray(u[l]) || u[l].length !== 2 || !Number.isInteger(u[l][0]) || !Number.isInteger(u[l][1]) || u[l][0] < 0 || u[l][1] <= u[l][0]) return rest;
+      n[l] = [u[l][0], u[l][1]];
+    }
+    units.push(n);
+  }
+  const clean = { v: 1, units };
+  if (align.level) clean.level = align.level;
+  if (align.review === true) clean.review = true;
+  if (align.len && typeof align.len === "object") clean.len = Object.fromEntries(SYNC_LANGS.filter((l) => Number.isInteger(align.len[l])).map((l) => [l, align.len[l]]));
+  return { ...rest, align: clean };
+}
+
+/**
  * Before saving: drop any mark whose version text no longer exists or that points past its end (for example
  * after the base script of the article changed), so a stale mark can never make the save fail.
  */
 export function cleanBlocksHl(blocks, baseLang) {
-  return blocks.map((b) => {
+  return blocks.map((b0) => {
+    const b = shapeAlign(b0);
     if (!MARK_FIELDS.some((f) => b[f])) return b;
     const rest = { ...b };
     for (const f of MARK_FIELDS) delete rest[f];
@@ -295,19 +356,33 @@ export function splitUnits(str, level = "sentence") {
 const versionString = (b, baseLang, lang) => (lang === baseLang ? b.text : b.tr?.[lang]) || "";
 const LEVELS = ["sentence", "line", "para"];
 
-/**
- * { aligned, level, versions: { en?: units, ... }, counts: { en?: n, ... } } - or null when there is nothing to sync
- * (sacred text, < 2 versions). Versions are compared by sentence first; if their sentence counts differ (a converter
- * adds or drops a full stop) by line, then by paragraph - the finest level at which ALL versions have the same count.
- * When none fits, `aligned` is false and `counts` are the line counts (shown to the admin).
- */
-export function unitMap(b, baseLang) {
-  if (!isHighlightable(b) || isSacred(b) || !baseLang) return null;
+/** Is `r` a well-formed [start, end] pair that fits inside a text of `len` characters? */
+const PAIR_OK = (r, len) => Array.isArray(r) && r.length === 2 && Number.isInteger(r[0]) && Number.isInteger(r[1]) && r[0] >= 0 && r[1] > r[0] && r[1] <= len;
+
+/** { en?: text, hi?: text, ur?: text } - the written (non-blank) versions of a block. */
+export function versionTexts(b, baseLang) {
   const texts = {};
   for (const lang of SYNC_LANGS) {
     const s = versionString(b, baseLang, lang);
     if (typeof s === "string" && s.trim()) texts[lang] = s;
   }
+  return texts;
+}
+
+/** The text length of every written version - stored in `align.len` so a mapping can tell when its text changed behind its back. */
+export const lengthsOf = (b, baseLang) => Object.fromEntries(Object.entries(versionTexts(b, baseLang)).map(([l, t]) => [l, t.length]));
+
+/**
+ * The count-based PROPOSAL for blocks that have no stored `align` yet (every post written before the permanent mapping
+ * existed) and the starting point when a translation is pasted: { aligned, level, versions, counts }.
+ * Versions are compared by sentence first; if their sentence counts differ (a converter adds or drops a full stop) by
+ * line, then by paragraph - the finest level at which ALL versions have the same count. When none fits, `aligned` is
+ * false and `counts` are the line counts (shown to the admin). It never decides anything on its own for new posts:
+ * the result is only ever stored as an explicit mapping (see lib/blockAlign.js), and never "fixed up" by guessing.
+ */
+export function deriveUnitMap(b, baseLang) {
+  if (!isHighlightable(b) || isSacred(b) || !baseLang) return null;
+  const texts = versionTexts(b, baseLang);
   const langs = Object.keys(texts);
   if (langs.length < 2) return null;
   const at = (level) => Object.fromEntries(langs.map((l) => [l, splitUnits(texts[l], level)]));
@@ -316,11 +391,58 @@ export function unitMap(b, baseLang) {
     const n = versions[langs[0]].length;
     // a lone line / paragraph would highlight the whole block, which is never what "same line" means - so those levels need 2+
     if (n > (level === "sentence" ? 0 : 1) && langs.every((l) => versions[l].length === n)) {
-      return { aligned: true, level, versions, counts: Object.fromEntries(langs.map((l) => [l, n])) };
+      return { aligned: true, level, versions, ids: null, persisted: false, counts: Object.fromEntries(langs.map((l) => [l, n])) };
     }
   }
   const lines = at("line");
-  return { aligned: false, level: "line", versions: lines, counts: Object.fromEntries(langs.map((l) => [l, lines[l].length])) };
+  return { aligned: false, level: "line", versions: lines, ids: null, persisted: false, counts: Object.fromEntries(langs.map((l) => [l, lines[l].length])) };
+}
+
+/**
+ * Reads a STORED mapping `block.align = { v: 1, level?, review?, len: { en?, hi?, ur? }, units: [{ id, en?: [s, e], hi?: [s, e], ur?: [s, e] }] }`.
+ * Unit N of every version is the same logical unit because they share one `id` - counts, word counts and lengths play no part.
+ * A mapping whose ranges no longer fit their text (text changed without the mapping being re-mapped) is `stale`:
+ * it is never trusted and never repaired by guessing - the block is flagged for manual correction instead.
+ */
+function persistedMap(b, texts) {
+  const al = b.align;
+  const langs = Object.keys(texts);
+  const units = Array.isArray(al.units) ? al.units : [];
+  let valid = true;
+  const seen = new Set();
+  for (const u of units) {
+    if (!u || typeof u.id !== "string" || !u.id || seen.has(u.id)) { valid = false; break; }
+    seen.add(u.id);
+    for (const l of SYNC_LANGS) if (u[l] !== undefined && !(texts[l] && PAIR_OK(u[l], texts[l].length))) valid = false;
+  }
+  if (valid && al.len && typeof al.len === "object") for (const l of langs) if (al.len[l] !== texts[l].length) valid = false;
+  if (valid) for (const l of langs) { let prev = 0; for (const u of units) if (u[l]) { if (u[l][0] < prev) valid = false; prev = u[l][1]; } }
+  const complete = valid && units.length > 0 && units.every((u) => langs.every((l) => u[l]));
+  const versions = Object.fromEntries(langs.map((l) => [l, valid ? units.filter((u) => u[l]).map((u) => u[l]) : []]));
+  return {
+    aligned: complete && al.review !== true,
+    level: al.level || "manual",
+    versions,
+    ids: units.map((u) => u.id),
+    counts: Object.fromEntries(langs.map((l) => [l, versions[l].length])),
+    persisted: true,
+    stale: !valid,
+  };
+}
+
+/**
+ * { aligned, level, versions: { en?: units, ... }, counts: { en?: n, ... }, ids, persisted } - or null when there is nothing
+ * to sync (sacred text, < 2 versions). A block with a stored `align` uses it (stable unit ids, see persistedMap); an old
+ * block without one falls back to the count-based proposal of deriveUnitMap (read-only: nothing is written by reading).
+ */
+export function unitMap(b, baseLang) {
+  if (!isHighlightable(b) || isSacred(b) || !baseLang) return null;
+  if (b.align && b.align.v === 1) {
+    const texts = versionTexts(b, baseLang);
+    if (Object.keys(texts).length < 2) return null;
+    return persistedMap(b, texts);
+  }
+  return deriveUnitMap(b, baseLang);
 }
 
 /**
@@ -362,7 +484,8 @@ export function inheritMarks(block, baseLang, lang) {
   // Colour layers follow the line. (arRed is word-level, so it is re-found by its text instead - see arabicSpans.)
   for (const field of COLOR_FIELDS) {
     if (!block[field]) continue;
-    const from = [baseLang, ...SYNC_LANGS].find((l) => l !== lang && map.versions[l] && rangesOf(block, l, field).length);
+    // the original (source) script is the only formatting source: a translation never hands its marks to another translation
+    const from = [baseLang].find((l) => l !== lang && map.versions[l] && rangesOf(block, l, field).length);
     if (!from) continue;
     const marked = map.versions[from].map((u, i) => (overlaps(rangesOf(block, from, field), u) ? i : -1)).filter((i) => i >= 0);
     if (!marked.length) continue;
@@ -370,7 +493,7 @@ export function inheritMarks(block, baseLang, lang) {
   }
   if (block[AR_FIELD]) {
     const text = versionString(block, baseLang, lang);
-    const from = [baseLang, ...SYNC_LANGS].find((l) => l !== lang && rangesOf(block, l, AR_FIELD).length);
+    const from = [baseLang].find((l) => l !== lang && rangesOf(block, l, AR_FIELD).length);
     if (from && text) {
       const src = versionString(block, baseLang, from);
       const found = [];

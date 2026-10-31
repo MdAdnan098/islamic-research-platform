@@ -4,6 +4,7 @@ import { lazy, Suspense } from "react";
 import { useAdminDraft } from "../../lib/adminDraft.js";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
+import AdminDock from "../components/AdminDock.jsx";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { PublicLayout } from "../../layouts/PublicLayout.jsx";
 import { ErrorState, Skeleton } from "../../components/ui/feedback.jsx";
@@ -33,12 +34,12 @@ export default function Preview() {
         : (
           <>
             <ArticleView article={shown} references={shownRefs} crumbs={[]} edit={editOn ? { saveLabel: "Save", onSave: draft.ops.onSave, onRemove: draft.ops.onRemove } : undefined} inline={{ scope: id, onInsert: draft.ops.onInsert }} banner={data.article.status !== "published" ? `Preview — status: ${data.article.status}. Not visible to the public.` : draft.hasDraft ? "Preview — live post mein ye badlav abhi publish nahi hue (Save & Publish dabayein)." : "Preview — this article is live."}
-              editor={hlOn ? { enabled: true, onApply: draft.ops.onApply, onTransform: draft.ops.onTransform } : undefined} />
-            <div dir="ltr" className="fixed bottom-4 start-4 z-[60] flex max-w-[80vw] flex-col gap-1 rounded-xl border border-rule bg-paper px-3 py-2 text-xs text-ink shadow-elev">
+              editor={hlOn ? { enabled: true, onApply: draft.ops.onApply, onTransform: draft.ops.onTransform, onAlign: draft.ops.onAlign } : undefined} />
+            <AdminDock>
               <button type="button" aria-pressed={hlOn} onClick={() => setHlOn((v) => !v)} className="text-start font-semibold">Highlight / Format mode: {hlOn ? "ON" : "OFF"}</button>
               <button type="button" aria-pressed={editOn} onClick={() => setEditOn((v) => !v)} className="text-start font-semibold">Edit buttons: {editOn ? "ON" : "OFF"}</button>
               <Suspense fallback={null}><PublishBar draft={draft} /></Suspense>
-            </div>
+            </AdminDock>
           </>
         )}
     </PublicLayout>

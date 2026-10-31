@@ -15,6 +15,7 @@ import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
 import { VersionsPanel } from "../components/VersionsPanel.jsx";
 import { detectLang } from "../../lib/versions.js";
+import AdminDock from "../components/AdminDock.jsx";
 import { useNoPattern } from "../../lib/useNoPattern.js";
 import { ErrorBox, Field, Modal, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 
@@ -36,8 +37,10 @@ export default function ArticleEditor() {
   const [hlOn, setHlOn] = useState(false);
   const [addOn, setAddOn] = useState(true);
   const [editOn, setEditOn] = useState(false);
+  const [srcLang, setSrcLang] = useState(null); // the stored original language of a saved post (permanent)
   const rev = useRef(null); // updatedAt of the version this editor is based on (stale-save guard)
-  const lang = detectLang(f.title, blocks); // the script the admin wrote in
+  // the script the admin wrote in. A saved post keeps the language it was created in (permanent); only a new post is detected.
+  const lang = (!isNew && srcLang) || detectLang(f.title, blocks);
   const saved = useRef("");
 
   const cats = useAsync((s) => adminApi.categories.list({ status: "active" }, s), []);
@@ -50,7 +53,7 @@ export default function ArticleEditor() {
     const a = await adminApi.articles.get(id, s);
     // The working copy: edits made from "View site" that are not published yet come first.
     const work = withIds(a.pending?.blocks ?? a.blocks);
-    setF(pick(a)); setBlocks(work);
+    setF(pick(a)); setBlocks(work); setSrcLang(a.sourceLanguage || a.language);
     saved.current = JSON.stringify([pick(a), a.pending ? [] : work]);
     rev.current = a.updatedAt;
     return a;
@@ -85,7 +88,7 @@ export default function ArticleEditor() {
     if (!isSlug(slug)) slug = "article-" + Math.random().toString(36).slice(2, 8);
     if (slug !== f.slug) setF((s) => ({ ...s, slug }));
     const body = {
-      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), titleTr: Object.fromEntries(Object.entries(f.titleTr || {}).filter(([, v]) => v && v.trim())), slug, language: lang || "en", blocks: cleanBlocksHl(blocks, lang || "en"),
+      categoryId: f.categoryId, topicId: f.topicId || null, title: f.title.trim(), titleTr: Object.fromEntries(Object.entries(f.titleTr || {}).filter(([, v]) => v && v.trim())), slug, language: lang || "en", sourceLanguage: lang || "en", blocks: cleanBlocksHl(blocks, lang || "en"),
       references: referenceIdsOf(blocks), excerpt: f.excerpt.trim() || null,
       seoTitle: f.seoTitle.trim() || null, seoDescription: f.seoDescription.trim() || null, coverKey: f.coverKey || null,
     };
@@ -204,13 +207,13 @@ export default function ArticleEditor() {
           <ArticleView article={{ ...f, language: lang || "en", title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs}
             inline={addOn ? { onInsert: async (index, block) => { setBlocks((bs) => [...bs.slice(0, index + 1), block, ...bs.slice(index + 1)]); if (block.type === "reference" && block.referenceId) { const r = await adminApi.references.get(block.referenceId).catch(() => null); if (r) setPreview((p) => ({ ...p, refs: [...p.refs.filter((x) => x.id !== r.id), r] })); } } } : undefined}
             edit={editOn ? { saveLabel: "Apply", onSave: async (index, nb) => { setBlocks((bs) => bs.map((b, j) => (j === index ? { ...nb, id: b.id } : b))); if (nb.type === "reference" && nb.referenceId) { const r = await adminApi.references.get(nb.referenceId).catch(() => null); if (r) setPreview((p) => ({ ...p, refs: [...p.refs.filter((x) => x.id !== r.id), r] })); } } } : undefined}
-            editor={hlOn ? { enabled: true, onApply: async (edits) => setBlocks((bs) => applyEdits(bs, edits)), onTransform: async (pieces, level) => { const res = setLineHeading(blocks, lang || "en", pieces, level); if (!res.error) setBlocks(res.blocks); return res.error; } } : undefined} />
-          <div dir="ltr" className="fixed bottom-4 start-4 z-[80] flex flex-col gap-1 rounded-xl border border-rule bg-paper px-3 py-2 text-xs text-ink shadow-elev">
+            editor={hlOn ? { enabled: true, onApply: async (edits) => setBlocks((bs) => applyEdits(bs, edits)), onTransform: async (pieces, level) => { const res = setLineHeading(blocks, lang || "en", pieces, level); if (!res.error) setBlocks(res.blocks); return res.error; }, onAlign: async (blockId, align) => setBlocks((bs) => bs.map((b) => (b.id === blockId ? { ...b, align } : b))) } : undefined} />
+          <AdminDock zClass="z-[80]">
             <button type="button" aria-pressed={hlOn} onClick={() => setHlOn((v) => !v)} className="text-start font-semibold">Admin · Highlight mode: {hlOn ? "ON" : "OFF"}</button>
             <button type="button" aria-pressed={addOn} onClick={() => setAddOn((v) => !v)} className="text-start font-semibold">Admin · Add buttons: {addOn ? "ON" : "OFF"}</button>
             <button type="button" aria-pressed={editOn} onClick={() => setEditOn((v) => !v)} className="text-start font-semibold">Admin · Edit buttons: {editOn ? "ON" : "OFF"}</button>
             {editOn && <span className="text-mute">Edit ke baad "Apply" dabayein, phir editor mein Save karein.</span>}
-          </div>
+          </AdminDock>
         </div>,
         document.body
       )}

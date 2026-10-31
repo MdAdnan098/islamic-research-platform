@@ -5,6 +5,7 @@ import { useAsync } from "../../lib/useAsync.js";
 import { lazy, Suspense, useState } from "react";
 import { useIsAdmin } from "../../lib/adminHint.js";
 import { useAdminDraft } from "../../lib/adminDraft.js";
+import AdminDock from "../../admin/components/AdminDock.jsx";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { Skeleton, ErrorState, NotFoundState } from "../../components/ui/feedback.jsx";
 import { DEMO_ARTICLE_PAYLOAD } from "../../config/demoArticle.js";
@@ -66,7 +67,7 @@ export default function ArticlePage() {
   }
   const shown = isAdmin && draft.blocks ? { ...data.article, blocks: draft.blocks } : data.article;
   const shownRefs = isAdmin && draft.ready ? draft.references : data.references;
-  const editor = isAdmin && editing ? { enabled: true, onApply: draft.ops.onApply, onTransform: draft.ops.onTransform } : undefined;
+  const editor = isAdmin && editing ? { enabled: true, onApply: draft.ops.onApply, onTransform: draft.ops.onTransform, onAlign: draft.ops.onAlign } : undefined;
   // Admin only: small "+ Add" under every block, auto-saved into the draft (no trip back to the dashboard).
   const inline = isAdmin && addOn ? { scope: data.article.id, onInsert: draft.ops.onInsert } : undefined;
   // Admin only: Edit + Delete under every block. Edit "Save" stores the draft; "Save & Publish" in the panel publishes it.
@@ -76,7 +77,7 @@ export default function ArticlePage() {
     <>
       <ArticleView {...data} article={shown} references={shownRefs} editor={editor} inline={inline} edit={edit} />
       {isAdmin && (
-        <div dir="ltr" className="fixed bottom-4 start-4 z-[60] flex max-w-[80vw] flex-col gap-1 rounded-xl border border-rule bg-paper px-3 py-2 text-xs text-ink shadow-elev">
+        <AdminDock>
           <button type="button" aria-pressed={editing} onClick={() => setEditing((v) => !v)} className="font-semibold">
             Admin · Highlight / Format mode: {editing ? "ON" : "OFF"}
           </button>
@@ -87,9 +88,9 @@ export default function ArticlePage() {
             Admin · Edit buttons: {editOn ? "ON" : "OFF"}
           </button>
           {editing && missingIds && <span className="text-mute">Is article ko ek baar editor mein kholkar Save karein, tab highlight chalega.</span>}
-          {editing && !missingIds && <span className="text-mute">Text select karein: Highlight, Bold, Color ya H1/H2/H3 lagayein.</span>}
+          {editing && !missingIds && <span className="text-mute">Text select karein: Highlight, Bold, Color ya H2/H3 lagayein.</span>}
           <Suspense fallback={null}><PublishBar draft={draft} /></Suspense>
-        </div>
+        </AdminDock>
       )}
     </>
   );

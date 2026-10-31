@@ -1,4 +1,5 @@
 import { inheritMarks, withoutVersionMarks } from "./highlights.js";
+import { attachVersion } from "./blockAlign.js";
 
 /**
  * Multi-script versions. An article keeps ONE structure (blocks). Text blocks
@@ -195,7 +196,9 @@ export function applyPaste(lang, parsed, titleTr, blocks, baseLang) {
     count++;
     // A pasted translation replaces that version's text, so highlights that belonged to the old text are dropped.
     // If the other versions are already highlighted, the same lines get highlighted in the pasted one too.
-    return inheritMarks(withoutVersionMarks({ ...b, tr: { ...(b.tr || {}), [lang]: v } }, lang), baseLang, lang);
+    // The pasted version is tied to the other versions through the block's stored unit mapping (existing unit ids are kept;
+    // a version that does not fit is left unmatched and the block is flagged for manual correction - nothing is guessed).
+    return inheritMarks(attachVersion(withoutVersionMarks({ ...b, tr: { ...(b.tr || {}), [lang]: v } }, lang), baseLang, lang), baseLang, lang);
   });
   let tt = titleTr || {};
   if (parsed[0]) { tt = { ...tt, [lang]: parsed[0] }; count++; }

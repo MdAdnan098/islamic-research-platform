@@ -5,6 +5,8 @@ import { useAsync } from "../../lib/useAsync.js";
 import { isSlug, slugify } from "../../lib/format.js";
 import { referenceIdsOf, withIds } from "../../lib/blocks.js";
 import { applyEdits, cleanBlocksHl } from "../../lib/highlights.js";
+import { setLineHeading } from "../../lib/lineHeading.js";
+import AdminDock from "../components/AdminDock.jsx";
 import { detectLang } from "../../lib/versions.js";
 import { flattenTree, folderLabel } from "../../lib/folders.js";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
@@ -43,7 +45,7 @@ export default function ArticleComposer() {
   const [title, setTitle] = useState(() => (routeId ? "" : readTitle()));
   const [blocks, setBlocks] = useState([]);
   const [refs, setRefs] = useState([]);
-  const [meta, setMeta] = useState({ categoryId: "", topicId: "", slug: "", status: "draft" });
+  const [meta, setMeta] = useState({ categoryId: "", topicId: "", slug: "", status: "draft", sourceLanguage: "", langLocked: false });
   const [extra, setExtra] = useState({ titleTr: {}, coverKey: "", excerpt: "" }); // converted heading, cover image (saved with the post)
   const [status, setStatus] = useState({ text: "", tone: "" });
   const [busy, setBusy] = useState(false);
@@ -65,7 +67,8 @@ export default function ArticleComposer() {
     const a = await adminApi.articles.get(routeId, s);
     setTitle(a.title); savedTitle.current = a.title;
     setBlocks(withIds(a.blocks));
-    setMeta({ categoryId: a.categoryId, topicId: a.topicId || "", slug: a.slug, status: a.status });
+    // the stored original language is permanent for a post that already has text
+    setMeta({ categoryId: a.categoryId, topicId: a.topicId || "", slug: a.slug, status: a.status, sourceLanguage: a.sourceLanguage || a.language, langLocked: (a.blocks || []).some((b) => typeof b.text === "string" && b.text.trim()) });
     setExtra({ titleTr: a.titleTr || {}, coverKey: a.coverKey || "", excerpt: a.excerpt || "" });
     rev.current = a.updatedAt;
     const found = await Promise.all(referenceIdsOf(a.blocks).map((r) => adminApi.references.get(r, s).catch(() => null)));
@@ -95,9 +98,10 @@ export default function ArticleComposer() {
       if (!cur.meta.categoryId) throw new Error("Pehle category chuniye (upar Category).");
       const base = withIds(cur.blocks);
       const next = mutate ? mutate(base) : base;
-      const language = detectLang(t, next) || "en";
+      // original language: the one chosen / stored for this post; detected from the text only while nothing has been chosen yet
+      const language = cur.meta.sourceLanguage || detectLang(t, next) || "en";
       const body = {
-        categoryId: cur.meta.categoryId, topicId: cur.meta.topicId || null, title: t, language,
+        categoryId: cur.meta.categoryId, topicId: cur.meta.topicId || null, title: t, language, sourceLanguage: language,
         blocks: cleanBlocksHl(next, language), references: referenceIdsOf(next),
         titleTr: Object.fromEntries(Object.entries(cur.extra.titleTr || {}).filter(([, v]) => v && String(v).trim())),
         coverKey: cur.extra.coverKey || null,
@@ -119,9 +123,10 @@ export default function ArticleComposer() {
       savedTitle.current = a.title;
       const saved = withIds(a.blocks);
       // Updated at once (not only on the next render) so a queued save sees the new id / blocks.
-      latest.current = { ...latest.current, id: a.id, blocks: saved, meta: { ...latest.current.meta, slug: a.slug, status: a.status } };
+      const lockedNow = saved.some((b) => typeof b.text === "string" && b.text.trim());
+      latest.current = { ...latest.current, id: a.id, blocks: saved, meta: { ...latest.current.meta, slug: a.slug, status: a.status, sourceLanguage: lockedNow ? (a.sourceLanguage || a.language) : latest.current.meta.sourceLanguage, langLocked: lockedNow } };
       setBlocks(saved);
-      setMeta((m) => ({ ...m, slug: a.slug, status: a.status }));
+      setMeta((m) => ({ ...m, slug: a.slug, status: a.status, sourceLanguage: lockedNow ? (a.sourceLanguage || a.language) : m.sourceLanguage, langLocked: lockedNow }));
       // references used by the blocks are loaded so they are drawn straight away
       const known = new Map(cur.refs.map((r) => [r.id, r]));
       const need = referenceIdsOf(a.blocks);
@@ -224,6 +229,18 @@ export default function ArticleComposer() {
   const editor = hlOn && id ? {
     enabled: true,
     onApply: async (edits) => { await persist((cur) => applyEdits(cur, edits)); },
+    // Heading (H2 / H3 / paragraph) of the selected line(s): original script only, see lib/lineHeading.js
+    onTransform: async (pieces, level) => {
+      let error = "";
+      await persist((cur) => {
+        const res = setLineHeading(cur, latest.current.meta.sourceLanguage || detectLang(latest.current.title, cur) || "en", pieces, level);
+        error = res.error;
+        if (res.error) throw new Error(res.error);
+        return res.blocks;
+      }).catch((e) => { if (!error) throw e; });
+      return error;
+    },
+    onAlign: async (blockId, align) => { await persist((cur) => cur.map((b) => (b.id === blockId ? { ...b, align } : b))); },
   } : undefined;
 
   // The heading looks like the post's own heading (big, no box); it grows with the text.
@@ -255,13 +272,23 @@ export default function ArticleComposer() {
   if (routeId && loaded.error && !loaded.data) return <PublicLayout><div className="container-read py-16"><ErrorState error={loaded.error} onRetry={loaded.reload} /></div></PublicLayout>;
 
   const live = meta.status === "published";
-  const lang = detectLang(title, blocks) || "en";
+  const lang = meta.sourceLanguage || detectLang(title, blocks) || "en";
   return (
     <PublicLayout>
       <div dir="ltr" className="sticky top-0 z-[45] border-b border-rule bg-card/95 px-3 py-2 font-sans text-sm text-ink backdrop-blur sm:px-5">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2">
           <Link to="/admin/articles" className="text-mute hover:text-ink">← Articles</Link>
           {id && <StatusBadge status={meta.status} />}
+          <div className="flex items-center gap-1 text-xs" role="group" aria-label="Original language">
+            <span className="text-mute">Original:</span>
+            {[["en", "Roman"], ["hi", "Hindi"], ["ur", "Urdu"]].map(([code, label]) => (
+              <button key={code} type="button" disabled={meta.langLocked} aria-pressed={lang === code}
+                title={meta.langLocked ? "Post ki original zabaan permanent hai (text likha ja chuka hai)" : `${label} mein likh rahe hain`}
+                onClick={() => updateMeta({ sourceLanguage: code })}
+                className={`rounded-full border px-2.5 py-1 ${lang === code ? "border-ink bg-tint font-semibold" : "border-rule"} disabled:opacity-60`}>{label}</button>
+            ))}
+            {meta.langLocked && <span aria-hidden="true" className="text-mute">🔒</span>}
+          </div>
           <span className={`text-xs ${status.tone === "err" ? "text-ad-danger" : status.tone === "ok" ? "text-ad-ok" : "text-mute"}`}>{status.text || (id ? "" : "Naya post — heading likhein")}</span>
           <div className="ms-auto flex flex-wrap items-center gap-2">
             <button type="button" className="a-btn" disabled={busy} onClick={saveNow}>{busy ? "Saving…" : live ? "Save Changes" : "Save Draft"}</button>
@@ -279,7 +306,7 @@ export default function ArticleComposer() {
         edit={edit}
       />
 
-      <div dir="ltr" className="fixed bottom-4 start-4 z-[60] flex max-w-[80vw] flex-col gap-1 rounded-xl border border-rule bg-paper px-3 py-2 font-sans text-xs text-ink shadow-elev">
+      <AdminDock extra="font-sans">
         <button type="button" aria-pressed={hlOn} disabled={!id} onClick={() => setHlOn((v) => !v)} className="text-start font-semibold disabled:opacity-50">
           Admin · Highlight mode: {hlOn ? "ON" : "OFF"}
         </button>
@@ -291,7 +318,7 @@ export default function ArticleComposer() {
         </button>
         {hlOn && id && <span className="text-mute">Text select karein, phir Highlight dabayein.</span>}
         {!id && <span className="text-mute">Highlight ke liye pehle post save karein.</span>}
-      </div>
+      </AdminDock>
 
       {/* Settings: below the live page, after a divider, above the footer. */}
       <section dir="ltr" className="container-article pb-16 pt-6 font-sans text-ink" aria-label="Post settings">

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { BLOCK_META } from "../../lib/blocks.js";
-import { MARK_FIELDS, remapRanges, withTextEdit } from "../../lib/highlights.js";
+import { MARK_FIELDS, remapAlignLang, remapRanges, withTextEdit } from "../../lib/highlights.js";
 import { VERSION_LANGS } from "../../lib/versions.js";
 import { Fields } from "./BlockEditor.jsx";
 import { Field, ToastProvider } from "./ui.jsx";
@@ -12,7 +12,8 @@ const isObj = (v) => !!v && typeof v === "object" && !Array.isArray(v);
 
 /** Sets the text of one converted version (block.tr[lang]) and keeps that version's highlights on the same words. */
 function withVersionText(block, lang, text) {
-  const next = { ...block, tr: { ...(block.tr || {}), [lang]: text } };
+  // the stored cross-script mapping follows the edit (unit ids stay the same); see remapAlignLang
+  const next = remapAlignLang({ ...block, tr: { ...(block.tr || {}), [lang]: text } }, lang, block.tr?.[lang] || "", text);
   for (const field of MARK_FIELDS) {
     const marks = block[field]?.[lang];
     if (!marks?.length) continue;
