@@ -68,17 +68,23 @@ export function FoldersCard({ folders: list, total, loading, error, onRetry, onC
             <FolderIcon size={28} />{t.home.noFolders}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-rule bg-card px-3">
-            {pinned.length > 0 && (
-              <div className="-mx-3 border-b border-rule bg-tint/40 px-3">
-                <p className="flex items-center gap-1.5 pb-0.5 pt-2 text-[11px] font-medium text-mute">
-                  <Icon name="pin" size={12} className="cta-text" />{t.home.pinnedByAdmin}
-                </p>
-                {pinned.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />)}
+          <div className="overflow-hidden rounded-xl border border-rule bg-card">
+            {/* ONE scrolling box. The pinned block sticks to its top, so swiping anywhere (even on a pinned row) scrolls this list,
+                never the page, and the pinned folders stay in place while the rest slide underneath. */}
+            <div style={{ "--ph": `${(pinned.length * 3.6 + (pinned.length ? 1.6 : 0)) * 0.6}rem` }} className="max-h-[calc(19rem_+_var(--ph))] overflow-y-auto overscroll-auto sm:max-h-[calc(22rem_+_var(--ph))]">
+              {pinned.length > 0 && (
+                <div className="sticky top-0 z-10 border-b border-rule bg-card">
+                  <div className="bg-tint/40 px-3">
+                    <p className="flex items-center gap-1.5 pb-0.5 pt-2 text-[11px] font-medium text-mute">
+                      <Icon name="pin" size={12} className="cta-text" />{t.home.pinnedByAdmin}
+                    </p>
+                    {pinned.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />)}
+                  </div>
+                </div>
+              )}
+              <div className="px-3">
+                {rest.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />)}
               </div>
-            )}
-            <div style={{ "--ph": `${pinned.length * 3.6 + (pinned.length ? 1.6 : 0)}rem` }} className="max-h-[max(9rem,calc(19rem_-_var(--ph)))] overflow-y-auto overscroll-auto sm:max-h-[max(9rem,calc(22rem_-_var(--ph)))]">
-              {rest.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />)}
             </div>
           </div>
         )}
