@@ -408,5 +408,7 @@ body.no-pattern, body.no-pattern .admin-root, body.no-pattern .paper-pattern, bo
 .btn-cta { background-color: rgb(var(--cta)); color: #fff; }
 .brand-text { color: rgb(var(--brand)); }
 .cta-text { color: rgb(var(--cta)); }
+.dark .dark-cta { color: #3399CC; }   /* tagline + footer brand name: button colour in dark mode only */
+:root:not(.dark):not([data-theme]) .foot-head { color: rgb(255 243 207); }   /* footer headings: same colour as the tagline in light mode */
 .view-all, .dark .view-all { color: rgb(var(--cta)); border-color: rgb(var(--cta) / .3); }
 .view-all:hover, .dark .view-all:hover { background-color: rgb(var(--cta)); color: #fff; }

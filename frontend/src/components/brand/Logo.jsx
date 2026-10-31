@@ -38,7 +38,7 @@ export function Logo({ size = 40, showText = true, className = "", badge = false
       {showText && (
         <span className="leading-tight">
           <span className="block text-[17px] font-bold tracking-tight"><BrandName /></span>
-          <span className="block whitespace-nowrap text-[8.5px] font-medium tracking-wide text-bronze sm:text-[10px]">{BRAND.tagline}</span>
+          <span className="dark-cta block whitespace-nowrap text-[8.5px] font-medium tracking-wide text-bronze sm:text-[10px]">{BRAND.tagline}</span>
         </span>
       )}
     </span>

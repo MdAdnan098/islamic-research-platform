@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FolderIcon } from "../../components/ui/FolderIcon.jsx";
 import { Link, useSearchParams } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
 import { SECTION_PATH, publicApi } from "../../services/public.js";
@@ -51,7 +52,7 @@ export default function SearchPage() {
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {folders.map((f) => (
                       <Link key={f.id} to={`/${SECTION_PATH[f.section] || "aqaid"}/${f.slug}`} className="flex items-center gap-3 rounded-xl border border-rule bg-card px-4 py-3 hover:border-accent/40">
-                        <Icon name="folder" size={22} className="shrink-0 text-accent/80" />
+                        <FolderIcon size={22} className="shrink-0" />
                         <div className="min-w-0"><Text as="p" className="line-clamp-2 font-display font-bold">{f.title}</Text>
                           <Text as="span" className="block text-xs text-mute">{[t.nav[f.section === "aqeedah" ? "aqaid" : "masail"], ...(f.folders || []).map((x) => x.title)].join(" › ")}</Text></div>
                       </Link>

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { FolderIcon } from "../ui/FolderIcon.jsx";
 import { useI18n } from "../../i18n/index.jsx";
 import { mediaUrl } from "../../lib/media.js";
 import { pickVersion } from "../../lib/versions.js";
@@ -34,11 +35,8 @@ export function ArticleCard({ article }) {
 export function TopicCard({ topic, to, label }) {
   return (
     <Link to={to} className="group block min-w-0">
-      <div className="relative pt-2 transition duration-300 ease-out group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
-        <span aria-hidden="true" className="absolute start-3 top-0 h-3 w-10 rounded-t-lg border border-b-0 border-rule bg-tint transition-colors group-hover:border-accent/40 sm:h-3.5 sm:w-12" />
-        <div className="flex aspect-[5/4] w-full items-center justify-center rounded-xl border border-rule bg-tint shadow-elev transition duration-300 group-hover:border-accent/40 group-hover:shadow-soft">
-          <Icon name="folder" size={34} className="text-accent/70 sm:h-10 sm:w-10" />
-        </div>
+      <div className="transition duration-300 ease-out group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
+        <FolderIcon fluid />
       </div>
       <Text as="h3" className="mt-2 line-clamp-2 px-0.5 text-center font-display text-xs font-bold leading-snug sm:text-sm">{topic.title}</Text>
       {label && <span className="mt-0.5 block text-center text-[11px] text-mute">{label}</span>}
@@ -51,7 +49,7 @@ export function FolderTile({ folder, to }) {
   const { t } = useI18n();
   return (
     <Link to={to} className="group flex min-w-0 items-center gap-3 rounded-xl border border-rule bg-tint px-3 py-3 transition hover:border-accent/40">
-      <Icon name="folder" size={26} className="shrink-0 text-accent/80" />
+      <FolderIcon size={26} className="shrink-0" />
       <div className="min-w-0">
         <Text as="h3" className="line-clamp-2 font-display text-sm font-bold leading-snug sm:text-base">{folder.title}</Text>
         {sectionLabel(t, folder.section) && <span className="block text-[11px] text-mute">{sectionLabel(t, folder.section)}</span>}

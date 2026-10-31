@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { FolderIcon } from "../ui/FolderIcon.jsx";
 import { useI18n } from "../../i18n/index.jsx";
 import { SECTION_PATH } from "../../services/public.js";
 import { Icon } from "../ui/icons.jsx";
@@ -17,7 +18,7 @@ function FolderRow({ folder, to, label }) {
   const count = folder.articleCount;
   return (
     <Link to={to} className="group flex items-center gap-3 border-t border-rule px-1 py-3 transition first:border-t-0 hover:bg-tint/60">
-      <Icon name="folder" size={22} className="shrink-0 text-accent/80" />
+      <FolderIcon size={22} className="shrink-0" />
       <div className="min-w-0 flex-1">
         <Text as="h3" className="font-display text-sm font-bold leading-snug sm:text-base">{folder.title}</Text>
         {label && <span className="block text-[11px] leading-tight text-mute">{label}</span>}
@@ -53,7 +54,7 @@ export function FoldersCard({ folders: list, loading, error, onRetry }) {
           <p className="py-6 text-center text-sm text-mute">{t.common.error} <button onClick={reload} className="text-accent underline">{t.common.retry}</button></p>
         ) : folders.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-rule px-6 py-8 text-center text-sm text-mute">
-            <Icon name="folder" size={28} className="text-accent/60" />{t.home.noFolders}
+            <FolderIcon size={28} />{t.home.noFolders}
           </div>
         ) : (
           <div className="max-h-[19rem] overflow-y-auto overscroll-auto rounded-xl border border-rule bg-card px-3 sm:max-h-[22rem]">

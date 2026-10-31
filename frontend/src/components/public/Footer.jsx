@@ -53,7 +53,7 @@ export function Footer() {
         {/* Links + Information sit side by side (on phones too); from md they become separate columns */}
         <div className="grid grid-cols-2 gap-x-6 md:contents">
           <div>
-            <p className="text-lg font-bold">{t.footer.links}</p>
+            <p className="foot-head text-lg font-bold">{t.footer.links}</p>
             <ul className="mt-4 space-y-3 text-base">
               {links.map(([to, label]) => (
                 <li key={to}><Link to={to} className="text-mute transition-colors hover:text-ink">{label}</Link></li>
@@ -61,7 +61,7 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <p className="text-lg font-bold">{t.footer.info}</p>
+            <p className="foot-head text-lg font-bold">{t.footer.info}</p>
             <ul className="mt-4 space-y-3 text-base">
               {info.map(([to, label]) => (
                 <li key={to}><Link to={to} className="text-mute transition-colors hover:text-ink">{label}</Link></li>
@@ -90,7 +90,7 @@ export function Footer() {
           </div>
           )}
           <div className="shrink-0">
-            <p className="text-lg font-bold">{t.footer.follow}</p>
+            <p className="foot-head text-lg font-bold">{t.footer.follow}</p>
             <div className="mt-3 flex gap-2 lg:mt-4 lg:gap-3">
               {SOCIALS.map(({ key, label, Glyph, bg }) => (
                 <a
@@ -112,8 +112,8 @@ export function Footer() {
       </div>
       <div className="border-t border-rule">
         <AdminTapZone className="container-page flex flex-col items-center justify-between gap-2 py-5 text-sm text-mute sm:flex-row">
-          <span>© {new Date().getFullYear()} <span className="text-accent">{BRAND.name}</span>. {t.footer.rights}</span>
-          <span className="whitespace-nowrap text-bronze">{BRAND.tagline}</span>
+          <span>© {new Date().getFullYear()} <span className="text-accent dark-cta">{BRAND.name}</span>. {t.footer.rights}</span>
+          <span className="dark-cta whitespace-nowrap text-bronze">{BRAND.tagline}</span>
         </AdminTapZone>
       </div>
     </footer>
