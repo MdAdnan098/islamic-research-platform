@@ -33,7 +33,7 @@ export default {
     volume: "Jild", page: "Safha", text: "Ibarat", scan: "Scan page", openScan: "Scan dekhein", pdf: "PDF Document",
     openPdf: "PDF kholein", download: "Download", preview: "Preview", notFound: "Ye mazmoon maujood nahi.",
     backTo: "Wapas", minRead: "min padhne ka waqt", previewBanner: "Preview — ye mazmoon abhi public nahi hai",
-    ayat: "Ayat", hadith: "Hadith", changeLang: "Zubaan tabdeel karein:",
+    ayat: "Ayat", hadith: "Hadith", changeLang: "Language",
     fontSize: "Font size", textSize: "Text ka size", resetSize: "Normal size",
     makeSmaller: "Font chhota karein (A-)", makeLarger: "Font bada karein (A+)",
     sizeSmall: "Chhota", sizeDefault: "Normal", sizeMedium: "Darmiyana", sizeLarge: "Bada", sizeXLarge: "Bohat bada",

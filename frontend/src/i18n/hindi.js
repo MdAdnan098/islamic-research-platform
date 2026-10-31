@@ -25,7 +25,7 @@ export default {
     volume: "जिल्द", page: "सफ़्हा", text: "इबारत", scan: "स्कैन पेज", openScan: "स्कैन देखें", pdf: "PDF दस्तावेज़",
     openPdf: "PDF खोलें", download: "डाउनलोड", preview: "प्रीव्यू", notFound: "यह मज़मून मौजूद नहीं।",
     backTo: "वापस", minRead: "मिनट पढ़ने का समय", previewBanner: "प्रीव्यू — यह मज़मून अभी सार्वजनिक नहीं है",
-    ayat: "आयत", hadith: "हदीस", changeLang: "भाषा बदलें:",
+    ayat: "आयत", hadith: "हदीस", changeLang: "भाषा",
     fontSize: "फ़ॉन्ट साइज़", textSize: "टेक्स्ट साइज़", resetSize: "सामान्य साइज़",
     makeSmaller: "फ़ॉन्ट छोटा करें (A-)", makeLarger: "फ़ॉन्ट बड़ा करें (A+)",
     sizeSmall: "छोटा", sizeDefault: "सामान्य", sizeMedium: "मध्यम", sizeLarge: "बड़ा", sizeXLarge: "बहुत बड़ा",

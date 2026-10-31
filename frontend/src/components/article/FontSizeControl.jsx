@@ -54,7 +54,7 @@ export function FontSizeControl({ className = "" }) {
       <div
         role="group"
         aria-label={articleI18n.fontSize || "Font size"}
-        className="inline-flex items-center rounded-full border border-rule bg-field p-0.5 shadow-sm transition-colors hover:border-accent/50"
+        className="btn-cta inline-flex items-center rounded-full p-0.5 shadow-sm"
       >
         {/* Decrease button */}
         <button
@@ -63,7 +63,7 @@ export function FontSizeControl({ className = "" }) {
           disabled={!canDecrease}
           aria-label={articleI18n.makeSmaller || "Decrease font size (A-)"}
           title={articleI18n.makeSmaller || "Decrease font size (A-)"}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-ink transition hover:bg-tint disabled:opacity-30 disabled:hover:bg-transparent"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-transparent"
         >
           A<span className="text-[10px] font-normal leading-none">-</span>
         </button>
@@ -76,11 +76,11 @@ export function FontSizeControl({ className = "" }) {
           aria-expanded={open}
           aria-label={`${articleI18n.fontSize || "Font size"}: ${percentage}%`}
           title={`${articleI18n.fontSize || "Font size"}: ${percentage}%`}
-          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold text-ink transition hover:bg-tint"
+          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold transition hover:bg-white/15"
         >
-          <span className="text-accent">Aa</span>
-          <span className="text-[11px] tabular-nums text-mute">{percentage}%</span>
-          <Icon name="down" size={12} className="text-mute/70" />
+          <span>Aa</span>
+          <span className="text-[11px] tabular-nums opacity-80">{percentage}%</span>
+          <Icon name="down" size={12} className="opacity-80" />
         </button>
 
         {/* Increase button */}
@@ -90,7 +90,7 @@ export function FontSizeControl({ className = "" }) {
           disabled={!canIncrease}
           aria-label={articleI18n.makeLarger || "Increase font size (A+)"}
           title={articleI18n.makeLarger || "Increase font size (A+)"}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-ink transition hover:bg-tint disabled:opacity-30 disabled:hover:bg-transparent"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition hover:bg-white/15 disabled:opacity-40 disabled:hover:bg-transparent"
         >
           A<span className="text-[10px] font-normal leading-none">+</span>
         </button>
@@ -194,17 +194,17 @@ export function FloatingReaderControls() {
       dir="ltr"
       className="fixed bottom-5 end-4 z-40 transition-all duration-300 ease-out select-none"
     >
-      <div className="flex items-center gap-1 rounded-full border border-rule bg-card/95 px-2 py-1.5 shadow-elev backdrop-blur-md">
+      <div className="btn-cta flex items-center gap-1 rounded-full px-2 py-1.5 shadow-elev">
         {collapsed ? (
           <button
             type="button"
             onClick={() => setCollapsed(false)}
             aria-label="Open font size controls"
             title={`${articleI18n.fontSize || "Font size"}: ${percentage}%`}
-            className="flex h-7 items-center gap-1 px-1.5 text-xs font-bold text-accent hover:opacity-80"
+            className="flex h-7 items-center gap-1 px-1.5 text-xs font-bold hover:opacity-80"
           >
             <span>Aa</span>
-            <span className="text-[10px] text-mute">{percentage}%</span>
+            <span className="text-[10px] opacity-80">{percentage}%</span>
           </button>
         ) : (
           <>
@@ -214,7 +214,7 @@ export function FloatingReaderControls() {
               disabled={!canDecrease}
               aria-label={articleI18n.makeSmaller || "Decrease font size (A-)"}
               title={articleI18n.makeSmaller || "Decrease font size (A-)"}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-ink transition hover:bg-tint disabled:opacity-30"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition hover:bg-white/15 disabled:opacity-40"
             >
               A<span className="text-[10px] font-normal leading-none">-</span>
             </button>
@@ -224,10 +224,10 @@ export function FloatingReaderControls() {
               onClick={resetFontSize}
               aria-label={articleI18n.resetSize || "Reset font size to 100%"}
               title={isDefault ? `${percentage}%` : `${percentage}% — Click to reset`}
-              className="flex h-7 items-center rounded-full px-1.5 text-xs font-semibold text-ink transition hover:bg-tint"
+              className="flex h-7 items-center rounded-full px-1.5 text-xs font-semibold transition hover:bg-white/15"
             >
-              <span className="text-accent">Aa</span>
-              <span className="ms-0.5 text-[10px] tabular-nums text-mute">{percentage}%</span>
+              <span>Aa</span>
+              <span className="ms-0.5 text-[10px] tabular-nums opacity-80">{percentage}%</span>
             </button>
 
             <button
@@ -236,7 +236,7 @@ export function FloatingReaderControls() {
               disabled={!canIncrease}
               aria-label={articleI18n.makeLarger || "Increase font size (A+)"}
               title={articleI18n.makeLarger || "Increase font size (A+)"}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-ink transition hover:bg-tint disabled:opacity-30"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition hover:bg-white/15 disabled:opacity-40"
             >
               A<span className="text-[10px] font-normal leading-none">+</span>
             </button>
@@ -246,7 +246,7 @@ export function FloatingReaderControls() {
               onClick={() => setCollapsed(true)}
               aria-label="Collapse reading controls"
               title="Minimize"
-              className="ms-0.5 flex h-5 w-5 items-center justify-center rounded-full text-mute/60 transition hover:bg-tint hover:text-ink"
+              className="ms-0.5 flex h-5 w-5 items-center justify-center rounded-full opacity-70 transition hover:bg-white/15 hover:opacity-100"
             >
               <Icon name="x" size={11} />
             </button>

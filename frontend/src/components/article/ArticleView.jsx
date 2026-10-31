@@ -58,7 +58,7 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
           <span className="ms-auto shrink-0">{formatDate(article.publishedAt || article.createdAt)}</span>
         </div>
         {/* Reading toolbar: Language selector on the start, font size adjustment controls on the end */}
-        <div dir="ltr" className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div dir="ltr" className="mb-3 flex flex-nowrap items-center justify-between gap-3">
           {!hideLanguage ? <ArticleLanguage /> : <span />}
           <FontSizeControl />
         </div>

@@ -25,7 +25,7 @@ export default {
     volume: "جلد", page: "صفحہ", text: "عبارت", scan: "اسکین صفحہ", openScan: "اسکین دیکھیں", pdf: "PDF دستاویز",
     openPdf: "PDF کھولیں", download: "ڈاؤن لوڈ", preview: "پیش منظر", notFound: "یہ مضمون موجود نہیں۔",
     backTo: "واپس", minRead: "منٹ مطالعہ", previewBanner: "پیش منظر — یہ مضمون ابھی عام نہیں ہے",
-    ayat: "آیت", hadith: "حدیث", changeLang: "زبان تبدیل کریں:",
+    ayat: "آیت", hadith: "حدیث", changeLang: "زبان",
     fontSize: "حرف کا سائز", textSize: "متن کا سائز", resetSize: "عام سائز",
     makeSmaller: "حرف چھوٹا کریں (A-)", makeLarger: "حرف بڑا کریں (A+)",
     sizeSmall: "چھوٹا", sizeDefault: "عام", sizeMedium: "درمیانہ", sizeLarge: "بڑا", sizeXLarge: "بہت بڑا",
