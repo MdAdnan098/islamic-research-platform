@@ -9,6 +9,9 @@ import { Icon } from "../../components/ui/icons.jsx";
 import { Text } from "../../components/ui/Text.jsx";
 import { CardSkeletons, EmptyState, ErrorState } from "../../components/ui/feedback.jsx";
 import { ArticleCard } from "../../components/public/Cards.jsx";
+import { PinButton } from "../../components/public/PinButton.jsx";
+import { useIsAdmin } from "../../lib/adminHint.js";
+import { togglePin } from "../../lib/pins.js";
 
 /** /search?q= - public search over published articles (title, body, folders, references). All matching happens on the server. */
 export default function SearchPage() {
@@ -19,6 +22,9 @@ export default function SearchPage() {
   useEffect(() => setText(q), [q]);
   useMeta({ title: q ? `${t.search.title}: ${q}` : t.search.title, description: "AthariTV ke mazameen aur folders mein talash karein.", noindex: !!q });
 
+  const isAdmin = useIsAdmin();
+  const [pins, setPins] = useState({});
+  const pinState = (f) => pins[f.id] ?? f.pinAll;
   const [folders, setFolders] = useState([]);
   const list = usePaged(async (page, signal) => {
     if (q.length < 2) { setFolders([]); return { items: [], hasMore: false }; }
@@ -55,6 +61,7 @@ export default function SearchPage() {
                         <FolderIcon size={22} className="shrink-0" />
                         <div className="min-w-0"><Text as="p" className="line-clamp-2 font-display font-bold">{f.title}</Text>
                           <Text as="span" className="block text-xs text-mute">{[t.nav[f.section === "aqeedah" ? "aqaid" : "masail"], ...(f.folders || []).map((x) => x.title)].join(" › ")}</Text></div>
+                        {isAdmin && !f.parentId && <PinButton className="ms-auto" active={pinState(f)} onToggle={async () => { if (await togglePin({ ...f, pinAll: pinState(f) }, "all")) setPins((p) => ({ ...p, [f.id]: !pinState(f) })); }} />}
                       </Link>
                     ))}
                   </div>

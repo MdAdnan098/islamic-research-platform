@@ -9,6 +9,8 @@ export default {
   home: {
     foldersCount: "{total} میں سے {n}",
     pinnedByAdmin: "ایڈمن کی طرف سے پن کیا گیا",
+    viewAllBtn: "سب دیکھیں",
+    searchFolders: "فولڈر تلاش کریں",
     ayat: "آیتِ قرآنی", hadith: "حدیثِ نبوی", sections: "تحقیقی شعبے",
     aqaidDesc: "اسلامی عقائد کی بنیادی تحقیق، قرآن و سنت کے دلائل کے ساتھ۔",
     aqeedahCard: "عقائد", masailCard: "مسائل", explore: "دیکھیں",

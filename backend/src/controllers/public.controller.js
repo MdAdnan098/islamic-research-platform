@@ -180,12 +180,14 @@ export async function folders(request, env) {
   const limit = Math.min(Math.max(intParam(url, "limit", 12), 1), 100);
   const page = Math.min(Math.max(intParam(url, "page", 1), 1), 10_000);
 
-  // ?pin=all (View all folders) or ?pin=section (Aqaid / Masail pages) puts that page's pinned folders first.
-  const pinParam = url.searchParams.get("pin");
-  const pinKey = pinParam === "all" ? "pinAll" : pinParam === "section" ? "pinSection" : null;
+  // ?pin=all puts the pinned folders first. One shared pin covers "View all folders" and the Aqaid / Masail pages.
+  const pinKey = ["all", "section"].includes(url.searchParams.get("pin")) ? "pinAll" : null;
+  // ?q= keeps only folders whose name contains every typed word (accents / spelling variants normalised).
+  const words = normalizeForSearch(String(url.searchParams.get("q") || "").slice(0, 100)).split(/\s+/).filter(Boolean);
 
   const ctx = await loadPublicContext(config, { type });
-  const roots = rootFolders(ctx, pinKey);
+  let roots = rootFolders(ctx, pinKey);
+  if (words.length) roots = roots.filter((f) => { const name = normalizeForSearch(String(f.title || "")); return words.every((w) => name.includes(w)); });
   const slice = roots.slice((page - 1) * limit, page * limit);
   return jsonSuccess({ folders: slice, total: roots.length, hasMore: page * limit < roots.length, page, limit }, { allowedOrigin: config.allowedOrigin, headers: LIST_CACHE });
 }

@@ -1,7 +1,7 @@
 import { bustPublicLists } from "../services/public.js";
 
 /** Pin scopes: home = homepage Folders card (max 3), all = View all folders, section = Aqaid / Masail pages. */
-export const PIN_KEY = { home: "pinHome", all: "pinAll", section: "pinSection" };
+export const PIN_KEY = { home: "pinHome", all: "pinAll", section: "pinAll" };
 
 /** Pins / unpins a folder for one scope (admin only; the server re-checks the session and the 3-folder homepage limit).
  *  Returns true when it worked; on failure it tells the admin why and returns false. */

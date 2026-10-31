@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useI18n } from "../../i18n/index.jsx";
 import { PATH_TYPE, publicApi } from "../../services/public.js";
-import { useAsync } from "../../lib/useAsync.js";
 import { usePaged } from "../../lib/usePaged.js";
 import { useMeta } from "../../lib/useMeta.js";
 import { CardSkeletons, ErrorState } from "../../components/ui/feedback.jsx";
-import { ArticleCard, TopicCard } from "../../components/public/Cards.jsx";
+import { ArticleCard } from "../../components/public/Cards.jsx";
+import { FolderSet, CountText } from "../../components/public/FolderGroups.jsx";
 import { useIsAdmin } from "../../lib/adminHint.js";
 import { togglePin } from "../../lib/pins.js";
 
@@ -16,15 +17,13 @@ export default function SectionPage({ section }) {
   const title = section === "aqaid" ? t.nav.aqaid : t.nav.masail;
   useMeta({ title, description: `${title}: AthariTV ke folders aur mazameen, Quran, Sunnat aur salaf ke fahm ki roshni mein.` });
 
-  const folders = useAsync(async (signal) => {
-    const all = [];
-    for (let page = 1; page <= 20; page++) {
-      const r = await publicApi.folders({ type, page, limit: 100, pin: "section" }, signal);
-      all.push(...r.folders);
-      if (!r.hasMore) break;
-    }
-    return all;
+  const [total, setTotal] = useState(null);
+  const folders = usePaged(async (page, signal) => {
+    const r = await publicApi.folders({ type, page, limit: 24, pin: "all" }, signal);
+    setTotal(r.total);
+    return { items: r.folders, hasMore: r.hasMore };
   }, [type]);
+  const pinFor = (f) => (isAdmin ? { active: f.pinAll, onToggle: async () => { if (await togglePin(f, "all")) folders.reload(); } } : undefined);
   const general = usePaged(async (page, signal) => {
     const r = await publicApi.articlePage({ type, general: 1, page, limit: 12 }, signal);
     return { items: r.articles, hasMore: r.hasMore };
@@ -35,15 +34,18 @@ export default function SectionPage({ section }) {
       <p className="eyebrow cta-text">{t.home.sections}</p>
       <h1 className="mt-1 text-3xl font-bold sm:text-4xl">{title}</h1>
 
-      {folders.loading && !folders.data ? <div className="mt-10"><CardSkeletons count={3} /></div>
-        : folders.error && !folders.data ? <div className="mt-10"><ErrorState error={folders.error} onRetry={folders.reload} /></div>
-        : folders.data.length > 0 && (
+      {folders.loading ? <div className="mt-10"><CardSkeletons count={3} /></div>
+        : folders.error && !folders.items.length ? <div className="mt-10"><ErrorState error={folders.error} onRetry={folders.reload} /></div>
+        : folders.items.length > 0 && (
           <>
             <hr className="mt-8 border-rule" />
-            <h2 className="mt-6 font-display text-xl font-bold sm:text-2xl">{t.home.folders}</h2>
-            <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-4">
-              {folders.data.map((f) => <TopicCard key={f.id} topic={f} to={`/${section}/${f.slug}`} pinned={f.pinSection} pin={isAdmin ? { active: f.pinSection, onToggle: async () => { if (await togglePin(f, "section")) folders.reload(); } } : undefined} />)}
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <h2 className="font-display text-xl font-bold sm:text-2xl">{t.home.folders}</h2>
+              {typeof total === "number" && <CountText shown={folders.items.length} total={total} t={t} />}
             </div>
+            <FolderSet folders={folders.items} t={t} hrefFor={(f) => `/${section}/${f.slug}`} pinFor={pinFor} />
+            {folders.error && <div className="mt-6"><ErrorState error={folders.error} onRetry={folders.retryMore} /></div>}
+            {folders.hasMore && <div className="mt-8 text-center"><button onClick={folders.loadMore} disabled={folders.more} className="btn-outline">{folders.more ? t.common.loading : t.home.loadMore}</button></div>}
           </>
         )}
 
@@ -60,7 +62,7 @@ export default function SectionPage({ section }) {
           </>
         )}
 
-      {!folders.loading && !general.loading && !folders.error && !folders.data?.length && !general.items.length && (
+      {!folders.loading && !general.loading && !folders.error && !folders.items.length && !general.items.length && (
         <div className="mt-10 rounded-xl border border-dashed border-rule px-6 py-10 text-center text-sm text-mute">{t.topic.noItems}</div>
       )}
     </div>

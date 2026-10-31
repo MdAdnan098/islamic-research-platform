@@ -1,54 +1,87 @@
+import { useEffect, useState } from "react";
 import { useI18n } from "../../i18n/index.jsx";
-import { publicApi } from "../../services/public.js";
-import { usePaged } from "../../lib/usePaged.js";
+import { SECTION_PATH, publicApi } from "../../services/public.js";
+import { useAsync } from "../../lib/useAsync.js";
 import { useMeta } from "../../lib/useMeta.js";
-import { CardSkeletons, EmptyState, ErrorState } from "../../components/ui/feedback.jsx";
-import { TopicCard } from "../../components/public/Cards.jsx";
-import { folderPath } from "../../components/public/FoldersCard.jsx";
-import { Icon } from "../../components/ui/icons.jsx";
 import { useIsAdmin } from "../../lib/adminHint.js";
 import { togglePin } from "../../lib/pins.js";
+import { CardSkeletons, EmptyState, ErrorState } from "../../components/ui/feedback.jsx";
+import { folderPath } from "../../components/public/FoldersCard.jsx";
+import { FolderSet, ViewAllLink, CountText } from "../../components/public/FolderGroups.jsx";
 
 const SECTIONS = [["aqeedah", "aqaid"], ["masail", "masail"]];
+/** Folders shown per section here (pinned first); the rest are one tap away under "View all". */
+const SECTION_LIMIT = 24;
+const SEARCH_LIMIT = 60;
 
-/** /folders - every ROOT folder, grouped by section (Aqaid, Masail). Subfolders live inside their folder. */
+const sectionKeyOf = (f) => (f.section === "aqeedah" ? "aqaid" : "masail");
+
+/** /folders - Aqaid and Masail one after the other: pinned folders first, then up to 24 folders, and View all buttons.
+ *  A search box on top finds a folder by name across both sections. */
 export default function FoldersPage() {
   const { t } = useI18n();
   const isAdmin = useIsAdmin();
   useMeta({ title: t.home.allFolders, description: "AthariTV ke saare folders: Aqaid aur Masail ke mazameen mauzu ke mutabiq." });
-  const list = usePaged(async (page, signal) => {
-    const r = await publicApi.folders({ page, limit: 24, pin: "all" }, signal);
-    return { items: r.folders, hasMore: r.hasMore };
-  }, []);
 
-  // Pinned folders (both sections) go into one "Pinned by admin" group on top; the Aqaid / Masail groups below keep the rest.
-  const pinnedItems = list.items.filter((f) => f.pinAll);
-  const unpinned = list.items.filter((f) => !f.pinAll);
-  const groups = SECTIONS.map(([type, key]) => ({ type, label: t.nav[key], items: unpinned.filter((f) => f.section === type) })).filter((g) => g.items.length);
-  const other = unpinned.filter((f) => !SECTIONS.some(([type]) => type === f.section));
-  const pinFor = (f) => (isAdmin ? { active: f.pinAll, onToggle: async () => { if (await togglePin(f, "all")) list.reload(); } } : undefined);
+  const [text, setText] = useState("");
+  const [q, setQ] = useState("");
+  useEffect(() => { const id = setTimeout(() => setQ(text.trim()), 300); return () => clearTimeout(id); }, [text]);
+
+  const sections = useAsync(async (signal) => {
+    const out = await Promise.all(SECTIONS.map(([type]) => publicApi.folders({ type, page: 1, limit: SECTION_LIMIT, pin: "all" }, signal)));
+    return SECTIONS.map(([type, key], i) => ({ type, key, folders: out[i].folders, total: out[i].total }));
+  }, []);
+  const found = useAsync(async (signal) => (q ? publicApi.folders({ q, page: 1, limit: SEARCH_LIMIT, pin: "all" }, signal) : null), [q]);
+
+  const reloadAll = () => { sections.reload(); found.reload(); };
+  const pinFor = (f) => (isAdmin ? { active: f.pinAll, onToggle: async () => { if (await togglePin(f, "all")) reloadAll(); } } : undefined);
+  const jump = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const visible = (sections.data || []).filter((s) => s.folders.length);
 
   return (
     <div className="container-page py-12 sm:py-16">
       <h1 className="text-3xl font-bold sm:text-4xl">{t.home.allFolders}</h1>
+
+      <input type="search" value={text} onChange={(e) => setText(e.target.value)} maxLength={100} dir="auto" placeholder={t.home.searchFolders} aria-label={t.home.searchFolders}
+        className="mt-6 w-full rounded-full border border-rule bg-field px-5 py-2.5 text-base text-ink placeholder:text-mute focus:border-accent focus:outline-none" />
+
       <div className="mt-8">
-        {list.loading ? <CardSkeletons count={3} /> : list.error && !list.items.length ? <ErrorState error={list.error} onRetry={list.reload} /> : list.items.length === 0 ? (
-          <EmptyState>{t.home.noFolders}</EmptyState>
-        ) : (
-          <>
-            {[...(pinnedItems.length ? [{ type: "pinned", label: t.home.pinnedByAdmin, items: pinnedItems }] : []), ...groups, ...(other.length ? [{ type: "other", label: t.home.folders, items: other }] : [])].map((g) => (
-              <section key={g.type} className="mb-10">
-                <h2 className="flex items-center gap-2 font-display text-xl font-bold sm:text-2xl">{g.type === "pinned" && <Icon name="pin" size={20} className="cta-text" />}{g.label}</h2>
-                <hr className="mt-3 border-rule" />
-                <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-4">
-                  {g.items.map((f) => <TopicCard key={f.id} topic={f} to={folderPath(f)} label={t.nav[f.section === "aqeedah" ? "aqaid" : "masail"]} pinned={f.pinAll} pin={pinFor(f)} />)}
+        {q ? (
+          found.loading && !found.data ? <CardSkeletons count={3} />
+            : found.error && !found.data ? <ErrorState error={found.error} onRetry={found.reload} />
+            : !found.data?.folders.length ? <EmptyState>{t.search.noResults}</EmptyState>
+            : (
+              <>
+                <CountText shown={found.data.folders.length} total={found.data.total} t={t} />
+                <FolderSet folders={found.data.folders} t={t} hrefFor={folderPath} labelFor={(f) => t.nav[sectionKeyOf(f)]} pinFor={pinFor} />
+              </>
+            )
+        ) : sections.loading && !sections.data ? <CardSkeletons count={3} />
+          : sections.error && !sections.data ? <ErrorState error={sections.error} onRetry={sections.reload} />
+          : visible.length === 0 ? <EmptyState>{t.home.noFolders}</EmptyState>
+          : (
+            <>
+              {visible.length > 1 && (
+                <div className="mb-8 flex gap-2">
+                  {visible.map((s) => <button key={s.key} type="button" onClick={() => jump(s.key)} className="btn-outline !px-4 !py-1.5 text-sm">{t.nav[s.key]}</button>)}
                 </div>
-              </section>
-            ))}
-            {list.error && <ErrorState error={list.error} onRetry={list.retryMore} />}
-            {list.hasMore && <div className="text-center"><button onClick={list.loadMore} disabled={list.more} className="btn-outline">{list.more ? t.common.loading : t.home.loadMore}</button></div>}
-          </>
-        )}
+              )}
+              {visible.map((s) => (
+                <section key={s.type} id={s.key} className="mb-12 scroll-mt-20">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="font-display text-xl font-bold sm:text-2xl">{t.nav[s.key]}</h2>
+                    <ViewAllLink to={`/${SECTION_PATH[s.type]}`} t={t} />
+                  </div>
+                  <hr className="mt-3 border-rule" />
+                  <FolderSet folders={s.folders} t={t} hrefFor={folderPath} labelFor={(f) => t.nav[sectionKeyOf(f)]} pinFor={pinFor} />
+                  <div className="mt-6 flex items-center justify-between gap-3">
+                    <CountText shown={s.folders.length} total={s.total} t={t} />
+                    <ViewAllLink to={`/${SECTION_PATH[s.type]}`} t={t} />
+                  </div>
+                </section>
+              ))}
+            </>
+          )}
       </div>
     </div>
   );

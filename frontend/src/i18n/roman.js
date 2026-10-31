@@ -9,6 +9,8 @@ export default {
   home: {
     foldersCount: "{n} of {total}",
     pinnedByAdmin: "Pinned by admin",
+    viewAllBtn: "View all",
+    searchFolders: "Folders mein search karein",
     ayat: "Ayat-e-Quraani", hadith: "Hadees-e-Nabawi", sections: "Research Sections",
     aqaidDesc: "Islami aqaid ki bunyaadi tahqeeq, Quran o Sunnat ke dalail ke saath.",
     aqeedahCard: "Aqaid", masailCard: "Masail", explore: "Explore",
