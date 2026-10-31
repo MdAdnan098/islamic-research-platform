@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { SearchGo } from "../ui/SearchGo.jsx";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
 import { useNow } from "../../lib/useNow.js";
@@ -72,7 +73,7 @@ export function HeroSearch({ overlap = true }) {
           <MicIcon />
         </button>
       )}
-      <button type="submit" aria-label="Search" className="btn-cta grid h-10 w-10 shrink-0 place-items-center rounded-lg transition hover:opacity-90"><Icon name="search" size={20} /></button>
+      <button type="submit" aria-label="Search" className="btn-cta grid h-10 w-10 shrink-0 place-items-center rounded-lg transition hover:opacity-90"><SearchGo active={text.trim().length > 0} /></button>
     </form>
   );
 }
