@@ -205,7 +205,7 @@ export default function Courses() {
                 {STATUSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
               <StatusBadge status={c.status === "archived" ? "archived" : c.isPublished ? "published" : "draft"} />
-              {c.status !== "archived" && <button className={c.isPublished ? "a-btn" : "a-btn-primary"} onClick={() => patch(c, { isPublished: !c.isPublished })}>{c.isPublished ? "Unpublish" : "Publish"}</button>}
+              {c.status !== "archived" && <button className={`${c.isPublished ? "a-btn" : "a-btn-primary"} btn-cta`} onClick={() => patch(c, { isPublished: !c.isPublished })}>{c.isPublished ? "Unpublish" : "Publish"}</button>}
               <IconBtn icon="edit" label="Edit" onClick={() => setEditing(c)} />
               {c.status !== "archived" && <button className="a-btn" onClick={() => archive(c)}>Archive</button>}
               <IconBtn icon="trash" label="Delete" danger onClick={() => remove(c)} />

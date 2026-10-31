@@ -138,7 +138,7 @@ export default function ArticleEditor() {
           {live === "published"
             ? <button className="a-btn-primary" onClick={() => save()} disabled={busy || !dirty} title="Edit kiye hue changes live post par save karein">{busy ? "Saving…" : "Save changes"}</button>
             : <button className="a-btn" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save draft"}</button>}
-          {live === "published" ? <button className="a-btn" onClick={() => transition("unpublish")}>Unpublish</button> : <button className="a-btn-primary" onClick={() => transition("publish")} disabled={busy}>Publish</button>}
+          {live === "published" ? <button className="a-btn btn-cta" onClick={() => transition("unpublish")}>Unpublish</button> : <button className="a-btn-primary btn-cta" onClick={() => transition("publish")} disabled={busy}>Publish</button>}
           {!isNew && <button className="a-btn-danger" onClick={remove}><Icon name="trash" size={15} /> Delete</button>}
         </div>
       </div>

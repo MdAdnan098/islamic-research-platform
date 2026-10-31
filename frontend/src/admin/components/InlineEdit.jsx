@@ -109,7 +109,7 @@ export default function InlineEdit({ block, baseLang, lang, onSave, onCancel, sa
 
         {err && <p role="alert" className="text-sm text-ad-danger">{err}</p>}
         <div className="flex flex-wrap items-center gap-2">
-          {dirty && <button type="button" className="a-btn-primary" disabled={busy} onClick={save}>{busy ? "Saving…" : saveLabel || "Save & Publish"}</button>}
+          {dirty && <button type="button" className="a-btn-primary btn-cta" disabled={busy} onClick={save}>{busy ? "Saving…" : saveLabel || "Save & Publish"}</button>}
           <button type="button" className="a-btn" disabled={busy} onClick={onCancel}>{dirty ? "Cancel" : "Band karein"}</button>
           {!dirty && <span className="text-xs text-mute">Kuch badalte hi yahan {saveLabel || "Save & Publish"} button aa jayega.</span>}
         </div>

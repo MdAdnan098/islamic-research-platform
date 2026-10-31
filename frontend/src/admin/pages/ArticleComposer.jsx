@@ -265,7 +265,7 @@ export default function ArticleComposer() {
           <span className={`text-xs ${status.tone === "err" ? "text-ad-danger" : status.tone === "ok" ? "text-ad-ok" : "text-mute"}`}>{status.text || (id ? "" : "Naya post — heading likhein")}</span>
           <div className="ms-auto flex flex-wrap items-center gap-2">
             <button type="button" className="a-btn" disabled={busy} onClick={saveNow}>{busy ? "Saving…" : live ? "Save Changes" : "Save Draft"}</button>
-            <button type="button" className="a-btn-primary" disabled={busy} onClick={publishToggle}>{live ? "Unpublish" : "Publish"}</button>
+            <button type="button" className="a-btn-primary btn-cta" disabled={busy} onClick={publishToggle}>{live ? "Unpublish" : "Publish"}</button>
           </div>
         </div>
       </div>

@@ -99,7 +99,7 @@ export function Navbar() {
               <form onSubmit={submitSearch} role="search" className="flex gap-2 border-b border-rule pb-4">
                 <input type="search" value={q} onChange={(e) => setQ(e.target.value)} maxLength={100} dir="auto" placeholder={HERO_SEARCH_PLACEHOLDER} aria-label={HERO_SEARCH_PLACEHOLDER}
                   className="min-w-0 flex-1 rounded-full border border-rule bg-field px-4 py-2 text-base text-[#262626] placeholder:text-[#7a7a7a] focus:border-accent focus:outline-none dark:text-[#dcd7ca] dark:placeholder:text-[#a0a5a3]" />
-                <button type="submit" className="btn-primary !px-4 !py-2 text-sm">{t.search.button}</button>
+                <button type="submit" className="btn-primary btn-cta !px-4 !py-2 text-sm">{t.search.button}</button>
               </form>
               {drawerLinks.map((l) => (
                 <NavLink key={l.to} to={l.to} end={l.end} className={itemCls}>{l.label}</NavLink>

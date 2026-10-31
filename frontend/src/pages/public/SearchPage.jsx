@@ -34,7 +34,7 @@ export default function SearchPage() {
       <form onSubmit={submit} role="search" className="mt-6 flex gap-2">
         <input type="search" value={text} onChange={(e) => setText(e.target.value)} maxLength={100} dir="auto" placeholder={t.search.placeholder} aria-label={t.search.title} autoFocus={!q}
           className="min-w-0 flex-1 rounded-full border border-rule bg-field px-5 py-2.5 text-base text-ink placeholder:text-mute focus:border-accent focus:outline-none" />
-        <button type="submit" className="btn-primary"><Icon name="search" size={18} /><span className="hidden sm:inline">{t.search.button}</span></button>
+        <button type="submit" className="btn-primary btn-cta"><Icon name="search" size={18} /><span className="hidden sm:inline">{t.search.button}</span></button>
       </form>
 
       <div className="mt-8">

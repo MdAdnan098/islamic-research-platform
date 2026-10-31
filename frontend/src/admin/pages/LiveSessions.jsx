@@ -118,7 +118,7 @@ export default function LiveSessions() {
                 <p className="text-xs text-ad-mute">{formatDateTime(s.scheduledStartTime || s.actualStartTime) || "No date"} · {s.source === "youtube" ? "from YouTube" : "manual"}</p>
               </div>
               <StatusBadge status={s.status} />
-              <button className={s.isPublished ? "a-btn" : "a-btn-primary"} onClick={() => togglePublish(s)}>{s.isPublished ? "Unpublish" : "Publish"}</button>
+              <button className={`${s.isPublished ? "a-btn" : "a-btn-primary"} btn-cta`} onClick={() => togglePublish(s)}>{s.isPublished ? "Unpublish" : "Publish"}</button>
               <a className="a-btn !px-2" href={s.youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label="Open on YouTube"><Icon name="external" size={15} /></a>
               <IconBtn icon="edit" label="Edit" onClick={() => setEditing(s)} />
               <IconBtn icon="trash" label="Delete" danger onClick={() => remove(s)} />

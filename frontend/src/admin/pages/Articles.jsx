@@ -74,7 +74,7 @@ export default function Articles() {
                 <IconBtn icon="edit" label="Edit" onClick={() => nav(`/admin/articles/${a.id}`)} />
                 <IconBtn icon="eye" label="Preview" onClick={() => window.open(`/admin/preview/${a.id}`, "_blank")} />
                 <IconBtn icon="copy" label="Duplicate" onClick={() => duplicate(a)} />
-                {a.status === "published" ? <button className="a-btn ms-1 !py-1" onClick={() => act(a, "unpublish")}>Unpublish</button> : a.status !== "archived" ? <button className="a-btn-primary ms-1 !py-1" onClick={() => act(a, "publish")}>Publish</button> : <button className="a-btn ms-1 !py-1" onClick={() => act(a, "publish")}>Restore & publish</button>}
+                {a.status === "published" ? <button className="a-btn btn-cta ms-1 !py-1" onClick={() => act(a, "unpublish")}>Unpublish</button> : a.status !== "archived" ? <button className="a-btn-primary btn-cta ms-1 !py-1" onClick={() => act(a, "publish")}>Publish</button> : <button className="a-btn btn-cta ms-1 !py-1" onClick={() => act(a, "publish")}>Restore & publish</button>}
                 <IconBtn icon="trash" label="Delete" danger onClick={() => remove(a)} />
               </div>
             </li>

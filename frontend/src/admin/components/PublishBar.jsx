@@ -26,7 +26,7 @@ export default function PublishBar({ draft }) {
     <div className="mt-1 space-y-1 border-t border-rule pt-1.5">
       <p className="text-mute">{draft.busy ? "Saving…" : pending ? (draft.status === "published" ? "Draft saved · live post abhi purani hai" : "Draft saved · post abhi publish nahi hui") : "Sab kuch published hai"}</p>
       <div className="flex flex-wrap items-center gap-1.5">
-        <button type="button" disabled={draft.busy || !pending} onClick={publish} className="a-btn-primary !px-3 !py-1.5 !text-xs disabled:opacity-40">Save &amp; Publish</button>
+        <button type="button" disabled={draft.busy || !pending} onClick={publish} className="a-btn-primary btn-cta !px-3 !py-1.5 !text-xs disabled:opacity-40">Save &amp; Publish</button>
         {draft.hasDraft && <button type="button" disabled={draft.busy} onClick={discard} className="a-btn !px-3 !py-1.5 !text-xs">Draft hatao</button>}
       </div>
       {msg && <p role="status" className="text-mute">{msg}</p>}
