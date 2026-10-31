@@ -33,9 +33,9 @@ export function nearestStop(pos) {
 
 /**
  * The real sizes of the headings in a post, as a percentage of the surrounding body text. They are the em values of the heading
- * classes in components/article/BlockRenderer.jsx (H3: text-[1.25em] sm:text-[1.38em], H2: text-[1.45em] sm:text-[1.65em]);
+ * classes in components/article/BlockRenderer.jsx (H3: text-[1.25em] sm:text-[1.38em], H2: text-[1.45em] sm:text-[1.65em], H1: text-[1.75em] sm:text-[2.1em]);
  * `sm` is Tailwind's default 640px breakpoint. tests/sizeSlider.test.mjs checks these numbers against that file.
  */
-export const HEADING_PERCENT = { narrow: { h3: 125, h2: 145 }, wide: { h3: 138, h2: 165 } };
+export const HEADING_PERCENT = { narrow: { h3: 125, h2: 145, h1: 175 }, wide: { h3: 138, h2: 165, h1: 210 } };
 export const WIDE_QUERY = "(min-width: 640px)";
 export const headingPercents = (wide) => (wide ? HEADING_PERCENT.wide : HEADING_PERCENT.narrow);

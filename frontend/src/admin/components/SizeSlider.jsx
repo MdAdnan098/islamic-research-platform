@@ -52,6 +52,7 @@ export default function SizeSlider({ value, mixed, disabled, onCommit }) {
       <div className="relative mx-[9px] h-3.5" aria-hidden="true">
         <span className="absolute top-0 -translate-x-1/2 text-[10px] font-bold leading-none text-accent" style={at(hp.h3)}>H3</span>
         <span className="absolute top-0 -translate-x-1/2 text-[10px] font-bold leading-none text-accent" style={at(hp.h2)}>H2</span>
+        <span className="absolute top-0 -translate-x-1/2 text-[10px] font-bold leading-none text-accent" style={at(hp.h1)}>H1</span>
       </div>
       <div className="relative mx-[9px] h-3" aria-hidden="true">
         {SLIDER_STOPS.map((s, i) => (

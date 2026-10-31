@@ -80,3 +80,17 @@ export function planEdits({ blocks, baseLang, pieces, mode, field }) {
   for (const [blockId, align] of aligns) if (edits.some((e) => e.blockId === blockId)) edits.push({ blockId, align });
   return { edits, notes: [...notes].map(([code, ids]) => ({ code, count: ids.size })) };
 }
+
+/**
+ * The edits that take `edits` back: every touched layer gets the ranges it has NOW (an empty list removes the layer), a mapping
+ * written for the first time is removed again (align: null). Applying them with applyEdits() restores the exact previous state;
+ * applying `edits` again is the redo. Valid only while the block texts are unchanged - the toolbar checks that before using it.
+ */
+export function inverseEdits(blocks, edits) {
+  const byId = new Map(blocks.map((b) => [b.id, b]));
+  return edits.map((e) => {
+    const b = byId.get(e.blockId);
+    if (e.align) return { blockId: e.blockId, align: b?.align ?? null };
+    return { blockId: e.blockId, lang: e.lang, field: e.field, ranges: rangesOf(b, e.lang, e.field || "hl") };
+  });
+}

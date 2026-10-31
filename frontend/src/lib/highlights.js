@@ -25,7 +25,7 @@ export function shownLang(b, baseLang, want) {
  *   hl       yellow background, red text (the original highlight)
  *   hlPink   #FF6EB4 background, black text
  *   hlBlue   #AEACFF background, black text
- *   hlGreen  green background, white text
+ *   hlGreen  green background, black text
  *   arRed    red TEXT colour for Arabic (no background) - set by hand, never guessed
  * The four background colours exclude each other on the same characters; arRed is independent of them.
  */
@@ -267,7 +267,7 @@ export function applyEdits(blocks, edits) {
     if (!mine.length) return b;
     const next = { ...b };
     for (const { lang, field = "hl", ranges, align } of mine) {
-      if (align) { next.align = align; continue; }
+      if (align !== undefined) { if (align) next.align = align; else delete next.align; continue; } // align: null = remove the stored mapping (undo)
       if (!MARK_FIELDS.includes(field)) continue;
       const layer = { ...(next[field] || {}) };
       if (ranges.length) layer[lang] = ranges; else delete layer[lang];

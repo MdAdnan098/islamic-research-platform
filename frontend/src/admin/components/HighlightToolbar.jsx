@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AR_FIELD, arabicSpans, BOLD_FIELD, COLOR_FIELDS, covered, FORMAT_FIELDS, SIZE_FIELDS, sizeOf, TEXT_COLORS, overlaps, rangesOf, syncSpans, trimRange, unitMap } from "../../lib/highlights.js";
-import { planEdits } from "../../lib/formatPlan.js";
+import { inverseEdits, planEdits } from "../../lib/formatPlan.js";
 import SizeSlider from "./SizeSlider.jsx";
 import AlignEditor from "./AlignEditor.jsx";
 
 /**
  * Admin-only floating toolbar for the current text selection: four highlight colours (yellow, pink, blue, green),
- * "Arabic red" (red text colour, set by hand) and the matching Remove buttons, plus bold / text colours / H1-H3 and
- * the text-size slider that makes the selected words bigger or smaller for readers too.
+ * "Arabic red" (red text colour, set by hand) and the matching Remove buttons, plus bold / text colours, Undo / Redo and
+ * the text-size slider (with H3 / H2 / H1 marks) that makes the selected words bigger or smaller for readers too.
  * The original (source) script is the only formatting source: what is formatted on it also lands on the matching lines of the
  * other scripts; formatting made on a translated version stays in that version (see lib/formatPlan.js).
  * The selection is mapped to (block id, script version, character offsets) through the data-hl-* attributes
@@ -43,12 +43,41 @@ function readSelection(container) {
   return { pieces, rect: range.getBoundingClientRect() };
 }
 
-export default function HighlightToolbar({ containerRef, blocks, baseLang, onApply, onTransform, onAlign }) {
+const BAR_STYLE = { position: "fixed", left: "50%", transform: "translateX(-50%)", top: "calc(env(safe-area-inset-top, 0px) + 72px)" };
+
+/** Undo / Redo buttons (also used alone, right after an action, when nothing is selected any more). */
+function UndoRedo({ counts, busy, onUndo, onRedo }) {
+  const b = "grid h-9 w-9 place-items-center rounded-full border border-rule bg-card text-base font-bold disabled:opacity-40";
+  return (
+    <>
+      <button type="button" disabled={busy || !counts[0]} title="Undo (pichla formatting wapas)" aria-label="Undo" onClick={onUndo} className={b}>↶</button>
+      <button type="button" disabled={busy || !counts[1]} title="Redo (dobara lagao)" aria-label="Redo" onClick={onRedo} className={b}>↷</button>
+    </>
+  );
+}
+
+function UndoBar({ style, counts, busy, error, onUndo, onRedo, onClose }) {
+  return (
+    <div role="toolbar" aria-label="Undo Redo" dir="ltr" style={style} onMouseDown={(e) => e.preventDefault()} className="flex max-w-[94vw] flex-col items-center gap-1 rounded-2xl border border-rule bg-paper p-1.5 text-ink shadow-elev">
+      <div className="flex items-center gap-1.5">
+        <UndoRedo counts={counts} busy={busy} onUndo={onUndo} onRedo={onRedo} />
+        <button type="button" aria-label="Close" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full text-mute hover:bg-tint">✕</button>
+      </div>
+      {error && <p role="alert" className="max-w-xs px-2 pb-1 text-center text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+export default function HighlightToolbar({ containerRef, blocks, baseLang, onApply, onAlign }) {
   const [sel, setSel] = useState(null);
   const [alignFor, setAlignFor] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  const undoStack = useRef([]); // one entry per applied action: { undo, redo, texts }
+  const redoStack = useRef([]);
+  const [counts, setCounts] = useState([0, 0]);
+  const [tail, setTail] = useState(false); // after an action the selection is gone: keep a small Undo / Redo bar for a moment
   const blocksRef = useRef(blocks);
   blocksRef.current = blocks;
 
@@ -82,7 +111,37 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     return () => { document.removeEventListener("selectionchange", update); container.removeEventListener("click", onClick); };
   }, [containerRef, busy]);
 
-  if (!sel && !alignFor) return null;
+  const versionOf = (b, lang) => (lang === baseLang ? b.text : b.tr?.[lang]) || "";
+  const syncCounts = () => setCounts([undoStack.current.length, redoStack.current.length]);
+  /** What it takes to go back: the ranges (and mapping) as they are NOW, plus the texts they belong to. */
+  function snapshot(edits) {
+    const cur = blocksRef.current;
+    const texts = {};
+    for (const e of edits) {
+      const b = cur.find((x) => x.id === e.blockId);
+      if (b) for (const l of ["en", "hi", "ur"]) texts[`${b.id}|${l}`] = versionOf(b, l);
+    }
+    const undo = inverseEdits(cur, edits);
+    return { undo, redo: edits, texts };
+  }
+  /** Undo / Redo of ONE formatting action. If the text changed since, the old ranges would be wrong: refuse instead of guessing. */
+  async function step(from, to, key) {
+    const entry = from.current[from.current.length - 1];
+    if (!entry) return;
+    const changed = Object.entries(entry.texts).some(([k, t]) => { const [id, l] = k.split("|"); const b = blocksRef.current.find((x) => x.id === id); return !b || versionOf(b, l) !== t; });
+    if (changed) { from.current = from.current.slice(0, -1); syncCounts(); setError("Text badal chuka hai, isliye ye undo/redo nahi ho sakta."); return; }
+    setBusy(true); setError(""); setInfo("");
+    try {
+      await onApply(entry[key]);
+      from.current = from.current.slice(0, -1);
+      to.current = [...to.current, entry];
+      syncCounts(); setTail(true);
+    } catch (e) { setError(e?.message || "Save nahi hua"); }
+    finally { setBusy(false); }
+  }
+
+  if (!sel && !alignFor && !(tail && counts[0] + counts[1] > 0)) return null;
+  if (!sel && !alignFor) return <UndoBar style={{ ...BAR_STYLE, zIndex: 80 }} counts={counts} busy={busy} error={error} onUndo={() => step(undoStack, redoStack, "undo")} onRedo={() => step(redoStack, undoStack, "redo")} onClose={() => setTail(false)} />;
   if (!sel) return <AlignEditor block={alignFor} baseLang={baseLang} onSave={(align) => onAlign(alignFor.id, align)} onClose={() => setAlignFor(null)} />;
 
   // Colours: is any part of the selection already coloured / is all of it already this colour?
@@ -149,7 +208,11 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     if (!edits.length) { if (mode !== "size") { window.getSelection()?.removeAllRanges(); setSel(null); } return; }
     setBusy(true); setError(""); setInfo("");
     try {
+      const entry = snapshot(edits);
       await onApply(edits);
+      undoStack.current = [...undoStack.current, entry].slice(-50);
+      redoStack.current = [];
+      syncCounts(); setTail(true);
       // Size stays open (offsets do not change), so the slider can be moved again on the same words.
       if (mode !== "size") { window.getSelection()?.removeAllRanges(); setSel(null); }
       else setInfo(notes.map((n) => NOTES[n.code]).filter(Boolean)[0] || "");
@@ -157,29 +220,16 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
     finally { setBusy(false); }
   }
 
-  /** Makes the selected line(s) H2 / H3, or back to a normal paragraph (level 0). Original script only (lib/lineHeading.js). */
-  async function heading(level) {
-    if (!onTransform) return;
-    setBusy(true); setError("");
-    try {
-      const msg = await onTransform(sel.pieces.map(({ blockId, lang, start, end }) => ({ blockId, lang, start, end })), level);
-      if (msg) { setError(msg); return; }
-      window.getSelection()?.removeAllRanges();
-      setSel(null);
-    } catch (e) { setError(e?.message || "Save nahi hua"); }
-    finally { setBusy(false); }
-  }
-
   // Fixed under the site header, at the TOP: the phone's own selection menu / "search" sheet appears at the bottom
   // and used to cover a bottom bar. Position never depends on the (possibly stale) selection rectangle.
-  const style = { position: "fixed", left: "50%", transform: "translateX(-50%)", top: "calc(env(safe-area-inset-top, 0px) + 72px)" };
+  const style = BAR_STYLE;
 
   const btn = "rounded-full px-3.5 py-2 text-sm font-semibold disabled:opacity-50";
   const swatches = [
-    { field: "hl", label: "Yellow", style: { background: "#fde047", color: "#b91c1c" } },
+    { field: "hl", label: "Yellow", style: { background: "#fde047", color: "#000" } },
     { field: "hlPink", label: "Pink", style: { background: "#FF6EB4", color: "#000" } },
     { field: "hlBlue", label: "Blue", style: { background: "#AEACFF", color: "#000" } },
-    { field: "hlGreen", label: "Green", style: { background: "#16a34a", color: "#fff" } },
+    { field: "hlGreen", label: "Green", style: { background: "#16a34a", color: "#000" } },
   ];
   return (
     <>
@@ -199,7 +249,7 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
         <button type="button" disabled={busy} onClick={() => run(ar.any ? "remove" : "add", AR_FIELD)} title={ar.any ? "Arabic ka red hatao" : "Arabic text red karo"}
           className={`${btn} border border-rule bg-card`}><span style={{ color: "#e60000" }}>Arabic</span> {ar.any ? "– Remove red" : "red"}</button>
         {state.anyMarked && <button type="button" disabled={busy} onClick={() => run("remove", null)} className={`${btn} border border-rule bg-card`}>Remove highlight</button>}
-        <button type="button" aria-label="Close" onClick={() => { window.getSelection()?.removeAllRanges(); setSel(null); }} className="grid h-9 w-9 place-items-center rounded-full text-mute hover:bg-tint">✕</button>
+        <button type="button" aria-label="Close" onClick={() => { window.getSelection()?.removeAllRanges(); setSel(null); setTail(false); }} className="grid h-9 w-9 place-items-center rounded-full text-mute hover:bg-tint">✕</button>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-1.5 border-t border-rule pt-1.5">
         <button type="button" disabled={busy} title={fmt.full[BOLD_FIELD] ? "Bold hatao" : "Bold"} aria-label="Bold" onClick={() => run(fmt.full[BOLD_FIELD] ? "remove" : "add", BOLD_FIELD)}
@@ -208,10 +258,7 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
           <button key={c.field} type="button" disabled={busy} title={`Text color ${c.label}`} aria-label={`Text color ${c.label}`} onClick={() => run(fmt.full[c.field] ? "remove" : "add", c.field)}
             className={`${btn} border border-rule bg-card font-bold ${fmt.full[c.field] ? "ring-2 ring-ink/60" : ""}`} style={{ color: c.swatch }}>A</button>
         ))}
-        {onTransform && [2, 3].map((n) => (
-          <button key={n} type="button" disabled={busy || !fromSource} title={fromSource ? `Selected line ko H${n} banao` : `Heading sirf original (${NAMES[baseLang]}) version mein lagti hai`} aria-label={`H${n}`} onClick={() => heading(n)} className={`${btn} border border-rule bg-card`}>H{n}</button>
-        ))}
-        {onTransform && <button type="button" disabled={busy || !fromSource} title={fromSource ? "Heading hatakar normal paragraph" : `Sirf original (${NAMES[baseLang]}) version mein`} aria-label="Normal paragraph" onClick={() => heading(0)} className={`${btn} border border-rule bg-card`}>¶</button>}
+        <UndoRedo counts={counts} busy={busy} onUndo={() => step(undoStack, redoStack, "undo")} onRedo={() => step(redoStack, undoStack, "redo")} />
         {fmt.any && <button type="button" disabled={busy} onClick={() => run("remove", "format-none")} className={`${btn} border border-rule bg-card`}>Remove bold/color</button>}
       </div>
       <div className="flex items-center justify-center border-t border-rule pt-1.5">

@@ -26,8 +26,11 @@ test("H3 / H2 label positions come from the REAL heading sizes in BlockRenderer.
   const em = (re) => { const m = re.exec(src); assert.ok(m, `pattern ${re} not found`); return [Math.round(parseFloat(m[1]) * 100), Math.round(parseFloat(m[2]) * 100)]; };
   const [h3n, h3w] = em(/level === 3[\s\S]*?text-\[([\d.]+)em\] sm:text-\[([\d.]+)em\] font-semibold/);
   const [h2n, h2w] = em(/<Text key=\{key\} as="h2" src=\{text\} \{\.\.\.attrs\} className="mb-4 mt-14[^"]*text-\[([\d.]+)em\] sm:text-\[([\d.]+)em\] font-semibold/);
-  assert.deepEqual(HEADING_PERCENT.narrow, { h3: h3n, h2: h2n });
-  assert.deepEqual(HEADING_PERCENT.wide, { h3: h3w, h2: h2w });
+  const [h1n, h1w] = em(/level === 1\) return <Text[^>]*?text-\[([\d.]+)em\] sm:text-\[([\d.]+)em\]/);
+  assert.deepEqual(HEADING_PERCENT.narrow, { h3: h3n, h2: h2n, h1: h1n });
+  assert.deepEqual(HEADING_PERCENT.wide, { h3: h3w, h2: h2w, h1: h1w });
+  assert.ok(valuePos(HEADING_PERCENT.narrow.h2) < valuePos(HEADING_PERCENT.narrow.h1) && valuePos(HEADING_PERCENT.wide.h2) < valuePos(HEADING_PERCENT.wide.h1));
+  assert.equal(valuePos(HEADING_PERCENT.narrow.h1), stopPos(SLIDER_STOPS.indexOf(175))); // H1 on phones is exactly the 175% stop
   assert.equal(headingPercents(false), HEADING_PERCENT.narrow);
   assert.equal(headingPercents(true), HEADING_PERCENT.wide);
   // on phones H3 sits exactly on the 125% stop; H2 lies between 125% and 150%, nearer 150%
