@@ -63,17 +63,16 @@ export function HeroSearch({ overlap = true }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); go(); }} role="search"
       className={`relative z-10 mx-auto flex w-[92%] max-w-2xl items-center gap-2 rounded-full border border-rule bg-field py-2 ps-4 pe-3 shadow-[0_4px_18px_rgb(0_0_0/0.14)] sm:py-2.5 sm:ps-5 ${overlap ? "-mt-7 sm:-mt-8" : "mt-1 sm:mt-2"}`}>
-      <button type="submit" aria-label="Search" className="shrink-0 text-ink"><Icon name="search" size={24} /></button>
       <input type="search" value={text} onChange={(e) => setText(e.target.value)} maxLength={100} dir="auto" enterKeyHint="search"
         placeholder={HERO_SEARCH_PLACEHOLDER} aria-label={HERO_SEARCH_PLACEHOLDER}
-        className="min-w-0 flex-1 bg-transparent py-1.5 text-base text-ink placeholder:text-ink/80 focus:outline-none [&::-webkit-search-cancel-button]:hidden" />
+        className="min-w-0 flex-1 bg-transparent py-1.5 text-[13px] text-ink sm:text-base placeholder:text-ink/80 focus:outline-none [&::-webkit-search-cancel-button]:hidden" />
       {SpeechRecognition && (
         <button type="button" onClick={toggleMic} aria-label="Voice search" aria-pressed={listening}
           className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition ${listening ? "animate-pulse bg-red-500/15 text-red-600" : "text-ink hover:bg-tint"}`}>
           <MicIcon />
         </button>
       )}
-      <button type="submit" aria-label="Search" className="btn-cta grid h-10 w-10 shrink-0 place-items-center rounded-full transition hover:opacity-90"><Icon name="search" size={20} /></button>
+      <button type="submit" aria-label="Search" className="btn-cta grid h-10 w-10 shrink-0 place-items-center rounded-lg transition hover:opacity-90"><Icon name="search" size={20} /></button>
     </form>
   );
 }
