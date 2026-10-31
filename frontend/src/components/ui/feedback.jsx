@@ -46,7 +46,7 @@ export function NotFoundState({ message }) {
 export function SectionHeading({ eyebrow, title, desc, className = "" }) {
   return (
     <div className={className}>
-      {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+      {eyebrow && <p className="eyebrow cta-text">{eyebrow}</p>}
       <h2 className="mt-1 text-2xl font-bold leading-tight sm:text-3xl">{title}</h2>
       {desc && <p className="mt-3 max-w-2xl text-mute">{desc}</p>}
     </div>

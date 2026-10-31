@@ -29,7 +29,7 @@ export default function SectionPage({ section }) {
 
   return (
     <div className="container-page py-12 sm:py-16">
-      <p className="eyebrow">{t.home.sections}</p>
+      <p className="eyebrow cta-text">{t.home.sections}</p>
       <h1 className="mt-1 text-3xl font-bold sm:text-4xl">{title}</h1>
 
       {folders.loading && !folders.data ? <div className="mt-10"><CardSkeletons count={3} /></div>
