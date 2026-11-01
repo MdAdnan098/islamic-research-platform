@@ -93,12 +93,19 @@ test("removing formatting on the source removes it from the matching sentence of
   assert.equal("hlGreen" in blocks[0], false);
 });
 
-test("a few words (partial selection) stay in the source script; the toolbar is told why", () => {
+test("a few words (partial selection) land on the matching words of the other scripts - or are reported when a script cannot be matched", () => {
   const blocks = [ensureAlign(mk("en"), "en")];
-  const [s] = unitOf("en", 1);
-  const r = plan(blocks, "en", [{ blockId: "b1", lang: "en", start: s, end: s + 4 }], "add", "bold");
-  assert.deepEqual(r.edits.map((e) => e.lang), ["en"]);
-  assert.deepEqual(r.notes, [{ code: "partial", count: 1 }]);
+  const [s0] = unitOf("en", 1);
+  const r = plan(blocks, "en", [{ blockId: "b1", lang: "en", start: s0, end: s0 + 4 }], "add", "bold"); // "Ilm" only
+  const next = bySrc(blocks, "en", r.edits);
+  assert.equal(next.text.slice(...next.bold.en[0]).trim(), "Ilm");
+  assert.equal(next.tr.hi.slice(...next.bold.hi[0]), "इल्म");
+  // this Urdu sentence is written in a different word order ("ہر مسلمان پر علم حاصل کرنا فرض ہے"): nothing is guessed for it, and the toolbar is told
+  assert.equal(next.bold.ur, undefined);
+  assert.deepEqual(r.notes.map((n) => [n.code, n.langs]), [["unmatched", ["ur"]]]);
+  // a whole sentence of the same block still reaches both, through the stored line mapping
+  const whole = plan(blocks, "en", [sel(blocks[0], "en", "en", 1)], "add", "bold");
+  assert.deepEqual(whole.edits.filter((e) => e.lang).map((e) => e.lang).sort(), ["en", "hi", "ur"]);
 });
 
 test("mapping survives edits: an added sentence in Hindi shifts positions, formatting still lands on the right sentence", () => {
@@ -122,9 +129,9 @@ test("editing the source text keeps ids and positions; editing without re-mappin
   const sneaky = { ...b, text: "x" + b.text }; // text changed behind the mapping's back
   assert.equal(alignStatus(sneaky, "hi"), "review");
   assert.equal(h.unitMap(sneaky, "hi").stale, true);
+  // the stale line mapping is never trusted, yet the formatting still reaches the same words (matched by sound, not by position)
   const r = plan([sneaky], "hi", [sel(sneaky, "hi", "hi", 1)], "add", "bold");
-  assert.deepEqual(r.edits.map((e) => e.lang), ["hi"]);
-  assert.equal(r.notes[0].code, "review");
+  assert.deepEqual(r.edits.filter((e) => e.lang).map((e) => e.lang).sort(), ["en", "hi", "ur"]);
 });
 
 test("deleting a whole sentence in one script flags the block instead of guessing", () => {
@@ -187,7 +194,7 @@ test("Arabic quotation inside a Roman line: red follows the same Arabic words fr
   const b = { id: "q", type: "text", text: `Surah Ikhlas: ${ar}. Phir tarjuma.`, tr: { hi: `सूरह इख़लास: ${ar}। फिर तर्जुमा।`, ur: `سورہ اخلاص: ${ar}۔ پھر ترجمہ۔` } };
   const s = b.text.indexOf(ar);
   const fromSrc = plan([b], "en", [{ blockId: "q", lang: "en", start: s, end: s + ar.length }], "add", "arRed");
-  assert.deepEqual(fromSrc.edits.map((e) => e.lang).sort(), ["en", "hi", "ur"]);
+  assert.deepEqual(fromSrc.edits.filter((e) => e.lang).map((e) => e.lang).sort(), ["en", "hi", "ur"]);
   const sh = b.tr.hi.indexOf(ar);
   const fromHi = plan([b], "en", [{ blockId: "q", lang: "hi", start: sh, end: sh + ar.length }], "add", "arRed");
   assert.deepEqual(fromHi.edits.map((e) => e.lang), ["hi"]);

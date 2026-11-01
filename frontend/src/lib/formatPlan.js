@@ -1,26 +1,33 @@
-import { addRange, AR_FIELD, arabicSpans, COLOR_FIELDS, FORMAT_FIELDS, overlaps, rangesOf, removeRange, SIZE_FIELDS, sizeOf, syncSpans, TEXT_COLOR_FIELDS, unitMap } from "./highlights.js";
+import { addRange, AR_FIELD, arabicSpans, COLOR_FIELDS, FORMAT_FIELDS, overlaps, rangesOf, removeRange, SIZE_FIELDS, sizeOf, TEXT_COLOR_FIELDS, unitMap } from "./highlights.js";
 import { buildAlign } from "./blockAlign.js";
+import { mapSelection } from "./wordAlign.js";
 
 /**
  * Plans what a formatting action (colour, bold, text colour, text size, Arabic red, remove) changes - as data, without touching anything.
  *
  * THE RULE: the original (source) script is the only formatting source.
- *  - Formatting made on the SOURCE version lands on the selection and, when the selection covers whole mapped unit(s), on the
- *    corresponding unit(s) of the other scripts (found through the stored unit ids, never by word count or position).
+ *  - Formatting made on the SOURCE version lands on the selection - a whole block, a line, a few words or ONE word - and on exactly the
+ *    same words of the other scripts (lib/wordAlign.js: words are matched by how they sound; whole lines through the stored line mapping).
  *  - Formatting made on a TRANSLATED version changes that version only. Nothing is ever propagated from a translation.
- *  - A block whose mapping is missing / stale / flagged is never guessed: the formatting stays on the source version and a note says why.
+ *  - Nothing is guessed: a version whose words cannot be matched with certainty (different words, reordered sentence, texts that differ too
+ *    much) gets no formatting from this action, and a note says which version and why.
  *
  * pieces: [{ blockId, lang, start, end }] (offsets into the version on screen). mode: "add" | "remove" | "size".
  * field: a colour layer, AR_FIELD, bold / text colour layer, "format-none", null (= remove every colour) or - for mode "size" - the wanted percent.
  * Returns { edits, notes }: `edits` go to applyEdits(); entries { blockId, align } store a legacy block's mapping the first time it is used.
- * notes: [{ code: "translated" | "review" | "partial", count }].
+ * notes: [{ code, count, langs, blockId }] with code "translated" (made on a translation: this version only), "unmatched" (these versions could not be
+ * matched, nothing applied there) or "missed" (matched, but some selected words had no partner there and were left out).
  */
 export function planEdits({ blocks, baseLang, pieces, mode, field }) {
   const byId = new Map(blocks.map((b) => [b.id, b]));
   const out = new Map();
   const aligns = new Map();
   const notes = new Map();
-  const note = (code, id) => { if (!notes.has(code)) notes.set(code, new Set()); notes.get(code).add(id); };
+  const cache = new Map(); // word matching is computed once per pair of texts, however many pieces are formatted
+  const note = (code, id, lang) => {
+    if (!notes.has(code)) notes.set(code, { ids: new Set(), langs: new Set(), blockId: id });
+    const n = notes.get(code); n.ids.add(id); if (lang) n.langs.add(lang);
+  };
   const keyOf = (blockId, lang, f) => `${blockId}|${lang}|${f}`;
   const current = (blockId, lang, f) => out.get(keyOf(blockId, lang, f))?.ranges ?? rangesOf(byId.get(blockId), lang, f);
   const put = (blockId, lang, f, change) => out.set(keyOf(blockId, lang, f), { blockId, lang, field: f, ranges: change(current(blockId, lang, f)) });
@@ -32,15 +39,17 @@ export function planEdits({ blocks, baseLang, pieces, mode, field }) {
     const sel = [p.start, p.end];
     const fromSource = p.lang === baseLang;
     const map = unitMap(b, baseLang);
-    let whole = null; // [{ lang, range }] - the same whole unit(s) in every script (source selections only)
+    let spans = [{ lang: p.lang, range: sel }]; // what this selection stands for in every script
     if (fromSource) {
-      whole = syncSpans(b, baseLang, p.lang, sel);
-      if (whole && !map.persisted) { const al = buildAlign(b, baseLang); if (al) aligns.set(b.id, al); }
-      else if (!whole && map) note(map.aligned ? "partial" : "review", b.id);
+      const m = mapSelection(b, baseLang, sel, cache);
+      spans = [...spans, ...m.spans];
+      if (m.usedUnits && !m.persisted) { const al = buildAlign(b, baseLang); if (al) aligns.set(b.id, al); } // an old block gets its line mapping stored once
+      for (const l of m.failed) note("unmatched", b.id, l);
+      for (const l of Object.keys(m.missed)) note("missed", b.id, l);
     } else if (map) note("translated", b.id);
     const own = [{ lang: p.lang, range: sel }];
-    const exact = whole ? whole.map((x) => (x.lang === p.lang ? { lang: p.lang, range: sel } : x)) : own; // bold / text colour / size: exactly what was selected here
-    const unit = whole || own; // background colours: the whole line
+    const exact = spans; // bold / text colour / size / colours: exactly the selected words, in every script it was matched in
+    const unit = spans;
 
     if (mode === "size") {
       for (const sp of exact) {
@@ -78,7 +87,7 @@ export function planEdits({ blocks, baseLang, pieces, mode, field }) {
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const edits = [...out.values()].filter((e) => !same(e.ranges, rangesOf(byId.get(e.blockId), e.lang, e.field)));
   for (const [blockId, align] of aligns) if (edits.some((e) => e.blockId === blockId)) edits.push({ blockId, align });
-  return { edits, notes: [...notes].map(([code, ids]) => ({ code, count: ids.size })) };
+  return { edits, notes: [...notes].map(([code, n]) => ({ code, count: n.ids.size, langs: [...n.langs], blockId: n.blockId })) };
 }
 
 /**

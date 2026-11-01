@@ -56,13 +56,14 @@ function UndoRedo({ counts, busy, onUndo, onRedo }) {
   );
 }
 
-function UndoBar({ style, counts, busy, error, onUndo, onRedo, onClose }) {
+function UndoBar({ style, counts, busy, error, info, onUndo, onRedo, onClose, onFix }) {
   return (
     <div role="toolbar" aria-label="Undo Redo" dir="ltr" style={style} onMouseDown={(e) => e.preventDefault()} className="flex max-w-[94vw] flex-col items-center gap-1 rounded-2xl border border-rule bg-paper p-1.5 text-ink shadow-elev">
       <div className="flex items-center gap-1.5">
         <UndoRedo counts={counts} busy={busy} onUndo={onUndo} onRedo={onRedo} />
         <button type="button" aria-label="Close" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full text-mute hover:bg-tint">✕</button>
       </div>
+      {info && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{info}{onFix && <> <button type="button" className="font-semibold text-accent underline" onClick={onFix}>Lines match karein</button></>}</p>}
       {error && <p role="alert" className="max-w-xs px-2 pb-1 text-center text-xs text-red-600">{error}</p>}
     </div>
   );
@@ -74,6 +75,7 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  const [infoBlock, setInfoBlock] = useState(null); // block whose versions could not be matched (offers the manual line pairing)
   const undoStack = useRef([]); // one entry per applied action: { undo, redo, texts }
   const redoStack = useRef([]);
   const [counts, setCounts] = useState([0, 0]);
@@ -141,7 +143,7 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
   }
 
   if (!sel && !alignFor && !(tail && counts[0] + counts[1] > 0)) return null;
-  if (!sel && !alignFor) return <UndoBar style={{ ...BAR_STYLE, zIndex: 80 }} counts={counts} busy={busy} error={error} onUndo={() => step(undoStack, redoStack, "undo")} onRedo={() => step(redoStack, undoStack, "redo")} onClose={() => setTail(false)} />;
+  if (!sel && !alignFor) return <UndoBar style={{ ...BAR_STYLE, zIndex: 80 }} counts={counts} busy={busy} error={error} info={info} onUndo={() => step(undoStack, redoStack, "undo")} onRedo={() => step(redoStack, undoStack, "redo")} onClose={() => { setTail(false); setInfo(""); }} onFix={infoBlock && onAlign ? () => setAlignFor(blocksRef.current.find((x) => x.id === infoBlock)) : null} />;
   if (!sel) return <AlignEditor block={alignFor} baseLang={baseLang} onSave={(align) => onAlign(alignFor.id, align)} onClose={() => setAlignFor(null)} />;
 
   // Colours: is any part of the selection already coloured / is all of it already this colour?
@@ -166,7 +168,6 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
   // matched with certainty (missing / flagged / stale mapping) is never guessed: its formatting stays in this script.
   const fromSource = sel.pieces.every((p) => p.lang === baseLang);
   const blockOf = (p) => blocksRef.current.find((x) => x.id === p.blockId);
-  const reviewBlock = fromSource ? sel.pieces.map(blockOf).find((b) => { const m = b && unitMap(b, baseLang); return m && !m.aligned; }) : null;
   const translatedView = !fromSource && sel.pieces.some((p) => { const b = blockOf(p); return b && unitMap(b, baseLang); });
   // Bold / text colours: is all of the selection already bold / this colour, and is any formatting present?
   const fmt = sel.pieces.reduce((acc, p) => {
@@ -195,11 +196,13 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
   const NAMES = { en: "Roman", hi: "Hindi", ur: "Urdu" };
   const arMissing = ar.missing.map((l) => NAMES[l]).join(", ");
 
+  const langNames = (list) => list.map((l) => NAMES[l]).join(" aur ");
   const NOTES = {
     translated: `Aap translated version par format kar rahe hain: ye sirf isi zabaan mein lagega. Teeno zabaan mein ek saath lagane ke liye original (${NAMES[baseLang]}) version mein format karein.`,
-    review: "Is hisse ki lines teeno zabaan mein pakki tarah match nahi hain, isliye formatting sirf original zabaan mein lagi.",
-    partial: "Kuch shabd select kiye hain, isliye formatting sirf isi zabaan mein lagi. Poori line select karein to dusri zabaanon mein bhi lagegi.",
+    unmatched: (n) => `${langNames(n.langs)} mein ye hissa pakki tarah match nahi hua (alag shabd ya alag tarteeb), isliye wahan formatting nahi lagi.`,
+    missed: (n) => `${langNames(n.langs)} mein kuch chune hue shabd ka jodidaar nahi mila, wo shabd wahan chhoot gaye.`,
   };
+  const describe = (notes) => notes.filter((n) => n.code !== "translated").map((n) => NOTES[n.code](n)).join(" ");
 
   /** mode "add" | "remove" | "size"; field = one of COLOR_FIELDS (a colour), or AR_FIELD, or null for "remove every colour";
    *  for mode "size", field = the wanted size in percent (100 = back to normal). What lands where is decided by planEdits. */
@@ -215,7 +218,8 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
       syncCounts(); setTail(true);
       // Size stays open (offsets do not change), so the slider can be moved again on the same words.
       if (mode !== "size") { window.getSelection()?.removeAllRanges(); setSel(null); }
-      else setInfo(notes.map((n) => NOTES[n.code]).filter(Boolean)[0] || "");
+      setInfo(describe(notes));
+      setInfoBlock(notes.find((n) => n.code === "unmatched")?.blockId ?? null);
     } catch (e) { setError(e?.message || "Save nahi hua"); }
     finally { setBusy(false); }
   }
@@ -249,7 +253,7 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
         <button type="button" disabled={busy} onClick={() => run(ar.any ? "remove" : "add", AR_FIELD)} title={ar.any ? "Arabic ka red hatao" : "Arabic text red karo"}
           className={`${btn} border border-rule bg-card`}><span style={{ color: "#e60000" }}>Arabic</span> {ar.any ? "– Remove red" : "red"}</button>
         {state.anyMarked && <button type="button" disabled={busy} onClick={() => run("remove", null)} className={`${btn} border border-rule bg-card`}>Remove highlight</button>}
-        <button type="button" aria-label="Close" onClick={() => { window.getSelection()?.removeAllRanges(); setSel(null); setTail(false); }} className="grid h-9 w-9 place-items-center rounded-full text-mute hover:bg-tint">✕</button>
+        <button type="button" aria-label="Close" onClick={() => { window.getSelection()?.removeAllRanges(); setSel(null); setTail(false); setInfo(""); }} className="grid h-9 w-9 place-items-center rounded-full text-mute hover:bg-tint">✕</button>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-1.5 border-t border-rule pt-1.5">
         <button type="button" disabled={busy} title={fmt.full[BOLD_FIELD] ? "Bold hatao" : "Bold"} aria-label="Bold" onClick={() => run(fmt.full[BOLD_FIELD] ? "remove" : "add", BOLD_FIELD)}
@@ -264,13 +268,12 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
       <div className="flex items-center justify-center border-t border-rule pt-1.5">
         <SizeSlider value={sizeNow} mixed={sizeMixed} disabled={busy} onCommit={(v) => run("size", v)} />
       </div>
-      {reviewBlock && (
+      {translatedView && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{NOTES.translated}</p>}
+      {info && !translatedView && (
         <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">
-          {NOTES.review}{onAlign && <> <button type="button" className="font-semibold text-accent underline" onClick={() => setAlignFor(reviewBlock)}>Lines match karein</button></>}
+          {info}{infoBlock && onAlign && <> <button type="button" className="font-semibold text-accent underline" onClick={() => setAlignFor(blocksRef.current.find((x) => x.id === infoBlock))}>Lines match karein</button></>}
         </p>
       )}
-      {translatedView && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{NOTES.translated}</p>}
-      {info && !reviewBlock && !translatedView && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{info}</p>}
       {arMissing && !ar.any && <p className="max-w-xs px-2 pb-1 text-center text-xs text-mute">{arMissing} version mein ye Arabic text same nahi mila, wahan red nahi lagega.</p>}
       {error && <p role="alert" className="max-w-xs px-2 pb-1 text-center text-xs text-red-600">{error}</p>}
     </div>

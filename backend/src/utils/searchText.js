@@ -161,7 +161,7 @@ const MAX_SEARCH_TEXT = 200_000;
  * are consonants, with the same rules in every script:
  *   w / v / و / व   is a consonant at the start of a word, or between two vowels (mu-a-VI-ya); next to a consonant it is a vowel (khwab).
  *   y / ی / य       is a consonant only at the start of a word (yazeed / یزید); elsewhere it is a vowel (muaviya).
- *   ح / ह           are real h (Urdu and Hindi have no "kh/sh/bh" digraph for them); Hindi final ह is silent (शाह).
+ *   ح / ہ / ह       are real h (Urdu and Hindi have no "kh/sh/bh" digraph for them; the aspirate sign is ھ); a final ہ / ह is silent (شاہ, शाह).
  * Everything else works like skeletonOf. It is derived from any text - no word list.
  *   muaviya / muwaviya / movaiya / moavia / معاویہ / मुआविया  -> "mw"
  *   yazeed / یزید / यजीद                                       -> "yjd"
@@ -174,7 +174,7 @@ export function soundKey(word) {
     if (Y_CHARS.has(ch)) return { t: "Y" };
     const c = AR_MAP[ch] ?? LATIN_MAP[ch];
     if (c === undefined) return { t: "V" };
-    if (ch === "\u0939") return { t: "D" };   // Hindi ha
+    if (ch === "\u0939" || ch === "\u06C1") return { t: "D" }; // Hindi ha / Urdu heh: a real h (raha = رہا = रहा), silent only at the very end (شاہ, اللہ)
     if (c === "H") return { t: "C", k: "h" }; // Urdu pe-he
     if (c === "h") return { t: "A" };         // Latin h / heh goal: aspirate or silent
     if (c === "w") return { t: "W" };
