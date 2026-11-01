@@ -18,7 +18,7 @@ import {
 import { findReferencesByIds, toSafeReference } from "../services/db/reference.service.js";
 import { loadPublicContext, folderTrail, withTrail, visibleSubtreeIds, SECTION_SEARCH_LABEL } from "../services/db/publicContent.service.js";
 import { CATEGORY_TYPES } from "../utils/contentEnums.js";
-import { normalizeForSearch, parseSearchQuery, phoneticNameMatch, phoneticQueryTokens } from "../utils/searchText.js";
+import { buildNameFields, makeMatcher, normalizeForSearch, parseSearchQuery, phoneticNameMatch, phoneticQueryTokens } from "../utils/searchText.js";
 import { enforceRateLimit } from "../middleware/rateLimit.js";
 import { isValidObjectIdString } from "../utils/validate.js";
 
@@ -330,7 +330,9 @@ export async function search(request, env) {
     const n = normalizeForSearch(String(name || ""));
     return !!n && (n.includes(normalized) || tokens.every((t) => n.includes(t)));
   };
-  const nameHit = (name) => exactHit(name) || phoneticNameMatch(normalizeForSearch(String(name || "")), phonetic);
+  // ... or its sound key / one-letter slip matches (Muaviya = Muwaviya = movaiya = معاویہ): the same rules as article titles
+  const nameMatcher = makeMatcher(tokens);
+  const nameHit = (name) => exactHit(name) || phoneticNameMatch(normalizeForSearch(String(name || "")), phonetic) || nameMatcher.test(buildNameFields(String(name || "")));
 
   const matchedFolders = ctx.topics.filter((t) => ctx.visible.has(String(t._id)) && nameHit(t.title));
   const folderIds = [...new Set(matchedFolders.flatMap((f) => visibleSubtreeIds(ctx, f._id)))].slice(0, 300);

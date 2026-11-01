@@ -4,7 +4,7 @@ import { findCategoryById } from "./category.service.js";
 import { findTopicById } from "./topic.service.js";
 import { normalizeSlug, slugify } from "../../utils/slug.js";
 import { validateArticleInput } from "../../utils/validate.js";
-import { buildArticleSearchFields, escapeRegex, phoneticFieldRegex, skeletonOf } from "../../utils/searchText.js";
+import { buildArticleSearchFields, escapeRegex, matchPlan } from "../../utils/searchText.js";
 import { HL_LANGS, isHighlightable, MARK_FIELDS, normalizeRanges, versionText } from "../../utils/highlights.js";
 import { resolveSourceLanguage } from "../../utils/blockAlign.js";
 
@@ -268,7 +268,7 @@ export async function updateArticle(config, id, updates) {
 
   // Keep the derived search copies in step with whatever changed.
   const touchesSearch = ["title", "titleTr", "blocks", "excerpt", "seoTitle", "seoDescription", "references"].some((k) => data[k] !== undefined);
-  if (touchesSearch || existing.searchPhonetic === undefined) {
+  if (touchesSearch || existing.searchPhonetic === undefined || existing.searchKeys === undefined) {
     const merged = { ...existing, ...$set };
     const refIds = data.references !== undefined ? data.references : (existing.references || []);
     Object.assign($set, buildArticleSearchFields(merged, await loadReferenceDocs(config, refIds)));
@@ -354,7 +354,7 @@ export function toListArticle(article) {
   };
 }
 
-const LIST_PROJECTION = { blocks: 0, searchText: 0, searchTitle: 0, searchPhonetic: 0, searchPhoneticTitle: 0, authorId: 0, references: 0, seoTitle: 0, seoDescription: 0 };
+const LIST_PROJECTION = { blocks: 0, searchText: 0, searchTitle: 0, searchPhonetic: 0, searchPhoneticTitle: 0, searchKeys: 0, searchKeysTitle: 0, authorId: 0, references: 0, seoTitle: 0, seoDescription: 0 };
 // publishedAt is the publication timestamp; legacy articles without one fall back to createdAt.
 const SORT_AT = { $addFields: { sortAt: { $ifNull: ["$publishedAt", "$createdAt"] } } };
 
@@ -410,16 +410,15 @@ export async function searchPublicArticles(config, { tokens, phrase, phonetic = 
   const valid = (categoryIds || []).filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   if (!valid.length || (!tokens?.length && !phonetic.length)) return { articles: [], hasMore: false, page: paging.page, limit: paging.limit };
 
-  // EVERY query word must be found. A word is found when it appears literally in the normalised text, or - for words
-  // with 3+ consonants - when a word of the article has the same consonant skeleton (Roman / Hindi / Urdu spellings
-  // of one word meet). Words that match nothing (random speech, "hello babu sahab") therefore return no article.
-  const skeletons = tokens.map((t) => skeletonOf(t));
-  const tokenClause = (t, i) => {
-    const exact = { searchText: { $regex: escapeRegex(t) } };
-    const fuzzy = phoneticFieldRegex(skeletons[i]);
-    return fuzzy ? { $or: [exact, { searchPhonetic: { $regex: fuzzy } }] } : exact;
-  };
-  const or = [{ $and: tokens.map(tokenClause) }];
+  // Which words must match (see matchPlan): 1-2 words = every word; 3+ words = any two words of 4+ letters (small words ka / ki / aur never
+  // count). A word is found when it appears literally, or sounds alike in Roman / Hindi / Urdu (consonant skeleton and the sound key that
+  // keeps w / v / y), or is one letter away in a title. Words that match nothing (random speech) therefore return no article.
+  const plan = matchPlan(tokens);
+  const hit = (i) => ({ $or: plan.alts[i].filter((a) => a.match !== false).map((a) => ({ [a.field]: { $regex: a.re } })) });
+  const textClause = plan.kind === "pairs"
+    ? { $or: plan.pairs.map(([x, y]) => ({ $and: [hit(x), hit(y)] })) }
+    : { $and: plan.required.map(hit) };
+  const or = [textClause];
   const folderObjectIds = folderIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   const matchedCats = matchedCategoryIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   if (folderObjectIds.length) or.push({ topicId: { $in: folderObjectIds } });
@@ -428,13 +427,10 @@ export async function searchPublicArticles(config, { tokens, phrase, phonetic = 
   if (language) match.language = language;
 
   const has = (field, regex, points) => ({ $cond: [{ $regexMatch: { input: { $ifNull: [`$${field}`, ""] }, regex } }, points, 0] });
-  // Ranking: exact title > exact body > sounds-alike title > sounds-alike body.
-  const fuzzyKeys = skeletons.map(phoneticFieldRegex).filter(Boolean);
+  // Ranking: exact title > exact body > sounds-alike title > sounds-alike body > one-letter slips (weights come from tokenAlternatives).
   const score = { $add: [
     has("searchTitle", escapeRegex(phrase || tokens.join(" ")), 200),
-    ...tokens.map((t) => has("searchTitle", escapeRegex(t), 20)),
-    ...tokens.map((t) => has("searchText", escapeRegex(t), 10)),
-    ...fuzzyKeys.flatMap((re) => [has("searchPhoneticTitle", re, 6), has("searchPhonetic", re, 2)]),
+    ...plan.alts.flat().map((a) => has(a.field, a.re, a.pts)),
   ] };
 
   const collection = await getArticlesCollection(config);
@@ -459,7 +455,7 @@ export async function searchPublicArticles(config, { tokens, phrase, phonetic = 
  */
 export async function backfillSearchFields(config, { limit = 25 } = {}) {
   const collection = await getArticlesCollection(config);
-  const rows = await collection.find({ searchPhonetic: { $exists: false } }).limit(Math.min(Math.max(limit, 1), 500)).toArray();
+  const rows = await collection.find({ $or: [{ searchPhonetic: { $exists: false } }, { searchKeys: { $exists: false } }] }).limit(Math.min(Math.max(limit, 1), 500)).toArray();
   if (!rows.length) return 0;
   const refDocs = await loadReferenceDocs(config, rows.flatMap((a) => a.references || []));
   const refById = new Map(refDocs.map((r) => [String(r._id), r]));

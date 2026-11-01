@@ -152,11 +152,160 @@ export const phoneticFieldRegex = (k) => (k.length >= MIN_PHONETIC_LEN ? `(^| )$
 
 const MAX_SEARCH_TEXT = 200_000;
 
+/* ------------------------------------------------------------------------------------------------ */
+/* Sound key (second, looser key) + typo tolerance                                                   */
+/* ------------------------------------------------------------------------------------------------ */
+/**
+ * The consonant skeleton above drops w / v / y completely, so names like "Muaviya" / "Muwaviya" / "movaiya" /
+ * "معاویہ" all collapse to a single letter ("m") and nothing can match. The SOUND KEY keeps them when they really
+ * are consonants, with the same rules in every script:
+ *   w / v / و / व   is a consonant at the start of a word, or between two vowels (mu-a-VI-ya); next to a consonant it is a vowel (khwab).
+ *   y / ی / य       is a consonant only at the start of a word (yazeed / یزید); elsewhere it is a vowel (muaviya).
+ *   ح / ह           are real h (Urdu and Hindi have no "kh/sh/bh" digraph for them); Hindi final ह is silent (शाह).
+ * Everything else works like skeletonOf. It is derived from any text - no word list.
+ *   muaviya / muwaviya / movaiya / moavia / معاویہ / मुआविया  -> "mw"
+ *   yazeed / یزید / यजीद                                       -> "yjd"
+ */
+const Y_CHARS = new Set(["y", "\u06CC", "\u092F"]); // y, farsi yeh (the folded yeh), Devanagari ya
+
+export function soundKey(word) {
+  const chars = [...word];
+  const kinds = chars.map((ch) => {
+    if (Y_CHARS.has(ch)) return { t: "Y" };
+    const c = AR_MAP[ch] ?? LATIN_MAP[ch];
+    if (c === undefined) return { t: "V" };
+    if (ch === "\u0939") return { t: "D" };   // Hindi ha
+    if (c === "H") return { t: "C", k: "h" }; // Urdu pe-he
+    if (c === "h") return { t: "A" };         // Latin h / heh goal: aspirate or silent
+    if (c === "w") return { t: "W" };
+    return { t: "C", k: c };
+  });
+  const vowelish = (x) => !!x && (x.t === "V" || x.t === "Y");
+  let out = "";
+  let afterC = false;
+  kinds.forEach((c, i) => {
+    const prev = kinds[i - 1], next = kinds[i + 1], last = i === kinds.length - 1;
+    if (c.t === "C") { out += c.k; afterC = true; }
+    else if (c.t === "D") { if (!last) { out += "h"; afterC = true; } }
+    else if (c.t === "A") { if (i === 0 || (!afterC && !last)) { out += "h"; afterC = true; } }
+    else if (c.t === "W") { if (i === 0 || (vowelish(prev) && vowelish(next))) { out += "w"; afterC = true; } else afterC = false; }
+    else if (c.t === "Y") { if (i === 0 && next) { out += "y"; afterC = true; } else afterC = false; }
+    else afterC = false;
+  });
+  return out.replace(/(.)\1+/g, "$1");
+}
+
+/**
+ * The two derived key fields of a text (all normalised, space-joined, de-duplicated):
+ *   searchKeysTitle  sound keys of the TITLE words (1-letter keys only for words of 3+ letters: "imam", "dua")
+ *   searchKeys       sound keys (2+ letters) of every word of the full text
+ */
+export function buildKeyFields(titleNormalized, fullNormalized) {
+  const title = new Set(), body = new Set();
+  for (const w of (titleNormalized || "").split(" ")) {
+    if (!w) continue;
+    const k = soundKey(w);
+    if (k.length >= 2 || (k.length === 1 && w.length >= 3)) title.add(k);
+  }
+  for (const w of (fullNormalized || "").split(" ")) {
+    if (!w) continue;
+    const k = soundKey(w);
+    if (k.length >= 2) body.add(k);
+  }
+  return { searchKeysTitle: [...title].join(" "), searchKeys: [...body].join(" ").slice(0, MAX_SEARCH_TEXT) };
+}
+
+/** All search fields of a short name (folder / category title), built exactly like an article with only a title. */
+export function buildNameFields(name) {
+  const n = normalizeForSearch(name || "");
+  const ph = phoneticWords(n).join(" ");
+  return { searchText: n, searchTitle: n, searchPhonetic: ph, searchPhoneticTitle: ph, ...buildKeyFields(n, n) };
+}
+
+const ANY = "[^ ]";
+/**
+ * Regex SOURCE (no flags; works in JS and MongoDB) for "a word that is at most ONE edit away from `word`":
+ * a prefix with one wrong letter, or a whole word with one missing / one extra letter.
+ */
+export function oneEditRegex(word) {
+  const c = [...word];
+  const esc = (arr) => arr.map(escapeRegex).join("");
+  const parts = new Set();
+  for (let i = 0; i < c.length; i++) {
+    parts.add(`${esc(c.slice(0, i))}${ANY}${esc(c.slice(i + 1))}`);                  // one wrong letter (word may be longer)
+    if (c.length > 3) parts.add(`${esc([...c.slice(0, i), ...c.slice(i + 1)])}( |$)`); // one letter missing
+  }
+  for (let i = 0; i <= c.length; i++) parts.add(`${esc(c.slice(0, i))}${ANY}${esc(c.slice(i))}( |$)`); // one letter extra
+  return `(^| )(?:${[...parts].join("|")})`;
+}
+
+const MAX_FUZZY_WORD = 24;
+
+/**
+ * Every way ONE query word can match: [{ field, re, pts, match }]. `re` is a regex source over a stored field; `pts` its weight
+ * in the ranking (exact title > exact text > sounds-alike title > ... > one-letter slips); `match: false` = ranking only.
+ * A word matches an article when ANY entry with match !== false matches its field.
+ */
+export function tokenAlternatives(t) {
+  const alts = [
+    { field: "searchText", re: escapeRegex(t), pts: 10, match: true },
+    { field: "searchTitle", re: escapeRegex(t), pts: 20, match: false },
+  ];
+  const sk = skeletonOf(t);
+  if (sk.length >= MIN_PHONETIC_LEN) {
+    alts.push({ field: "searchPhonetic", re: phoneticFieldRegex(sk), pts: 2, match: true });
+    alts.push({ field: "searchPhoneticTitle", re: phoneticFieldRegex(sk), pts: 6, match: true });
+  }
+  const k = soundKey(t);
+  if (k.length >= 3) alts.push({ field: "searchKeysTitle", re: `(^| )${escapeRegex(k)}`, pts: 5, match: true });
+  else if (k.length === 2 || (k.length === 1 && t.length >= 3)) alts.push({ field: "searchKeysTitle", re: `(^| )${escapeRegex(k)}( |$)`, pts: k.length === 2 ? 5 : 2, match: true });
+  if (k.length >= 4) alts.push({ field: "searchKeys", re: `(^| )${escapeRegex(k)}`, pts: 1, match: true });
+  if (t.length <= MAX_FUZZY_WORD) {
+    if (k.length >= 4 && k.length <= MAX_FUZZY_WORD) {
+      alts.push({ field: "searchKeysTitle", re: oneEditRegex(k), pts: 3, match: true });
+      alts.push({ field: "searchKeys", re: oneEditRegex(k), pts: 1, match: true });
+    }
+    if (t.length >= 4) alts.push({ field: "searchTitle", re: oneEditRegex(t), pts: 3, match: true });
+  }
+  return alts;
+}
+
+/**
+ * How the query words combine. 1-2 words: every word must match. 3+ words: small words (ka, ki, aur ... = under 4 letters) are neither
+ * required nor counted; if two or more words have 4+ letters, ANY TWO of them matching is enough; with one such word that word must
+ * match (and if there is none, every word must match).
+ */
+export function matchPlan(tokens) {
+  const alts = tokens.map(tokenAlternatives);
+  const ev = tokens.map((t, i) => i).filter((i) => tokens[i].length >= 4);
+  if (tokens.length >= 3 && ev.length >= 2) {
+    const pairs = [];
+    for (let a = 0; a < ev.length; a++) for (let b = a + 1; b < ev.length; b++) pairs.push([ev[a], ev[b]]);
+    return { kind: "pairs", alts, pairs };
+  }
+  if (tokens.length >= 3 && ev.length === 1) return { kind: "all", alts, required: ev };
+  return { kind: "all", alts, required: tokens.map((_, i) => i) };
+}
+
+/** JS twin of the MongoDB query built from matchPlan (folder names, tests): compiled once per query, then test(fields) per candidate. */
+export function makeMatcher(tokens) {
+  const plan = matchPlan(tokens);
+  const compiled = plan.alts.map((list) => list.filter((a) => a.match !== false).map((a) => ({ field: a.field, re: new RegExp(a.re) })));
+  const hit = (i, fields) => compiled[i].some((a) => typeof fields[a.field] === "string" && a.re.test(fields[a.field]));
+  return {
+    plan,
+    test(fields) {
+      if (plan.kind === "pairs") return plan.pairs.some(([a, b]) => hit(a, fields) && hit(b, fields));
+      return plan.required.every((i) => hit(i, fields));
+    },
+  };
+}
+
 /**
  * Builds the normalised searchable copies of an article.
  * @param {object} article  { title, titleTr, excerpt, seoTitle, seoDescription, blocks }
  * @param {Array<{ book?: string, author?: string, referenceText?: string }>} references  resolved reference documents
- * @returns {{ searchTitle: string, searchText: string, searchPhonetic: string, searchPhoneticTitle: string }}
+ * @returns {{ searchTitle, searchText, searchPhonetic, searchPhoneticTitle, searchKeysTitle, searchKeys: string }}
  */
 export function buildArticleSearchFields(article, references = []) {
   const titles = [article.title, ...Object.values(article.titleTr || {})].filter((x) => typeof x === "string");
@@ -177,5 +326,5 @@ export function buildArticleSearchFields(article, references = []) {
   const searchText = normalizeForSearch(parts.filter((x) => typeof x === "string").join(" \n ")).slice(0, MAX_SEARCH_TEXT);
   const searchPhoneticTitle = phoneticWords(titles.join(" ")).join(" ");
   const searchPhonetic = phoneticWords(searchText).join(" ").slice(0, MAX_SEARCH_TEXT);
-  return { searchTitle, searchText, searchPhonetic, searchPhoneticTitle };
+  return { searchTitle, searchText, searchPhonetic, searchPhoneticTitle, ...buildKeyFields(searchTitle, searchText) };
 }
