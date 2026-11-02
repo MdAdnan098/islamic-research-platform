@@ -52,7 +52,7 @@ export default function Login() {
   return (
     <AdminShell><HomeLink /><div className="grid min-h-screen place-items-center p-4">
       <form onSubmit={(e) => e.preventDefault()} className="a-card w-full max-w-sm space-y-4 p-7">
-        <div className="flex flex-col items-center gap-2 pb-2"><LogoMark variant="full" size={96} /><h1 className="text-xl font-bold">Admin sign in</h1><p className="text-xs text-ad-mute">AthariTV content management</p></div>
+        <div className="flex flex-col items-center gap-2 pb-2"><LogoMark size={46} /><h1 className="text-xl font-bold">Admin sign in</h1><p className="text-xs text-ad-mute">AthariTV content management</p></div>
         <div><label className="a-label" htmlFor="un">Username</label><input id="un" type="text" autoComplete="username" autoCapitalize="none" required className="a-input" value={f.username} onChange={typed("username")} /></div>
         <div>
           <label className="a-label" htmlFor="pw">Password</label>

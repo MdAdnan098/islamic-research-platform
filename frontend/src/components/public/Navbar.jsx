@@ -62,7 +62,7 @@ export function Navbar() {
   return (
     <header ref={header} className="bar-teal sticky top-0 z-40 border-b border-rule bg-paper">
       <div className="container-page flex h-16 items-center justify-between gap-2">
-        <Link to="/" aria-label="AthariTV" className="-ms-2 min-w-0"><Logo variant="lockup" size={48} showText={false} /></Link>
+        <Link to="/" aria-label="AthariTV" className="-ms-2 min-w-0"><Logo size={32} badge /></Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
           {links.map((l) => <NavLink key={l.to} {...l} className={linkCls}>{l.label}</NavLink>)}

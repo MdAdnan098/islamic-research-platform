@@ -29,7 +29,7 @@ export function AdminLayout() {
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 px-4 py-5 text-ad-ink">
-        <LogoMark variant="emblem" size={30} /><div className="leading-tight"><p className="text-sm font-semibold"><BrandName /></p><p className="text-[11px] text-ad-mute">Admin</p></div>
+        <LogoMark size={26} badge /><div className="leading-tight"><p className="text-sm font-semibold"><BrandName /></p><p className="text-[11px] text-ad-mute">Admin</p></div>
       </div>
       <nav className="flex-1 space-y-1 px-3" onClick={() => setOpen(false)}>
         {NAV.map(([to, label, icon, end]) => <NavLink key={to} to={to} end={end} className={link}><Icon name={icon} size={17} />{label}</NavLink>)}

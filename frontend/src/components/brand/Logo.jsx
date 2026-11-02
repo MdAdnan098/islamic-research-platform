@@ -1,25 +1,19 @@
 import { BRAND } from "../../config/env.js";
 
 /**
- * Official AthariTV logo (gold arch, Arabic calligraphy, pen and book). The artwork is made for a BLACK background, so it always sits on a
- * black rounded tile - in Light and Dark mode alike - and needs no light / dark variants.
- *   variant "emblem"  arch + calligraphy only (small spaces: the admin menu)
- *   variant "lockup"  emblem + ATHARI TV (the navbar)
- *   variant "full"    emblem + ATHARI TV + tagline (footer, sign-in pages)
+ * Official AthariTV logo, the WHOLE image as supplied (nothing cropped): gold arch, calligraphy, pen, book, ATHARI TV and tagline on black.
+ * It is made for a black background, so it always sits on a black rounded tile (Light and Dark mode alike). `size` is the height of the
+ * image, as before; with `badge` the tile gets a little padding around it (navbar, footer, admin menu).
  * The previous logo files (/logo.png, /logo-dark.png and the /favicon*.png set) are still in /public, unused: going back = one git revert.
  */
-const VARIANTS = {
-  emblem: { src: "/brand/athari-emblem.webp", w: 420, h: 363 },
-  lockup: { src: "/brand/athari-lockup.webp", w: 620, h: 459 },
-  full: { src: "/brand/athari-full.webp", w: 760, h: 563 },
-};
+const SRC = "/brand/athari-logo.webp";
+const RATIO = 540 / 464; // width / height of the image
 
-export function LogoMark({ size = 44, className = "", variant = "lockup" }) {
-  const v = VARIANTS[variant] || VARIANTS.lockup;
-  const width = Math.round((size * v.w) / v.h);
+export function LogoMark({ size = 44, className = "", badge = false }) {
+  const width = Math.round(size * RATIO);
   return (
-    <span className={`inline-flex shrink-0 overflow-hidden rounded-xl bg-black ${className}`}>
-      <img src={v.src} alt={BRAND.name} width={width} height={size} style={{ height: size, width }} className="block" decoding="async" />
+    <span className={`inline-flex shrink-0 overflow-hidden rounded-xl bg-black ${badge ? "p-1" : ""} ${className}`}>
+      <img src={SRC} alt={BRAND.name} width={width} height={size} style={{ height: size, width }} className="block" decoding="async" />
     </span>
   );
 }
@@ -33,11 +27,11 @@ export function BrandName({ className = "" }) {
   );
 }
 
-/** The logo, optionally with the text next to it (the lockup / full logo already contain the name: pass showText={false}). */
-export function Logo({ size = 40, showText = true, className = "", variant = "emblem" }) {
+/** badge: the logo sits on a black rounded tile with a little padding, in Light AND Dark mode. */
+export function Logo({ size = 40, showText = true, className = "", badge = false }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <LogoMark size={size} variant={variant} />
+      <LogoMark size={size} badge={badge} />
       {showText && (
         <span className="leading-tight">
           <span className="block text-[17px] font-bold tracking-tight"><BrandName /></span>
