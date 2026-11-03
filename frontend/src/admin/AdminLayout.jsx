@@ -10,6 +10,7 @@ const NAV = [
   ["/admin/articles", "Articles", "doc"],
   ["/admin/categories", "Categories", "folder"],
   ["/admin/topics", "Folders", "tag"],
+  ["/admin/references", "References", "book"],
   ["/admin/live-sessions", "Live Sessions", "monitor"],
   ["/admin/courses", "Courses", "cap"],
   ["/admin/enrollments", "Enrollments", "check"],

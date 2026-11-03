@@ -50,7 +50,7 @@ export default function ArticleComposer() {
   const [refs, setRefs] = useState([]);
   const [meta, setMeta] = useState({ categoryId: "", topicId: "", slug: "", status: "draft", sourceLanguage: "", langLocked: false });
   const [extra, setExtra] = useState({ titleTr: {}, coverKey: "", excerpt: "" }); // converted heading, cover image (saved with the post)
-  const [status, setStatus] = useState({ text: "", tone: "" });
+  const [status, setStatus] = useState({ text: "", tone: "", detail: "", time: "" }); // text: Saving… / Saved ✓ / Failed, retry
   const [busy, setBusy] = useState(false);
   const [addFolder, setAddFolder] = useState(false);
 
@@ -118,11 +118,12 @@ export default function ArticleComposer() {
    * Calls run one after another, so a heading autosave and a block save can never overtake each other.
    */
   function persist(mutate, titleNow) {
+    setStatus({ text: "Saving…", tone: "", detail: "", time: "" });
     const run = async () => {
       const cur = latest.current;
       const t = (titleNow ?? cur.title).trim();
       if (!t) throw new Error("Pehle upar heading likhein, uske baad hi post save hogi.");
-      if (!cur.meta.categoryId) throw new Error("Pehle category chuniye (upar Category).");
+      if (!cur.meta.categoryId) throw new Error("Pehle category chuniye (neeche Post settings mein Category).");
       const base = withIds(cur.blocks);
       const next = mutate ? mutate(base) : base;
       // original language: the one chosen / stored for this post; detected from the text only while nothing has been chosen yet
@@ -160,7 +161,7 @@ export default function ArticleComposer() {
       const need = referenceIdsOf(a.blocks);
       const fresh = await Promise.all(need.map((rid) => (known.has(rid) ? known.get(rid) : adminApi.references.get(rid).catch(() => null))));
       setRefs(fresh.filter(Boolean));
-      setStatus({ text: a.status === "published" ? `Live post update ho gayi · ${clock()}` : `Draft save ho gaya · ${clock()}`, tone: "ok" });
+      setStatus({ text: "Saved ✓", tone: "ok", detail: "", time: clock() });
       return a;
     };
     const p = chain.current.then(run);
@@ -169,8 +170,8 @@ export default function ArticleComposer() {
   }
 
   async function saveNow() {
-    setBusy(true); setStatus({ text: "Saving…", tone: "" });
-    try { await persist(); } catch (e) { setStatus({ text: e.message, tone: "err" }); toast(e.message, "error"); } finally { setBusy(false); }
+    setBusy(true);
+    try { await persist(); } catch (e) { fail(e); } finally { setBusy(false); }
   }
 
   async function publishToggle() {
@@ -189,18 +190,24 @@ export default function ArticleComposer() {
     if (onTrTitle) {
       // the converted heading on screen: stored with the post when it changed
       if (JSON.stringify(cleanTr(extra.titleTr)) === savedTr.current || !title.trim() || !meta.categoryId) return;
-      setStatus({ text: "Saving…", tone: "" });
-      persist().catch((e) => setStatus({ text: e.message, tone: "err" }));
+      persist().catch((e) => setStatus({ text: "Failed, retry", tone: "err", detail: e.message, time: "" }));
       return;
     }
     const t = title.trim();
     if (!t || t === savedTitle.current) return;
     if (!meta.categoryId) return;
-    setStatus({ text: "Saving…", tone: "" });
-    persist(undefined, t).catch((e) => setStatus({ text: e.message, tone: "err" }));
+    persist(undefined, t).catch((e) => setStatus({ text: "Failed, retry", tone: "err", detail: e.message, time: "" }));
   }
 
-  function fail(e) { setStatus({ text: e.message, tone: "err" }); toast(e.message, "error"); }
+  function fail(e) { setStatus({ text: "Failed, retry", tone: "err", detail: e.message, time: "" }); toast(e.message, "error"); }
+
+  // Floating card "Settings": smooth scroll to the Post settings section below the page.
+  function goSettings() {
+    const el = document.getElementById("post-settings");
+    if (!el) return;
+    const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" });
+  }
 
   // Settings below the page: stored together with the post as soon as the post exists (before that they wait for the first save).
   function updateMeta(patch) {
@@ -335,7 +342,8 @@ export default function ArticleComposer() {
             <div className="flex items-center gap-2">
               <Link to="/admin/articles" className="text-mute hover:text-ink">← Articles</Link>
               {id && <StatusBadge status={meta.status} />}
-              <button type="button" onClick={toggleBar} aria-label="Card band karein" title="Band karein" className="ms-auto grid h-6 w-6 place-items-center rounded-full text-mute hover:bg-tint hover:text-ink"><Icon name="up" size={16} /></button>
+              <button type="button" onClick={goSettings} className="a-btn ms-auto !px-2 !py-0.5">Settings</button>
+              <button type="button" onClick={toggleBar} aria-label="Card band karein" title="Band karein" className="grid h-6 w-6 place-items-center rounded-full text-mute hover:bg-tint hover:text-ink"><Icon name="up" size={16} /></button>
             </div>
             <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Original language">
               <span className="text-mute">Original:</span>
@@ -347,7 +355,11 @@ export default function ArticleComposer() {
               ))}
               {meta.langLocked && <span aria-hidden="true" className="text-mute">🔒</span>}
             </div>
-            <p className={`min-h-[1rem] ${status.tone === "err" ? "text-ad-danger" : status.tone === "ok" ? "text-ad-ok" : "text-mute"}`}>{status.text || (id ? "" : "Naya post — heading likhein")}</p>
+            <div className="flex min-h-[1rem] items-center gap-2" role="status" aria-live="polite">
+              <p title={status.time ? `Last saved ${status.time}` : undefined} className={`font-semibold ${status.tone === "err" ? "text-ad-danger" : status.tone === "ok" ? "text-ad-ok" : "text-mute"}`}>{status.text || (id ? "" : "Naya post — heading likhein")}</p>
+              {status.tone === "err" && <button type="button" className="a-btn !px-2 !py-0.5" disabled={busy} onClick={saveNow}>Retry</button>}
+            </div>
+            {status.tone === "err" && status.detail && <p className="text-[11px] text-mute">{status.detail}</p>}
             <div className="flex gap-1.5">
               <button type="button" className="a-btn flex-1 !px-2 !py-1" disabled={busy} onClick={saveNow}>{busy ? "Saving…" : live ? "Save Changes" : "Save Draft"}</button>
               <button type="button" className="a-btn-primary btn-cta flex-1 !px-2 !py-1" disabled={busy} onClick={publishToggle}>{live ? "Unpublish" : "Publish"}</button>
@@ -386,7 +398,7 @@ export default function ArticleComposer() {
       </AdminDock>
 
       {/* Settings: below the live page, after a divider, above the footer. */}
-      <section dir="ltr" className="container-article pb-16 pt-6 font-sans text-ink" aria-label="Post settings">
+      <section id="post-settings" dir="ltr" className="container-article scroll-mt-24 pb-16 pt-6 font-sans text-ink" aria-label="Post settings">
         <div className="my-8 flex items-center gap-4 text-gold" aria-hidden="true">
           <span className="h-px flex-1 bg-rule" /><span className="text-xs">◆</span><span className="h-px flex-1 bg-rule" />
         </div>

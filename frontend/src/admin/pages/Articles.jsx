@@ -50,7 +50,6 @@ export default function Articles() {
   return (
     <>
       <PageHeader title="Articles" desc="Research articles, in every language.">
-        <button className="a-btn-danger" onClick={removeAll}><Icon name="trash" size={15} />Delete all</button>
         <Link to="/admin/articles/new" className="a-btn-primary btn-cta"><Icon name="plus" size={15} />New article</Link>
       </PageHeader>
 
@@ -86,6 +85,11 @@ export default function Articles() {
         <span>Page {f.page}</span>
         <button className="a-btn" disabled={(data?.length || 0) < LIMIT} onClick={() => setF({ ...f, page: f.page + 1 })}>Next →</button>
       </div>
+      <section className="mt-10 rounded-lg border border-ad-rule p-4" aria-label="Danger zone">
+        <h2 className="text-sm font-semibold text-ad-danger">Danger zone</h2>
+        <p className="mb-3 mt-1 text-xs text-ad-mute">Saare drafts aur published articles hamesha ke liye delete ho jayenge. Ye wapas nahi aa sakta.</p>
+        <button className="a-btn-danger" onClick={removeAll}><Icon name="trash" size={15} />Delete all</button>
+      </section>
       {dialog}
     </>
   );
