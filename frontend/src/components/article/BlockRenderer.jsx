@@ -74,21 +74,26 @@ function Quote({ b, text, layers, attrs }) {
       <span aria-hidden="true" className={`${mark} left-4 top-1 sm:left-6`}>&ldquo;</span>
       <span aria-hidden="true" className={`${mark} bottom-[-1.9rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
       {sacred && <p className="eyebrow relative mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
-      <Text as="blockquote" src={text} force={big ? s : undefined} {...attrs} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.2em] sm:text-[1.4em]" : "sacred-arabic text-[1.45em] sm:text-[1.75em]") : `font-display text-[0.95em] sm:text-[1.05em] leading-[1.8] ${slant}`}`}>{marked(cleanText(text), layers, s)}</Text>
+      <Text as="blockquote" src={text} force={big ? s : undefined} {...attrs} className={`relative ${big ? (s === "urdu" ? "sacred-urdu text-[1.2em] sm:text-[1.4em]" : "sacred-arabic text-[1.3em] sm:text-[1.75em]") : `font-display text-[0.95em] sm:text-[1.05em] leading-[1.8] ${slant}`}`}>{marked(cleanText(text), layers, s)}</Text>
       {b.source && <Text as="figcaption" className="relative mt-3 text-xs text-bronze sm:text-sm">— {b.source}</Text>}
     </figure>
   );
 }
 
 function Figure({ pages, caption, startOpen }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(null);
   const single = pages.length === 1;
+  // Scans / book pages are shown as compact thumbnails (tap = fullscreen zoom viewer), so they do not push the text away.
   return (
-    <figure className="my-9">
-      <div className={single ? "" : "flex flex-col gap-4"}>
+    <figure className="my-6">
+      <div className={single ? "" : "grid grid-cols-2 gap-3 sm:grid-cols-3"}>
         {pages.map((p, i) => (
-          <button key={i} onClick={() => setOpen(i)} className="block w-full text-start" aria-label={p.caption || "Open"}>
-            <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-auto w-full bg-rule/30" />
+          <button key={i} onClick={() => setOpen(i)} className="group block w-full overflow-hidden rounded-lg border border-rule text-start transition hover:border-accent/60" aria-label={p.caption || t.article.openScan}>
+            <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className={`block w-full bg-rule/30 object-cover object-top ${single ? "h-44 sm:h-64" : "h-32 sm:h-44"}`} />
+            <span className="flex items-center justify-between bg-paper px-3 py-1.5 text-xs font-medium text-bronze">
+              {single ? t.article.openScan : `${i + 1} / ${pages.length}`}<Icon name="zoomIn" size={14} />
+            </span>
           </button>
         ))}
       </div>
@@ -139,8 +144,8 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
             const host = scriptOf(text);
             if (b.level === 1) return <Text key={key} as="h2" src={text} {...attrs} className="mb-5 mt-14 font-display text-[1.75em] sm:text-[2.1em] font-bold leading-tight">{marked(text, layers, host)}</Text>;
             return b.level === 3
-              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-10 font-display text-[1.25em] sm:text-[1.38em] font-semibold">{marked(text, layers, host)}</Text>
-              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-8 font-display text-[1.45em] sm:text-[1.65em] font-semibold">{marked(text, layers, host)}</Text>;
+              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-12 font-display text-[1.25em] sm:text-[1.38em] font-semibold">{marked(text, layers, host)}</Text>
+              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-10 font-display text-[1.45em] sm:text-[1.65em] font-semibold">{marked(text, layers, host)}</Text>;
           }
           case "text":
             return (

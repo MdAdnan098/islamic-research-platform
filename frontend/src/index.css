@@ -235,7 +235,10 @@
   @media (max-width: 639px) {
     .script-arabic { line-height: 2.3 !important; }
     .script-urdu { line-height: 2.4 !important; }
-    .script-arabic.home-arabic, .script-arabic.sacred-arabic { line-height: 2.4 !important; }
+    .script-arabic.home-arabic, .script-arabic.sacred-arabic { line-height: 2.2 !important; }
+    /* post paragraphs: a little less air for Arabic / Urdu so they sit closer to the Roman text rhythm */
+    .reading p.script-arabic { line-height: 2.1 !important; }
+    .reading p.script-urdu { line-height: 2.25 !important; }
   }
 
   /* Home Ayat / Hadith cards: compact premium sizing (tighter line-height than the generic sacred text) */
@@ -269,7 +272,8 @@
   .reading { overflow-wrap: anywhere; }
 
   /* Article header title and excerpt scaling with reader font preference */
-  .article-title { font-size: clamp(1.85rem, calc(2.5rem * var(--reading-font-scale, 1)), 3.75rem); line-height: 1.25; }
+  .article-title { font-size: clamp(1.5rem, calc(1.75rem * var(--reading-font-scale, 1)), 3.75rem); line-height: 1.25; }
+  @media (min-width: 640px) { .article-title { font-size: clamp(1.85rem, calc(2.5rem * var(--reading-font-scale, 1)), 3.75rem); } }
   .article-excerpt { font-size: calc(1.125rem * var(--reading-font-scale, 1)); line-height: 1.6; }
   /* Saved text highlight: yellow background + red text (original), plus pink / blue / green. Same in every theme.
      No padding so Urdu/Arabic letters keep joining. */

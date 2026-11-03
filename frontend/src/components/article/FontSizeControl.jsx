@@ -161,8 +161,8 @@ export function FontSizeControl({ className = "" }) {
  * Positioned at bottom-end corner (bottom-right in LTR) so it does not collide with admin tools.
  */
 export function FloatingReaderControls() {
-  const [visible, setVisible] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [scrolling, setScrolling] = useState(false); // hidden while the page is scrolling, back 0.7 s after it stops
+  const [collapsed, setCollapsed] = useState(true); // small "Aa 100%" pill by default
   const {
     percentage,
     canIncrease,
@@ -176,23 +176,21 @@ export function FloatingReaderControls() {
   const articleI18n = t.article || {};
 
   useEffect(() => {
+    let timer;
     const handleScroll = () => {
-      // Reveal floating controls when user scrolls past 300px
-      const scrolled = window.scrollY > 300;
-      setVisible(scrolled);
+      setScrolling(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setScrolling(false), 700);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => { clearTimeout(timer); window.removeEventListener("scroll", handleScroll); };
   }, []);
-
-  if (!visible) return null;
 
   return (
     <aside
       aria-label={articleI18n.fontSize || "Reading controls"}
       dir="ltr"
-      className="fixed bottom-5 end-4 z-40 transition-all duration-300 ease-out select-none"
+      className={`fixed bottom-5 end-4 z-40 select-none transition-all duration-300 ease-out ${scrolling ? "pointer-events-none translate-y-2 opacity-0" : "opacity-100"}`}
     >
       <div className="flex items-center gap-1 rounded-full border border-rule bg-card/95 px-2 py-1.5 shadow-elev backdrop-blur-md">
         {collapsed ? (

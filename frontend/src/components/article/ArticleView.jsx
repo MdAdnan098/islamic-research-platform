@@ -10,7 +10,7 @@ import { pickVersion } from "../../lib/versions.js";
 import { ArticleLanguage } from "../public/Controls.jsx";
 import { useFontSize } from "../../context/FontSizeContext.jsx";
 import { useNoPattern } from "../../lib/useNoPattern.js";
-import { FontSizeControl, FloatingReaderControls } from "./FontSizeControl.jsx";
+import { FloatingReaderControls } from "./FontSizeControl.jsx";
 
 // Admin-only: loaded on demand, so public visitors never download the highlight toolbar.
 const HighlightToolbar = lazy(() => import("../../admin/components/HighlightToolbar.jsx"));
@@ -57,14 +57,13 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
           ) : <span />}
           <span className="ms-auto shrink-0">{formatDate(article.publishedAt || article.createdAt)}</span>
         </div>
-        {/* Reading toolbar: Language selector on the start, font size adjustment controls on the end */}
-        {(!hideLanguage || showFontControls) && (
+        {/* Reading toolbar: Language selector only. Font size lives in ONE place: the floating pill (FloatingReaderControls). */}
+        {!hideLanguage && (
           <div dir="ltr" className="mb-3 flex flex-nowrap items-center justify-between gap-3">
-            {!hideLanguage ? <ArticleLanguage /> : <span />}
-            {showFontControls ? <FontSizeControl /> : <span />}
+            <ArticleLanguage />
           </div>
         )}
-        {titleNode ?? <Text as="h1" className="font-display article-title text-3xl font-semibold leading-[1.25] sm:text-5xl">{title}</Text>}
+        {titleNode ?? <Text as="h1" className="font-display article-title text-2xl font-semibold leading-[1.25] sm:text-5xl">{title}</Text>}
         {article.excerpt && <Text as="p" className="article-excerpt mt-5 text-lg text-mute">{article.excerpt}</Text>}
       </header>
       {cover && <div className="container-page max-w-4xl"><img src={cover} alt="" className="w-full rounded-xl border border-rule" /></div>}
