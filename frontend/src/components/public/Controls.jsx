@@ -36,7 +36,7 @@ export function LanguageSwitch({ className = "" }) {
 }
 
 /** Compact "LN" dropdown (globe icon): Roman · हिन्दी · اردو — the content-language filter. */
-export function LanguageDropdown({ className = "", align = "end" }) {
+export function LanguageDropdown({ className = "", align = "end", up = false }) {
   const { lang, setLang, t } = useI18n();
   const [open, setOpen] = useState(false);
   const box = useRef(null);
@@ -60,7 +60,7 @@ export function LanguageDropdown({ className = "", align = "end" }) {
         <ul
           role="listbox"
           aria-label={t.nav.language}
-          className={`absolute top-full z-50 mt-2 w-40 animate-fade overflow-hidden rounded-lg border border-rule bg-card p-1 shadow-soft ${align === "end" ? "end-0" : "start-0"}`}
+          className={`absolute ${up ? "bottom-full mb-2" : "top-full mt-2"} z-50 w-40 animate-fade overflow-hidden rounded-lg border border-rule bg-card p-1 shadow-soft ${align === "end" ? "end-0" : "start-0"}`}
         >
           {Object.entries(CONTENT_LANGS).map(([key, d]) => {
             const on = lang === key;
