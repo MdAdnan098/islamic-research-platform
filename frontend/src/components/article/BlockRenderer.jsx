@@ -88,10 +88,10 @@ function Figure({ pages, caption, startOpen }) {
   // so tap -> fullscreen viewer shows it in full quality.
   return (
     <figure className="my-6">
-      <div className="flex flex-wrap items-start justify-center gap-3">
+      <div className="flex flex-wrap items-start justify-center gap-3 sm:justify-start">
         {pages.map((p, i) => (
           <button key={i} onClick={() => setOpen(i)} className="group relative inline-block max-w-full overflow-hidden rounded-lg border border-rule bg-paper transition hover:border-accent/60" aria-label={p.caption || t.article.openScan} title={t.article.openScan}>
-            <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-auto w-auto max-h-[20rem] max-w-full object-contain sm:max-h-[24rem]" />
+            <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-auto w-auto max-h-[22rem] max-w-full object-contain sm:max-h-[28rem]" />
             <span className="absolute bottom-1.5 end-1.5 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[11px] font-medium text-white">
               <Icon name="zoomIn" size={13} />{many && <span className="tabular-nums">{i + 1}/{pages.length}</span>}
             </span>

@@ -60,7 +60,7 @@ export function ReferenceCard({ reference: r }) {
             <a href={scan} target="_blank" rel="noopener noreferrer" className="btn-outline mt-5"><Icon name="file" size={16} />{t.article.openPdf}</a>
           ) : (
             <button onClick={() => setOpen(true)} className="group mt-5 block w-full overflow-hidden rounded-lg border border-rule bg-paper text-start transition hover:border-accent/60" aria-label={t.article.openScan}>
-              <img src={scan} alt={t.article.scan} loading="lazy" decoding="async" className="mx-auto block h-auto w-auto max-h-64 max-w-full object-contain sm:max-h-80" />
+              <img src={scan} alt={t.article.scan} loading="lazy" decoding="async" className="mx-auto block h-auto w-auto max-h-72 max-w-full object-contain sm:max-h-[22rem]" />
               <span className="flex items-center justify-between bg-paper px-3 py-2 text-xs font-medium text-bronze">
                 {t.article.openScan}<Icon name="zoomIn" size={15} />
               </span>

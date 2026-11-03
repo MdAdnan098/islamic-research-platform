@@ -178,7 +178,7 @@
   .container-page { @apply mx-auto w-full max-w-6xl px-5 sm:px-8; }
   .container-read { @apply mx-auto w-full max-w-3xl px-5 sm:px-6; }
   /* Article pages: text nearly edge-to-edge on phones, wider column on laptops */
-  .container-article { @apply mx-auto w-full max-w-5xl px-2.5 sm:px-6 lg:px-8; }
+  .container-article { @apply mx-auto w-full max-w-4xl px-2.5 sm:px-6 lg:px-8; }
   .eyebrow { @apply text-sm font-semibold text-accent; }
   .rule-gold { @apply h-px w-12 bg-accent; }
 
