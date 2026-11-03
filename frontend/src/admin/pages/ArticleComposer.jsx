@@ -23,6 +23,7 @@ import { LANG_KEY_BY_CODE, useI18n } from "../../i18n/index.jsx";
 const TITLE_BACKUP = "fs_compose_title";
 const readTitle = () => { try { return localStorage.getItem(TITLE_BACKUP) || ""; } catch { return ""; } };
 const writeTitle = (v) => { try { v ? localStorage.setItem(TITLE_BACKUP, v) : localStorage.removeItem(TITLE_BACKUP); } catch { /* ignore */ } };
+const cleanTr = (tr) => Object.fromEntries(Object.entries(tr || {}).filter(([, v]) => v && String(v).trim()));
 const clock = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 /**
@@ -37,7 +38,7 @@ export default function ArticleComposer() {
   const { id: routeId } = useParams();
   const toast = useToast();
   const nav = useNavigate();
-  const { pinLang } = useI18n();
+  const { pinLang, contentLang } = useI18n();
   // Same three switches as on the live post page: Highlight / Add buttons / Edit buttons.
   const [hlOn, setHlOn] = useState(false);
   const [addOn, setAddOn] = useState(!routeId); // existing post: OFF; empty new post: ON (needs it to write the first block)
@@ -57,6 +58,7 @@ export default function ArticleComposer() {
   latest.current = { id, title, blocks, meta, refs, extra };
   const rev = useRef(null); // updatedAt of the stored copy this page is based on
   const savedTitle = useRef("");
+  const savedTr = useRef("{}"); // converted headings as last stored
   const chain = useRef(Promise.resolve());
 
   // Save card (top right): folded by default; on every change it shakes / peeks open for 2 s and shows Save Draft, then folds again.
@@ -88,6 +90,7 @@ export default function ArticleComposer() {
     if (!routeId) return null;
     const a = await adminApi.articles.get(routeId, s);
     setTitle(a.title); savedTitle.current = a.title;
+    savedTr.current = JSON.stringify(cleanTr(a.titleTr));
     setBlocks(withIds(a.blocks));
     // the stored original language is permanent for a post that already has text
     setMeta({ categoryId: a.categoryId, topicId: a.topicId || "", slug: a.slug, status: a.status, sourceLanguage: a.sourceLanguage || a.language, langLocked: (a.blocks || []).some((b) => typeof b.text === "string" && b.text.trim()) });
@@ -127,7 +130,7 @@ export default function ArticleComposer() {
       const body = {
         categoryId: cur.meta.categoryId, topicId: cur.meta.topicId || null, title: t, language, sourceLanguage: language,
         blocks: cleanBlocksHl(next, language), references: referenceIdsOf(next),
-        titleTr: Object.fromEntries(Object.entries(cur.extra.titleTr || {}).filter(([, v]) => v && String(v).trim())),
+        titleTr: cleanTr(cur.extra.titleTr),
         coverKey: cur.extra.coverKey || null,
       };
       let a;
@@ -145,6 +148,7 @@ export default function ArticleComposer() {
       }
       rev.current = a.updatedAt;
       savedTitle.current = a.title;
+      savedTr.current = JSON.stringify(body.titleTr);
       const saved = withIds(a.blocks);
       // Updated at once (not only on the next render) so a queued save sees the new id / blocks.
       const lockedNow = saved.some((b) => typeof b.text === "string" && b.text.trim());
@@ -182,6 +186,13 @@ export default function ArticleComposer() {
 
   // The heading is saved as soon as the admin leaves the field (only when it changed).
   function onTitleBlur() {
+    if (onTrTitle) {
+      // the converted heading on screen: stored with the post when it changed
+      if (JSON.stringify(cleanTr(extra.titleTr)) === savedTr.current || !title.trim() || !meta.categoryId) return;
+      setStatus({ text: "Saving…", tone: "" });
+      persist().catch((e) => setStatus({ text: e.message, tone: "err" }));
+      return;
+    }
     const t = title.trim();
     if (!t || t === savedTitle.current) return;
     if (!meta.categoryId) return;
@@ -281,10 +292,14 @@ export default function ArticleComposer() {
 
   // The heading looks like the post's own heading (big, no box); it grows with the text.
   const titleRef = useRef(null);
+  // The heading follows the language chosen in the navbar: in another script it shows (and edits) the converted heading, if there is one.
+  const baseLang = meta.sourceLanguage || detectLang(title, blocks) || "en";
+  const onTrTitle = contentLang !== baseLang && typeof extra.titleTr?.[contentLang] === "string";
+  const titleShown = onTrTitle ? extra.titleTr[contentLang] : title;
   useLayoutEffect(() => {
     const el = titleRef.current;
     if (el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }
-  }, [title, loaded.data]);
+  }, [titleShown, loaded.data]);
   const titleField = (
     <div dir="ltr" className="font-sans">
       <textarea
@@ -294,8 +309,11 @@ export default function ArticleComposer() {
         dir="auto"
         autoFocus={!routeId}
         placeholder="Post ka heading yahan likhein"
-        value={title}
-        onChange={(e) => { setTitle(e.target.value); if (!id) writeTitle(e.target.value); }}
+        value={titleShown}
+        onChange={(e) => {
+          if (onTrTitle) { updateExtra({ titleTr: { ...extra.titleTr, [contentLang]: e.target.value } }, false); return; }
+          setTitle(e.target.value); if (!id) writeTitle(e.target.value);
+        }}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); } }}
         onBlur={onTitleBlur}
         aria-label="Heading"
