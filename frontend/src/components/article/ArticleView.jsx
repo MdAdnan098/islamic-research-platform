@@ -30,7 +30,7 @@ function ReadingProgress() {
 }
 
 /** Shared by the public article page and the admin preview. */
-export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline, edit, titleNode, hideLanguage = false }) {
+export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline, edit, titleNode, hideLanguage = false, showFontControls = true }) {
   useNoPattern(); // post pages: plain page colour, no geometric pattern
   const bodyRef = useRef(null);
   const { t, contentLang } = useI18n();
@@ -58,10 +58,12 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
           <span className="ms-auto shrink-0">{formatDate(article.publishedAt || article.createdAt)}</span>
         </div>
         {/* Reading toolbar: Language selector on the start, font size adjustment controls on the end */}
-        <div dir="ltr" className="mb-3 flex flex-nowrap items-center justify-between gap-3">
-          {!hideLanguage ? <ArticleLanguage /> : <span />}
-          <FontSizeControl />
-        </div>
+        {(!hideLanguage || showFontControls) && (
+          <div dir="ltr" className="mb-3 flex flex-nowrap items-center justify-between gap-3">
+            {!hideLanguage ? <ArticleLanguage /> : <span />}
+            {showFontControls ? <FontSizeControl /> : <span />}
+          </div>
+        )}
         {titleNode ?? <Text as="h1" className="font-display article-title text-3xl font-semibold leading-[1.25] sm:text-5xl">{title}</Text>}
         {article.excerpt && <Text as="p" className="article-excerpt mt-5 text-lg text-mute">{article.excerpt}</Text>}
       </header>
@@ -74,7 +76,7 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
           <HighlightToolbar containerRef={bodyRef} blocks={article.blocks} baseLang={article.language} onApply={editor.onApply} onTransform={editor.onTransform} onAlign={editor.onAlign} />
         </Suspense>
       )}
-      <FloatingReaderControls />
+      {showFontControls && <FloatingReaderControls />}
     </article>
   );
 }

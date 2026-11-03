@@ -16,6 +16,7 @@ export default function Preview() {
   const { id } = useParams();
   const [hlOn, setHlOn] = useState(false);
   const [editOn, setEditOn] = useState(false);
+  const [addOn, setAddOn] = useState(false);
   const { data, error, loading, reload, setData } = useAsync(async (s) => {
     const article = await adminApi.articles.get(id, s);
     const ids = [...new Set((article.blocks || []).filter((b) => b.type === "reference" && b.referenceId).map((b) => b.referenceId))];
@@ -33,10 +34,11 @@ export default function Preview() {
         : error && !data ? <div className="container-read py-16"><ErrorState error={error} onRetry={reload} /></div>
         : (
           <>
-            <ArticleView article={shown} references={shownRefs} crumbs={[]} edit={editOn ? { saveLabel: "Save", onSave: draft.ops.onSave, onRemove: draft.ops.onRemove } : undefined} inline={{ scope: id, onInsert: draft.ops.onInsert }} banner={data.article.status !== "published" ? `Preview — status: ${data.article.status}. Not visible to the public.` : draft.hasDraft ? "Preview — live post mein ye badlav abhi publish nahi hue (Save & Publish dabayein)." : "Preview — this article is live."}
+            <ArticleView article={shown} references={shownRefs} crumbs={[]} edit={editOn ? { saveLabel: "Save", onSave: draft.ops.onSave, onRemove: draft.ops.onRemove } : undefined} inline={addOn ? { scope: id, onInsert: draft.ops.onInsert } : undefined} showFontControls={false} banner={data.article.status !== "published" ? `Preview — status: ${data.article.status}. Not visible to the public.` : draft.hasDraft ? "Preview — live post mein ye badlav abhi publish nahi hue (Save & Publish dabayein)." : "Preview — this article is live."}
               editor={hlOn ? { enabled: true, onApply: draft.ops.onApply, onTransform: draft.ops.onTransform, onAlign: draft.ops.onAlign } : undefined} />
-            <AdminDock>
+            <AdminDock resetKey={id}>
               <button type="button" aria-pressed={hlOn} onClick={() => setHlOn((v) => !v)} className="text-start font-semibold">Highlight / Format mode: {hlOn ? "ON" : "OFF"}</button>
+              <button type="button" aria-pressed={addOn} onClick={() => setAddOn((v) => !v)} className="text-start font-semibold">Add buttons: {addOn ? "ON" : "OFF"}</button>
               <button type="button" aria-pressed={editOn} onClick={() => setEditOn((v) => !v)} className="text-start font-semibold">Edit buttons: {editOn ? "ON" : "OFF"}</button>
               <Suspense fallback={null}><PublishBar draft={draft} /></Suspense>
             </AdminDock>

@@ -35,7 +35,7 @@ export default function ArticleEditor() {
   const [preview, setPreview] = useState(null);
   const [addFolder, setAddFolder] = useState(false);
   const [hlOn, setHlOn] = useState(false);
-  const [addOn, setAddOn] = useState(true);
+  const [addOn, setAddOn] = useState(false);
   const [editOn, setEditOn] = useState(false);
   const [srcLang, setSrcLang] = useState(null); // the stored original language of a saved post (permanent)
   const rev = useRef(null); // updatedAt of the version this editor is based on (stale-save guard)
@@ -204,7 +204,7 @@ export default function ArticleEditor() {
               <button className="rounded-lg border border-red-300 px-3 py-1 text-sm font-semibold text-red-600 hover:bg-red-50" onClick={() => setPreview(null)}>✕ Band karein</button>
             </div>
           </div>
-          <ArticleView article={{ ...f, language: lang || "en", title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs}
+          <ArticleView showFontControls={false} article={{ ...f, language: lang || "en", title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs}
             inline={addOn ? { onInsert: async (index, block) => { setBlocks((bs) => [...bs.slice(0, index + 1), block, ...bs.slice(index + 1)]); if (block.type === "reference" && block.referenceId) { const r = await adminApi.references.get(block.referenceId).catch(() => null); if (r) setPreview((p) => ({ ...p, refs: [...p.refs.filter((x) => x.id !== r.id), r] })); } } } : undefined}
             edit={editOn ? { saveLabel: "Apply", onSave: async (index, nb) => { setBlocks((bs) => bs.map((b, j) => (j === index ? { ...nb, id: b.id } : b))); if (nb.type === "reference" && nb.referenceId) { const r = await adminApi.references.get(nb.referenceId).catch(() => null); if (r) setPreview((p) => ({ ...p, refs: [...p.refs.filter((x) => x.id !== r.id), r] })); } } } : undefined}
             editor={hlOn ? { enabled: true, onApply: async (edits) => setBlocks((bs) => applyEdits(bs, edits)), onTransform: async (pieces, level) => { const res = setLineHeading(blocks, lang || "en", pieces, level); if (!res.error) setBlocks(res.blocks); return res.error; }, onAlign: async (blockId, align) => setBlocks((bs) => bs.map((b) => (b.id === blockId ? { ...b, align } : b))) } : undefined} />

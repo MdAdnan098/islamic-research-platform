@@ -38,8 +38,8 @@ export default function ArticleComposer() {
   const nav = useNavigate();
   // Same three switches as on the live post page: Highlight / Add buttons / Edit buttons.
   const [hlOn, setHlOn] = useState(false);
-  const [addOn, setAddOn] = useState(true);
-  const [editOn, setEditOn] = useState(true);
+  const [addOn, setAddOn] = useState(!routeId); // existing post: OFF; empty new post: ON (needs it to write the first block)
+  const [editOn, setEditOn] = useState(false);
 
   const [id, setId] = useState(routeId || null);
   const [title, setTitle] = useState(() => (routeId ? "" : readTitle()));
@@ -57,6 +57,25 @@ export default function ArticleComposer() {
   const savedTitle = useRef("");
   const chain = useRef(Promise.resolve());
 
+  // Save card (top right): folded by default; on every change it shakes / peeks open for 2 s and shows Save Draft, then folds again.
+  const [barOpen, setBarOpen] = useState(false); // opened by hand: stays until folded by hand
+  const [peek, setPeek] = useState(false);
+  const barOpenRef = useRef(false);
+  const peekRef = useRef(false);
+  const peekTimer = useRef(null);
+  const armed = useRef(false); // ignores the changes caused by loading the post
+  const cardRef = useRef(null);
+  barOpenRef.current = barOpen;
+  const closePeek = () => { peekRef.current = false; setPeek(false); };
+  const nudge = () => {
+    if (barOpenRef.current) return;
+    clearTimeout(peekTimer.current);
+    if (!peekRef.current) { peekRef.current = true; setPeek(true); }
+    peekTimer.current = setTimeout(closePeek, 2000);
+  };
+  const toggleBar = () => { clearTimeout(peekTimer.current); closePeek(); setBarOpen((v) => !v); };
+  useEffect(() => () => clearTimeout(peekTimer.current), []);
+
   const cats = useAsync((s) => adminApi.categories.list({ status: "active" }, s), []);
   const topicsRes = useAsync((s) => (meta.categoryId ? adminApi.topics.list({ categoryId: meta.categoryId }, s) : []), [meta.categoryId]);
   const topicOptions = flattenTree((topicsRes.data || []).filter((t) => t.status === "active" || t.id === meta.topicId));
@@ -71,6 +90,7 @@ export default function ArticleComposer() {
     setMeta({ categoryId: a.categoryId, topicId: a.topicId || "", slug: a.slug, status: a.status, sourceLanguage: a.sourceLanguage || a.language, langLocked: (a.blocks || []).some((b) => typeof b.text === "string" && b.text.trim()) });
     setExtra({ titleTr: a.titleTr || {}, coverKey: a.coverKey || "", excerpt: a.excerpt || "" });
     rev.current = a.updatedAt;
+    if (!(a.blocks || []).length) setAddOn(true);
     const found = await Promise.all(referenceIdsOf(a.blocks).map((r) => adminApi.references.get(r, s).catch(() => null)));
     setRefs(found.filter(Boolean));
     return a;
@@ -243,6 +263,18 @@ export default function ArticleComposer() {
     onAlign: async (blockId, align) => { await persist((cur) => cur.map((b) => (b.id === blockId ? { ...b, align } : b))); },
   } : undefined;
 
+  useEffect(() => {
+    if (routeId && !loaded.data) return undefined;
+    const t = setTimeout(() => { armed.current = true; }, 1200);
+    return () => clearTimeout(t);
+  }, [routeId, !!loaded.data]);
+  useEffect(() => { if (armed.current) nudge(); }, [title, blocks, extra, meta.categoryId, meta.topicId, meta.sourceLanguage]);
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!peek || !el || !el.animate || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    el.animate([{ transform: "translateX(0)" }, { transform: "translateX(-7px)" }, { transform: "translateX(6px)" }, { transform: "translateX(-3px)" }, { transform: "translateX(0)" }], { duration: 380, easing: "ease-out" });
+  }, [peek]);
+
   // The heading looks like the post's own heading (big, no box); it grows with the text.
   const titleRef = useRef(null);
   useLayoutEffect(() => {
@@ -275,38 +307,49 @@ export default function ArticleComposer() {
   const lang = meta.sourceLanguage || detectLang(title, blocks) || "en";
   return (
     <PublicLayout>
-      <div dir="ltr" className="sticky top-0 z-[45] border-b border-rule bg-card/95 px-3 py-2 font-sans text-sm text-ink backdrop-blur sm:px-5">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2">
-          <Link to="/admin/articles" className="text-mute hover:text-ink">← Articles</Link>
-          {id && <StatusBadge status={meta.status} />}
-          <div className="flex items-center gap-1 text-xs" role="group" aria-label="Original language">
-            <span className="text-mute">Original:</span>
-            {[["en", "Roman"], ["hi", "Hindi"], ["ur", "Urdu"]].map(([code, label]) => (
-              <button key={code} type="button" disabled={meta.langLocked} aria-pressed={lang === code}
-                title={meta.langLocked ? "Post ki original zabaan permanent hai (text likha ja chuka hai)" : `${label} mein likh rahe hain`}
-                onClick={() => updateMeta({ sourceLanguage: code })}
-                className={`rounded-full border px-2.5 py-1 ${lang === code ? "border-ink bg-tint font-semibold" : "border-rule"} disabled:opacity-60`}>{label}</button>
-            ))}
-            {meta.langLocked && <span aria-hidden="true" className="text-mute">🔒</span>}
+      <div dir="ltr" className="fixed right-2 top-[4.75rem] z-[45] font-sans text-ink">
+        {barOpen || peek ? (
+          <div ref={cardRef} onPointerDown={() => { if (peekRef.current) nudge(); }} className="animate-fade w-[50vw] min-w-[11.5rem] max-w-[20rem] space-y-2 rounded-xl border border-rule bg-card/95 p-2.5 text-xs shadow-elev backdrop-blur">
+            <div className="flex items-center gap-2">
+              <Link to="/admin/articles" className="text-mute hover:text-ink">← Articles</Link>
+              {id && <StatusBadge status={meta.status} />}
+              <button type="button" onClick={toggleBar} aria-label="Card band karein" title="Band karein" className="ms-auto grid h-6 w-6 place-items-center rounded-full text-mute hover:bg-tint hover:text-ink"><Icon name="up" size={16} /></button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Original language">
+              <span className="text-mute">Original:</span>
+              {[["en", "Roman"], ["hi", "Hindi"], ["ur", "Urdu"]].map(([code, label]) => (
+                <button key={code} type="button" disabled={meta.langLocked} aria-pressed={lang === code}
+                  title={meta.langLocked ? "Post ki original zabaan permanent hai (text likha ja chuka hai)" : `${label} mein likh rahe hain`}
+                  onClick={() => updateMeta({ sourceLanguage: code })}
+                  className={`rounded-full border px-2 py-0.5 ${lang === code ? "border-ink bg-tint font-semibold" : "border-rule"} disabled:opacity-60`}>{label}</button>
+              ))}
+              {meta.langLocked && <span aria-hidden="true" className="text-mute">🔒</span>}
+            </div>
+            <p className={`min-h-[1rem] ${status.tone === "err" ? "text-ad-danger" : status.tone === "ok" ? "text-ad-ok" : "text-mute"}`}>{status.text || (id ? "" : "Naya post — heading likhein")}</p>
+            <div className="flex gap-1.5">
+              <button type="button" className="a-btn flex-1 !px-2 !py-1" disabled={busy} onClick={saveNow}>{busy ? "Saving…" : live ? "Save Changes" : "Save Draft"}</button>
+              <button type="button" className="a-btn-primary btn-cta flex-1 !px-2 !py-1" disabled={busy} onClick={publishToggle}>{live ? "Unpublish" : "Publish"}</button>
+            </div>
           </div>
-          <span className={`text-xs ${status.tone === "err" ? "text-ad-danger" : status.tone === "ok" ? "text-ad-ok" : "text-mute"}`}>{status.text || (id ? "" : "Naya post — heading likhein")}</span>
-          <div className="ms-auto flex flex-wrap items-center gap-2">
-            <button type="button" className="a-btn" disabled={busy} onClick={saveNow}>{busy ? "Saving…" : live ? "Save Changes" : "Save Draft"}</button>
-            <button type="button" className="a-btn-primary btn-cta" disabled={busy} onClick={publishToggle}>{live ? "Unpublish" : "Publish"}</button>
-          </div>
-        </div>
+        ) : (
+          <button type="button" onClick={toggleBar} aria-label="Save card kholein" title="Save / Publish kholein" className="animate-fade inline-flex items-center gap-1.5 rounded-full border border-rule bg-card/95 px-3 py-1.5 text-xs font-semibold shadow-elev backdrop-blur hover:bg-tint">
+            <Icon name="down" size={14} />{live ? "Live post" : "Draft"}
+            {status.tone === "err" && <span className="h-2 w-2 rounded-full bg-ad-danger" aria-label="Error" />}
+          </button>
+        )}
       </div>
       <ArticleView
         article={{ title, language: lang, blocks, titleTr: null, coverKey: extra.coverKey || null, excerpt: extra.excerpt || null, createdAt: new Date().toISOString() }}
         references={refs}
         titleNode={titleField}
         hideLanguage
+        showFontControls={false}
         editor={editor}
         inline={inline}
         edit={edit}
       />
 
-      <AdminDock extra="font-sans">
+      <AdminDock extra="font-sans" resetKey={routeId || "new"}>
         <button type="button" aria-pressed={hlOn} disabled={!id} onClick={() => setHlOn((v) => !v)} className="text-start font-semibold disabled:opacity-50">
           Admin · Highlight mode: {hlOn ? "ON" : "OFF"}
         </button>

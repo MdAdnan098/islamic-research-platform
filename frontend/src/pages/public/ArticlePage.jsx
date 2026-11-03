@@ -17,7 +17,7 @@ export default function ArticlePage() {
   const { slug } = useParams();
   const isAdmin = useIsAdmin();
   const [editing, setEditing] = useState(false);
-  const [addOn, setAddOn] = useState(true);
+  const [addOn, setAddOn] = useState(false);
   const [editOn, setEditOn] = useState(false);
   const { t } = useI18n();
   const { data, error, loading, reload, setData } = useAsync(async (signal) => {
@@ -77,7 +77,7 @@ export default function ArticlePage() {
     <>
       <ArticleView {...data} article={shown} references={shownRefs} editor={editor} inline={inline} edit={edit} />
       {isAdmin && (
-        <AdminDock>
+        <AdminDock resetKey={slug}>
           <button type="button" aria-pressed={editing} onClick={() => setEditing((v) => !v)} className="font-semibold">
             Admin · Highlight / Format mode: {editing ? "ON" : "OFF"}
           </button>
