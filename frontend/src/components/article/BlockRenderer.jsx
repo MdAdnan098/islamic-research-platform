@@ -83,16 +83,17 @@ function Quote({ b, text, layers, attrs }) {
 function Figure({ pages, caption, startOpen }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(null);
-  const single = pages.length === 1;
-  // Scans / book pages are shown as compact thumbnails (tap = fullscreen zoom viewer), so they do not push the text away.
+  const many = pages.length > 1;
+  // Scans / book pages: the WHOLE page is shown (object-contain, never cropped), just smaller. The file itself is untouched,
+  // so tap -> fullscreen viewer shows it in full quality.
   return (
     <figure className="my-6">
-      <div className={single ? "" : "grid grid-cols-2 gap-3 sm:grid-cols-3"}>
+      <div className="flex flex-wrap items-start justify-center gap-3">
         {pages.map((p, i) => (
-          <button key={i} onClick={() => setOpen(i)} className="group block w-full overflow-hidden rounded-lg border border-rule text-start transition hover:border-accent/60" aria-label={p.caption || t.article.openScan}>
-            <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className={`block w-full bg-rule/30 object-cover object-top ${single ? "h-44 sm:h-64" : "h-32 sm:h-44"}`} />
-            <span className="flex items-center justify-between bg-paper px-3 py-1.5 text-xs font-medium text-bronze">
-              {single ? t.article.openScan : `${i + 1} / ${pages.length}`}<Icon name="zoomIn" size={14} />
+          <button key={i} onClick={() => setOpen(i)} className="group relative inline-block max-w-full overflow-hidden rounded-lg border border-rule bg-paper transition hover:border-accent/60" aria-label={p.caption || t.article.openScan} title={t.article.openScan}>
+            <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-auto w-auto max-h-[20rem] max-w-full object-contain sm:max-h-[24rem]" />
+            <span className="absolute bottom-1.5 end-1.5 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[11px] font-medium text-white">
+              <Icon name="zoomIn" size={13} />{many && <span className="tabular-nums">{i + 1}/{pages.length}</span>}
             </span>
           </button>
         ))}
