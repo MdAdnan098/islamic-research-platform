@@ -156,7 +156,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           }
           case "text": {
             const toLeft = ltrView(b);
-            const wrap = arabicOnly(b) ? "mb-2 mt-5" : arabicOnly(blocks[i - 1]) ? "mb-5 mt-2" : "my-5";
+            const wrap = arabicOnly(b) ? "mb-0 mt-5" : arabicOnly(blocks[i - 1]) ? "-mt-1 mb-5" : "my-5";
             return (
               <div key={key} dir={toLeft ? "ltr" : undefined} className={wrap}>
                 {runsOf(b).map((run, j) => {
