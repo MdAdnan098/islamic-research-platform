@@ -134,6 +134,11 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
   const [editingKey, setEditingKey] = useState(null); // the block whose inline editor is open (admin only)
   const txt = (b) => (b.kind === "ayat" || b.kind === "hadith" ? b.text : pickVersion(b.text, b.tr, baseLang, contentLang));
   const refMap = Object.fromEntries(references.map((r) => [r.id, r]));
+  // Hindi / Roman view: an Arabic run is right-to-left inside left-to-right text. It sits in its own soft card (like Ayat / Hadith)
+  // so it reads as a deliberate quote block, and the translation that follows it is pulled close. Urdu / Arabic views stay as they are.
+  const runsOf = (b) => splitParagraphs(cleanText(txt(b))).flatMap((seg) => splitScriptRuns(seg.text, seg.start));
+  const ltrView = (b) => { const l = shownLang(b, baseLang, contentLang); return l !== "ur" && l !== "ar"; };
+  const arabicOnly = (b) => { if (b?.type !== "text" || !ltrView(b)) return false; const r = runsOf(b); return r.length > 0 && r.every((x) => x.script === "arabic"); };
   function renderBlock(b, i) {
         const key = b.id || i;
         const lang = shownLang(b, baseLang, contentLang); // which script version is on screen = which highlight set applies
@@ -148,22 +153,25 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
               ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-12 font-display text-[1.25em] sm:text-[1.38em] font-semibold">{marked(text, layers, host)}</Text>
               : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-10 font-display text-[1.45em] sm:text-[1.65em] font-semibold">{marked(text, layers, host)}</Text>;
           }
-          case "text":
+          case "text": {
+            const card = ltrView(b);
+            const wrap = arabicOnly(b) ? "mb-2 mt-5" : arabicOnly(blocks[i - 1]) ? "mb-5 mt-2" : "my-5";
             return (
-              <div key={key} className="my-5">
-                {splitParagraphs(cleanText(txt(b))).flatMap((seg) => splitScriptRuns(seg.text, seg.start)).map((run, j) => {
+              <div key={key} className={wrap}>
+                {runsOf(b).map((run, j) => {
                   // Arabic / Urdu lines are joined with a space (1 character -> 1 character, so highlight offsets stay valid):
                   // the text then fills the full width line after line and is justified, instead of stopping at each pasted line break.
                   const flow = isRtl(run.script) ? run.text.replace(/\n/g, " ") : run.text;
                   return (
                     // Each run of same-script lines is its own paragraph with its own direction (offsets stay relative to the whole block).
-                    <Text key={j} as="p" src={flow} force={run.script} {...hlAttrs(hlEdit, b, lang, run.start)} className="whitespace-pre-line">
+                    <Text key={j} as="p" src={flow} force={run.script} {...hlAttrs(hlEdit, b, lang, run.start)} className={`whitespace-pre-line ${card && run.script === "arabic" ? "my-2 rounded-xl border border-rule bg-card px-4 py-1.5 sm:px-5" : ""}`}>
                       {marked(flow, sliceLayers(layers, run.start, run.start + flow.length), run.script)}
                     </Text>
                   );
                 })}
               </div>
             );
+          }
           case "quote":
             return <Quote key={key} b={b} text={txt(b)} layers={layers} attrs={hlAttrs(hlEdit, b, lang)} />;
           case "reference":

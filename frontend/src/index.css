@@ -269,6 +269,9 @@
   @media (min-width: 640px) { .reading { font-size: calc(1.125rem * var(--reading-font-scale, 1)); } .reading .script-latin { line-height: 1.7; } }
   @media (min-width: 1024px) { .reading { font-size: calc(1.25rem * var(--reading-font-scale, 1)); } }
   .reading p + p { margin-top: 1.1em; }
+  /* Headings (Roman / Hindi): the body line-height made two-line headings look gappy; tighter here */
+  .reading h2.script-latin, .reading h3.script-latin { line-height: 1.35; }
+  .reading h2.script-deva, .reading h3.script-deva { line-height: 1.5 !important; }
   .reading { overflow-wrap: anywhere; }
 
   /* Article header title and excerpt scaling with reader font preference */
