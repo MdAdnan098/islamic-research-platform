@@ -15,6 +15,8 @@ export const CONTENT_LANGS = {
 // Only written when the visitor changes the language themselves, so everyone else opens in Urdu.
 const STORAGE_KEY = "fs_lang_choice";
 const DEFAULT_LANG = "urdu";
+/** Article language code ("en" | "hi" | "ur") -> content language key. Unknown codes (e.g. "ar") have no key. */
+export const LANG_KEY_BY_CODE = { en: "roman", hi: "hindi", ur: "urdu" };
 const I18nContext = createContext(null);
 
 function initial() {
@@ -29,13 +31,19 @@ function initial() {
 }
 
 export function I18nProvider({ children }) {
-  const [lang, setLangState] = useState(initial);
+  const [saved, setLangState] = useState(initial);
+  // Language a page opens in on its own (the admin's article opens in the language it was written in).
+  // Never saved; any change from the navbar replaces it, and the page clears it when it closes.
+  const [pin, setPin] = useState(null);
+  const lang = pin || saved;
   const setLang = (next) => {
+    setPin(null);
     setLangState(next);
     try { localStorage.setItem(STORAGE_KEY, next); } catch { /* ignore */ }
   };
+  const pinLang = (key) => setPin(CONTENT_LANGS[key] ? key : null);
 
-  const value = useMemo(() => ({ t: ui, lang, setLang, contentLang: CONTENT_LANGS[lang].code }), [lang]);
+  const value = useMemo(() => ({ t: ui, lang, setLang, pinLang, contentLang: CONTENT_LANGS[lang].code }), [lang]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 

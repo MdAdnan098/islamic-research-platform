@@ -18,6 +18,7 @@ import { MediaUploader } from "../components/MediaUploader.jsx";
 import { VersionsPanel } from "../components/VersionsPanel.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
 import { useNoPattern } from "../../lib/useNoPattern.js";
+import { LANG_KEY_BY_CODE, useI18n } from "../../i18n/index.jsx";
 
 const TITLE_BACKUP = "fs_compose_title";
 const readTitle = () => { try { return localStorage.getItem(TITLE_BACKUP) || ""; } catch { return ""; } };
@@ -36,6 +37,7 @@ export default function ArticleComposer() {
   const { id: routeId } = useParams();
   const toast = useToast();
   const nav = useNavigate();
+  const { pinLang } = useI18n();
   // Same three switches as on the live post page: Highlight / Add buttons / Edit buttons.
   const [hlOn, setHlOn] = useState(false);
   const [addOn, setAddOn] = useState(!routeId); // existing post: OFF; empty new post: ON (needs it to write the first block)
@@ -75,6 +77,7 @@ export default function ArticleComposer() {
   };
   const toggleBar = () => { clearTimeout(peekTimer.current); closePeek(); setBarOpen((v) => !v); };
   useEffect(() => () => clearTimeout(peekTimer.current), []);
+  useEffect(() => () => pinLang(null), []); // leaving the post: the navbar language applies again
 
   const cats = useAsync((s) => adminApi.categories.list({ status: "active" }, s), []);
   const topicsRes = useAsync((s) => (meta.categoryId ? adminApi.topics.list({ categoryId: meta.categoryId }, s) : []), [meta.categoryId]);
@@ -90,6 +93,7 @@ export default function ArticleComposer() {
     setMeta({ categoryId: a.categoryId, topicId: a.topicId || "", slug: a.slug, status: a.status, sourceLanguage: a.sourceLanguage || a.language, langLocked: (a.blocks || []).some((b) => typeof b.text === "string" && b.text.trim()) });
     setExtra({ titleTr: a.titleTr || {}, coverKey: a.coverKey || "", excerpt: a.excerpt || "" });
     rev.current = a.updatedAt;
+    pinLang(LANG_KEY_BY_CODE[a.sourceLanguage || a.language]);
     if (!(a.blocks || []).length) setAddOn(true);
     const found = await Promise.all(referenceIdsOf(a.blocks).map((r) => adminApi.references.get(r, s).catch(() => null)));
     setRefs(found.filter(Boolean));
@@ -307,7 +311,7 @@ export default function ArticleComposer() {
   const lang = meta.sourceLanguage || detectLang(title, blocks) || "en";
   return (
     <PublicLayout>
-      <div dir="ltr" className="fixed right-2 top-[4.75rem] z-[45] font-sans text-ink">
+      <div dir="ltr" className="fixed left-4 top-[4.75rem] z-[45] font-sans text-ink">
         {barOpen || peek ? (
           <div ref={cardRef} onPointerDown={() => { if (peekRef.current) nudge(); }} className="animate-fade w-[50vw] min-w-[11.5rem] max-w-[20rem] space-y-2 rounded-xl border border-rule bg-card/95 p-2.5 text-xs shadow-elev backdrop-blur">
             <div className="flex items-center gap-2">
@@ -320,7 +324,7 @@ export default function ArticleComposer() {
               {[["en", "Roman"], ["hi", "Hindi"], ["ur", "Urdu"]].map(([code, label]) => (
                 <button key={code} type="button" disabled={meta.langLocked} aria-pressed={lang === code}
                   title={meta.langLocked ? "Post ki original zabaan permanent hai (text likha ja chuka hai)" : `${label} mein likh rahe hain`}
-                  onClick={() => updateMeta({ sourceLanguage: code })}
+                  onClick={() => { updateMeta({ sourceLanguage: code }); pinLang(LANG_KEY_BY_CODE[code]); }}
                   className={`rounded-full border px-2 py-0.5 ${lang === code ? "border-ink bg-tint font-semibold" : "border-rule"} disabled:opacity-60`}>{label}</button>
               ))}
               {meta.langLocked && <span aria-hidden="true" className="text-mute">🔒</span>}

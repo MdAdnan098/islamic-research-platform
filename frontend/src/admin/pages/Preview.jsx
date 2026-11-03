@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { useAdminDraft } from "../../lib/adminDraft.js";
@@ -8,12 +8,14 @@ import AdminDock from "../components/AdminDock.jsx";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { PublicLayout } from "../../layouts/PublicLayout.jsx";
 import { ErrorState, Skeleton } from "../../components/ui/feedback.jsx";
+import { LANG_KEY_BY_CODE, useI18n } from "../../i18n/index.jsx";
 
 const PublishBar = lazy(() => import("../components/PublishBar.jsx"));
 
 /** Renders a saved article (any status) exactly as the public site would. */
 export default function Preview() {
   const { id } = useParams();
+  const { pinLang } = useI18n();
   const [hlOn, setHlOn] = useState(false);
   const [editOn, setEditOn] = useState(false);
   const [addOn, setAddOn] = useState(false);
@@ -23,6 +25,11 @@ export default function Preview() {
     const references = (await Promise.all(ids.map((r) => adminApi.references.get(r, s).catch(() => null)))).filter(Boolean);
     return { article, references };
   }, [id]);
+
+  // Opens in the language the article was written in; the navbar language switch still changes it.
+  const writtenIn = data?.article ? data.article.sourceLanguage || data.article.language : null;
+  useEffect(() => { if (writtenIn) pinLang(LANG_KEY_BY_CODE[writtenIn]); }, [writtenIn]);
+  useEffect(() => () => pinLang(null), []);
 
   const draft = useAdminDraft({ article: data?.article, references: data?.references, enabled: !!data, initial: data?.article });
   const shown = data && draft.blocks ? { ...data.article, blocks: draft.blocks } : data?.article;
