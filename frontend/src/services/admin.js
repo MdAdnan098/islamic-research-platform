@@ -62,6 +62,9 @@ export const adminApi = {
     get: (id, signal) => request(`/api/admin/enrollments/${id}`, { signal }).then((d) => d.enrollment),
     update: (id, body) => request(`/api/admin/enrollments/${id}`, json("PATCH", body)).then((d) => d.enrollment),
   },
+  dashboard: {
+    stats: (signal) => request("/api/admin/dashboard-stats", { signal }).then((d) => d.stats), // read-only counts: { enrollments, payments, liveSessions }
+  },
   payments: {
     list: (params, signal) => request(`/api/admin/payments${qs(params)}`, { signal }).then((d) => d.payments),
   },
