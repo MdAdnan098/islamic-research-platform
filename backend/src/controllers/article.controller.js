@@ -7,6 +7,7 @@ import {
   createArticle,
   listArticles,
   countArticlesByStatus,
+  countArticles,
   findArticleById,
   updateArticle,
   archiveArticle,
@@ -83,6 +84,7 @@ export async function list(request, env) {
     topicId: url.searchParams.get("topicId") || undefined,
     status: url.searchParams.get("status") || undefined,
     language: url.searchParams.get("language") || undefined,
+    q: url.searchParams.get("q") || undefined,
     sort: url.searchParams.get("sort") === "updated" ? "updated" : undefined,
     limit,
     skip: (page - 1) * limit,
@@ -91,7 +93,10 @@ export async function list(request, env) {
   const articles = await listArticles(config, filters);
   // ?counts=1 adds the real totals (whole collection), used by the dashboard.
   const counts = url.searchParams.get("counts") === "1" ? await countArticlesByStatus(config) : undefined;
-  return jsonSuccess({ articles: articles.map(toAdminArticle), page, limit, ...(counts ? { counts } : {}) }, { allowedOrigin: config.allowedOrigin });
+  // `total` = every article matching the filters / search (all pages), `pages` = how many pages that makes.
+  const total = await countArticles(config, filters);
+  const perPage = Math.min(Math.max(limit, 1), 100);
+  return jsonSuccess({ articles: articles.map(toAdminArticle), page, limit: perPage, total, pages: Math.max(Math.ceil(total / perPage), 1), ...(counts ? { counts } : {}) }, { allowedOrigin: config.allowedOrigin });
 }
 
 export async function getOne(request, env, ctx, params) {

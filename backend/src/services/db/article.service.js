@@ -4,7 +4,7 @@ import { findCategoryById } from "./category.service.js";
 import { findTopicById } from "./topic.service.js";
 import { normalizeSlug, slugify } from "../../utils/slug.js";
 import { validateArticleInput } from "../../utils/validate.js";
-import { buildArticleSearchFields, escapeRegex, matchPlan } from "../../utils/searchText.js";
+import { buildArticleSearchFields, escapeRegex, matchPlan, normalizeForSearch } from "../../utils/searchText.js";
 import { HL_LANGS, isHighlightable, MARK_FIELDS, normalizeRanges, versionText } from "../../utils/highlights.js";
 import { resolveSourceLanguage } from "../../utils/blockAlign.js";
 
@@ -198,8 +198,11 @@ export async function findArticleBySlug(config, slug) {
  * @param {{ categoryId?: string, topicId?: string, status?: string,
  *   language?: string, limit?: number, skip?: number }} filters
  */
-export async function listArticles(config, filters = {}) {
-  const collection = await getArticlesCollection(config);
+/**
+ * Admin list filter. `q` = words of the title: every word must appear in the normalised title (any script,
+ * accents / marks ignored), or literally in the title / link name. Words are regex-escaped literals.
+ */
+function buildAdminQuery(filters = {}) {
   const query = {};
 
   if (filters.categoryId && ObjectId.isValid(filters.categoryId)) {
@@ -210,6 +213,30 @@ export async function listArticles(config, filters = {}) {
   }
   if (filters.status) query.status = filters.status;
   if (filters.language) query.language = filters.language;
+  if (typeof filters.q === "string" && filters.q.trim()) {
+    const words = [...new Set(normalizeForSearch(filters.q.slice(0, 100)).split(" ").filter(Boolean))].slice(0, 6);
+    if (words.length) {
+      query.$and = words.map((w) => ({
+        $or: [
+          { searchTitle: { $regex: escapeRegex(w) } },
+          { title: { $regex: escapeRegex(w), $options: "i" } },
+          { slug: { $regex: escapeRegex(w) } },
+        ],
+      }));
+    }
+  }
+  return query;
+}
+
+/** How many articles match the same filters (all pages together) - for "Page 2 of 7". */
+export async function countArticles(config, filters = {}) {
+  const collection = await getArticlesCollection(config);
+  return collection.countDocuments(buildAdminQuery(filters));
+}
+
+export async function listArticles(config, filters = {}) {
+  const collection = await getArticlesCollection(config);
+  const query = buildAdminQuery(filters);
 
   const limit = Math.min(Math.max(filters.limit || 20, 1), 100);
   const skip = Math.max(filters.skip || 0, 0);

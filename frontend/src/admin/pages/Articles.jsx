@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
@@ -16,13 +16,22 @@ export default function Articles() {
   const [confirm, dialog] = useConfirm();
   const [f, setF] = useState({ status: "", language: "", categoryId: "", q: "", page: 1 });
   const set = (p) => setF((s) => ({ ...s, page: 1, ...p }));
+  // The search runs on the server (all articles, not just this page); it waits a moment after the last key.
+  const [q, setQ] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => { setQ(f.q.trim()); setF((s) => (s.page === 1 ? s : { ...s, page: 1 })); }, 350);
+    return () => clearTimeout(t);
+  }, [f.q]);
   const cats = useAsync((s) => adminApi.categories.list({}, s), []);
   const { data, error, loading, reload } = useAsync(
-    (s) => adminApi.articles.list({ status: f.status, language: f.language, categoryId: f.categoryId, page: f.page, limit: LIMIT }, s),
-    [f.status, f.language, f.categoryId, f.page]
+    (s) => adminApi.articles.listPage({ status: f.status, language: f.language, categoryId: f.categoryId, q, page: f.page, limit: LIMIT }, s),
+    [f.status, f.language, f.categoryId, q, f.page]
   );
   const catName = (id) => cats.data?.find((c) => c.id === id)?.name || "—";
-  const rows = (data || []).filter((a) => a.title.toLowerCase().includes(f.q.toLowerCase()));
+  const rows = data?.articles || [];
+  const pages = data?.pages || 1;
+  // e.g. the last article of the last page was deleted: step back to the last page that still exists
+  useEffect(() => { if (data && f.page > pages) setF((s) => ({ ...s, page: pages })); }, [data, pages, f.page]);
 
   async function act(a, name) {
     try { await adminApi.articles.action(a.id, name); toast(`Article ${name === "archive" ? "archived" : name + "ed"}`); reload(); } catch (e) { toast(e.message, "error"); }
@@ -54,7 +63,7 @@ export default function Articles() {
       </PageHeader>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <input className="a-input" dir="auto" placeholder="Search title…" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} />
+        <input className="a-input" dir="auto" placeholder="Search title (saare articles mein)…" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} />
         <select className="a-input" value={f.status} onChange={(e) => set({ status: e.target.value })}><option value="">All statuses</option><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select>
         <select className="a-input" value={f.language} onChange={(e) => set({ language: e.target.value })}><option value="">All languages</option>{Object.entries(LANGS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
         <select className="a-input" value={f.categoryId} onChange={(e) => set({ categoryId: e.target.value })}><option value="">All categories</option>{(cats.data || []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
@@ -82,8 +91,8 @@ export default function Articles() {
       )}
       <div className="mt-4 flex items-center justify-between text-sm text-ad-mute">
         <button className="a-btn" disabled={f.page === 1} onClick={() => setF({ ...f, page: f.page - 1 })}>← Previous</button>
-        <span>Page {f.page}</span>
-        <button className="a-btn" disabled={(data?.length || 0) < LIMIT} onClick={() => setF({ ...f, page: f.page + 1 })}>Next →</button>
+        <span>Page {f.page} of {pages}{data ? ` · ${data.total} articles` : ""}</span>
+        <button className="a-btn" disabled={f.page >= pages} onClick={() => setF({ ...f, page: f.page + 1 })}>Next →</button>
       </div>
       <section className="mt-10 rounded-lg border border-ad-rule p-4" aria-label="Danger zone">
         <h2 className="text-sm font-semibold text-ad-danger">Danger zone</h2>
