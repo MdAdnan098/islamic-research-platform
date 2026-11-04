@@ -19,6 +19,7 @@ const BlockTools = lazy(() => import("../../admin/components/BlockTools.jsx"));
 const AR = "\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF";
 const RTL_RUN = new RegExp(`[${AR}]+(?:[\\s\\u200c\\u200d.,:;!?()'"\\u201C\\u201D\\u00AB\\u00BB\\-\\u2013\\u2014]+[${AR}]+)*`, "g");
 const HAS_AR = new RegExp(`[${AR}]`);
+const TR_LABEL = /^\s*(?:ترجمہ|ترجمه|ترجمة|tarjum[ae]h?|tarjama|translation|अनुवाद|तर्जुमा|तर्जमा|हवाला|حوالہ|hawala)\s*[:：\-–—]*\s*$/iu;
 const URDU_ONLY = /[\u0679\u0688\u0691\u06BA\u06BE\u06C1\u06C3\u06D2\u06D3\u06CC\u06A9\u06AF\u0686\u067E\u0698]/;
 
 /**
@@ -70,7 +71,7 @@ function Quote({ b, text, layers, attrs }) {
   const slant = s === "latin" ? "italic" : "not-italic";
   const mark = "pointer-events-none absolute select-none font-display text-[4.2rem] font-bold leading-none text-accent/25 sm:text-[6rem]";
   return (
-    <figure className="card-lift relative my-9 overflow-hidden rounded-2xl border border-rule bg-card px-6 pb-10 pt-11 sm:px-12 sm:pb-14 sm:pt-16">
+    <figure className="card-lift relative my-7 overflow-hidden rounded-2xl border border-rule bg-card px-6 pb-10 pt-11 sm:px-12 sm:pb-14 sm:pt-16">
       <span aria-hidden="true" className={`${mark} left-4 top-1 sm:left-6`}>&ldquo;</span>
       <span aria-hidden="true" className={`${mark} bottom-[-1.9rem] right-4 sm:bottom-[-3.2rem] sm:right-6`}>&rdquo;</span>
       {sacred && <p className="eyebrow relative mb-3">{b.kind === "ayat" ? t.article.ayat : t.article.hadith}</p>}
@@ -84,22 +85,34 @@ function Figure({ pages, caption, rtl }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(null);
   const many = pages.length > 1;
-  // Scans / book pages: the WHOLE page is shown (object-contain, never cropped), just smaller. The file itself is untouched,
+  const note = many ? caption : pages[0].caption || caption;
+  // Scans / book pages sit in ONE light grey card: the whole page is shown (object-contain, never cropped), centred, up to 36rem wide.
+  // Several pages become a row of equal thumbnails (from the RIGHT in Urdu / Arabic). The file itself is untouched,
   // so tap -> fullscreen viewer shows it in full quality.
   return (
-    <figure className="my-6">
-      {/* Urdu / Arabic view: the pages start from the RIGHT (like the text); other languages from the left. Phones stay centred. */}
-      <div dir={rtl ? "rtl" : "ltr"} className="flex flex-wrap items-start justify-center gap-3 sm:justify-start">
-        {pages.map((p, i) => (
-          <button key={i} dir="ltr" onClick={() => setOpen(i)} className="group relative inline-block max-w-full overflow-hidden rounded-lg border border-rule bg-paper transition hover:border-accent/60" aria-label={p.caption || t.article.openScan} title={t.article.openScan}>
-            <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-auto w-auto max-h-[22rem] max-w-full object-contain sm:max-h-[28rem]" />
-            <span className="absolute bottom-1.5 end-1.5 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[11px] font-medium text-white">
-              <Icon name="zoomIn" size={13} />{many && <span className="tabular-nums">{i + 1}/{pages.length}</span>}
-            </span>
+    <figure className="my-7">
+      <div className={`${many ? "w-full" : "mx-auto w-full max-w-[36rem]"} rounded-xl border border-rule bg-rule/30 p-3 sm:p-4`}>
+        {many ? (
+          <div dir={rtl ? "rtl" : "ltr"} className="flex flex-wrap items-start justify-start gap-3">
+            {pages.map((p, i) => (
+              <button key={i} dir="ltr" onClick={() => setOpen(i)} className="group relative aspect-[3/4] w-28 overflow-hidden rounded-lg border border-rule bg-paper transition hover:border-accent/60 sm:w-36" aria-label={p.caption || t.article.openScan} title={t.article.openScan}>
+                <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-full w-full object-contain" />
+                <span className="absolute bottom-1.5 end-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-medium tabular-nums text-white">{i + 1}/{pages.length}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <button dir="ltr" onClick={() => setOpen(0)} className="group block w-full" aria-label={pages[0].caption || t.article.openScan} title={t.article.openScan}>
+            <img src={pages[0].src} alt={pages[0].alt || pages[0].caption || ""} loading="lazy" decoding="async" className="mx-auto block h-auto max-h-[30rem] w-auto max-w-full rounded-md border border-rule bg-paper object-contain sm:max-h-[34rem]" />
           </button>
-        ))}
+        )}
+        <div dir={rtl ? "rtl" : "ltr"} className="mt-3 flex items-center justify-between gap-3 border-t border-rule pt-2.5 text-xs text-mute">
+          {note ? <Text as="span" className="min-w-0 break-words">{note}</Text> : <span />}
+          <button type="button" onClick={() => setOpen(0)} className="inline-flex shrink-0 items-center gap-1.5 hover:text-ink" aria-label={t.article.openScan}>
+            <Icon name="zoomIn" size={14} />{many && <span className="tabular-nums">{pages.length}</span>}
+          </button>
+        </div>
       </div>
-      {caption && <Text as="figcaption" className="mt-3 text-center text-sm text-mute">{caption}</Text>}
       {open !== null && <ScanViewer pages={pages} start={open} onClose={() => setOpen(null)} />}
     </figure>
   );
@@ -111,7 +124,7 @@ function Pdf({ b }) {
   const url = mediaUrl(b.key);
   if (!url) return null;
   return (
-    <div className="card-lift my-9 rounded-2xl border border-rule bg-card p-4 sm:p-5">
+    <div className="card-lift my-7 rounded-2xl border border-rule bg-card p-4 sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-rule/50 text-bronze"><Icon name="file" size={22} /></span>
@@ -143,7 +156,10 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
   const pageLang = contentLang === baseLang || blocks.some((x) => typeof x.tr?.[contentLang] === "string" && x.tr[contentLang].trim()) ? contentLang : baseLang;
   const rtlView = pageLang === "ur" || pageLang === "ar";
   const ltrView = (b) => { const l = shownLang(b, baseLang, contentLang); return l !== "ur" && l !== "ar"; };
-  const arabicOnly = (b) => { if (b?.type !== "text" || !ltrView(b)) return false; const r = runsOf(b); return r.length > 0 && r.every((x) => x.script === "arabic"); };
+  // A text block that is only Arabic: shown in a light bordered card (all views), so it reads as its own block.
+  const arabicOnly = (b) => { if (b?.type !== "text") return false; const r = runsOf(b); return r.length > 0 && r.every((x) => x.script === "arabic"); };
+  // A block that is only a small label ("Tarjuma:" / "ترجمہ" / "अनुवाद"): small muted label sitting close to the text under it.
+  const labelOnly = (b) => b?.type === "text" && TR_LABEL.test(cleanText(txt(b)));
   function renderBlock(b, i) {
         const key = b.id || i;
         const lang = shownLang(b, baseLang, contentLang); // which script version is on screen = which highlight set applies
@@ -153,14 +169,22 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
             const text = cleanText(txt(b));
             const attrs = hlAttrs(hlEdit, b, lang);
             const host = scriptOf(text);
-            if (b.level === 1) return <Text key={key} as="h2" src={text} {...attrs} className="mb-5 mt-14 font-display text-[1.75em] sm:text-[2.1em] font-bold leading-tight">{marked(text, layers, host)}</Text>;
+            if (b.level === 1) return <Text key={key} as="h2" src={text} {...attrs} className="mb-5 mt-12 font-display text-[1.75em] sm:text-[2.1em] font-bold leading-tight">{marked(text, layers, host)}</Text>;
             return b.level === 3
-              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-12 font-display text-[1.25em] sm:text-[1.38em] font-semibold">{marked(text, layers, host)}</Text>
-              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-14 border-t border-rule pt-10 font-display text-[1.45em] sm:text-[1.65em] font-semibold">{marked(text, layers, host)}</Text>;
+              ? <Text key={key} as="h3" src={text} {...attrs} className="mb-3 mt-10 font-display text-[1.25em] sm:text-[1.38em] font-semibold">{marked(text, layers, host)}</Text>
+              : <Text key={key} as="h2" src={text} {...attrs} className="mb-4 mt-12 border-t border-rule pt-8 font-display text-[1.45em] sm:text-[1.65em] font-semibold">{marked(text, layers, host)}</Text>;
           }
           case "text": {
             const toLeft = ltrView(b);
-            const wrap = arabicOnly(b) ? "mb-0 mt-5" : arabicOnly(blocks[i - 1]) ? "-mt-1 mb-5" : "my-5";
+            if (labelOnly(b)) {
+              const text = cleanText(txt(b));
+              return <Text key={key} as="p" src={text} {...hlAttrs(hlEdit, b, lang)} className="ref-t ref-label mb-0 mt-6 text-[0.72em] font-semibold text-mute">{marked(text, layers, scriptOf(text))}</Text>;
+            }
+            const card = arabicOnly(b);
+            const follows = arabicOnly(blocks[i - 1]) || labelOnly(blocks[i - 1]);
+            const wrap = card
+              ? "arabic-card mb-2 mt-6 rounded-xl border border-rule bg-card/70 px-5 py-3 sm:px-8 sm:py-4"
+              : follows ? "mb-5 mt-2" : "my-5";
             return (
               <div key={key} dir={toLeft ? "ltr" : undefined} className={wrap}>
                 {runsOf(b).map((run, j) => {
@@ -191,7 +215,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
             return <Pdf key={key} b={b} />;
           case "divider":
             return (
-              <div key={key} className="my-12 flex items-center gap-4 text-gold" aria-hidden="true">
+              <div key={key} className="my-10 flex items-center gap-4 text-gold" aria-hidden="true">
                 <span className="h-px flex-1 bg-rule" /><span className="text-xs">◆</span><span className="h-px flex-1 bg-rule" />
               </div>
             );

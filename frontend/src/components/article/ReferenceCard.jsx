@@ -42,32 +42,34 @@ export function ReferenceCard({ reference: r }) {
 
   return (
     <aside className="my-6">
-      <div>
-        {/* Plain book-style citation: "Hawala :-" then "[ book jild safa ]". Colours live in index.css (.ref-line): blue in Light, soft blue in Dark. */}
-        {line && (
-          <div className="ref-line">
-            <Text as="p" dir={dir} className="text-[1.05em] font-semibold leading-snug sm:text-[1.12em]">{LABELS[contentLang] || LABELS.en} :-</Text>
-            <Text as="p" className="whitespace-pre-line text-[1.05em] font-semibold leading-snug sm:text-[1.12em]">{line}</Text>
-          </div>
-        )}
+      {/* Hawala: a light grey box, small muted label on top, the citation in smaller type. Colours live in index.css (.ref-line):
+          blue in Light, soft blue in Dark. */}
+      {(line || below) && (
+        <div className="rounded-lg border border-rule bg-rule/30 px-4 py-3 sm:px-5">
+          {line && (
+            <>
+              <Text as="p" dir={dir} className="ref-t ref-label mb-1 text-[0.7em] font-semibold text-mute">{LABELS[contentLang] || LABELS.en}</Text>
+              <div className="ref-line">
+                <Text as="p" className="ref-t whitespace-pre-line text-[0.82em] font-semibold leading-snug">{line}</Text>
+              </div>
+            </>
+          )}
+          {below && <Text as="p" className="ref-t mt-3 text-[0.82em] leading-relaxed">{below}</Text>}
+        </div>
+      )}
 
-        {below && (
-          <Text as="p" className="mt-4 text-[0.95em] leading-relaxed sm:text-[1.05em]">{below}</Text>
-        )}
-
-        {scan && (
-          isPdfKey(r.mediaKey) ? (
-            <a href={scan} target="_blank" rel="noopener noreferrer" className="btn-outline mt-5"><Icon name="file" size={16} />{t.article.openPdf}</a>
-          ) : (
-            <button onClick={() => setOpen(true)} className="group mt-5 block w-full overflow-hidden rounded-lg border border-rule bg-paper text-start transition hover:border-accent/60" aria-label={t.article.openScan}>
-              <img src={scan} alt={t.article.scan} loading="lazy" decoding="async" className="mx-auto block h-auto w-auto max-h-72 max-w-full object-contain sm:max-h-[22rem]" />
-              <span className="flex items-center justify-between bg-paper px-3 py-2 text-xs font-medium text-bronze">
-                {t.article.openScan}<Icon name="zoomIn" size={15} />
-              </span>
-            </button>
-          )
-        )}
-      </div>
+      {scan && (
+        isPdfKey(r.mediaKey) ? (
+          <a href={scan} target="_blank" rel="noopener noreferrer" className="btn-outline mt-4"><Icon name="file" size={16} />{t.article.openPdf}</a>
+        ) : (
+          <button onClick={() => setOpen(true)} className="group mx-auto mt-4 block w-full max-w-[36rem] overflow-hidden rounded-xl border border-rule bg-rule/30 p-3 text-start transition hover:border-accent/60" aria-label={t.article.openScan}>
+            <img src={scan} alt={t.article.scan} loading="lazy" decoding="async" className="mx-auto block h-auto w-auto max-h-72 max-w-full rounded-md border border-rule bg-paper object-contain sm:max-h-[22rem]" />
+            <span className="mt-3 flex items-center justify-between border-t border-rule pt-2.5 text-xs font-medium text-mute">
+              {t.article.openScan}<Icon name="zoomIn" size={15} />
+            </span>
+          </button>
+        )
+      )}
       {open && <ScanViewer pages={[{ src: scan, caption: [r.book, r.page && `${t.article.page} ${r.page}`].filter(Boolean).join(" · ") || undefined }]} onClose={() => setOpen(false)} />}
     </aside>
   );
