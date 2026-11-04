@@ -45,7 +45,7 @@ export function ReferenceCard({ reference: r }) {
       {/* Hawala: a light grey box, small muted label on top, the citation in smaller type. Colours live in index.css (.ref-line):
           blue in Light, soft blue in Dark. */}
       {(line || below) && (
-        <div className="rounded-lg border border-rule bg-rule/30 px-4 py-3 sm:px-5">
+        <div>
           {line && (
             <>
               <Text as="p" dir={dir} className="ref-t ref-label mb-1 text-[0.7em] font-semibold text-mute">{LABELS[contentLang] || LABELS.en}</Text>
