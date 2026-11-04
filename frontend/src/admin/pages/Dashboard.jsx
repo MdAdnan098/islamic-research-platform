@@ -20,12 +20,12 @@ export default function Dashboard() {
   if (error && !data) return <ErrorBox error={error} onRetry={reload} />;
   const { articles: recent, counts, drafts, stats: extra, categories, references } = data;
   const n = (v) => (v === undefined || v === null ? "—" : v);
-  const side = [
+  const articleStats = [["Articles", counts.total], ["Published", counts.published], ["Drafts", counts.draft], ["Archived", counts.archived], ["Categories", categories.length], ["References", references.length]];
+  const otherStats = [
     ["Enrollments", n(extra?.enrollments.total), extra ? `${extra.enrollments.pending} pending` : ""],
     ["Payments", n(extra?.payments.paid), extra ? `paid · ${extra.payments.total} total` : ""],
     ["Live sessions", n(extra?.liveSessions.total), extra ? `${extra.liveSessions.live} live · ${extra.liveSessions.upcoming} upcoming` : ""],
   ];
-  const stats = [["Total articles", counts.total], ["Published", counts.published], ["Drafts", counts.draft], ["Archived", counts.archived], ["Categories", categories.length], ["References", references.length]];
 
   return (
     <>
@@ -33,13 +33,21 @@ export default function Dashboard() {
         {drafts[0] && <Link to={`/admin/articles/${drafts[0].id}`} title={drafts[0].title} className="a-btn btn-cta">Continue draft</Link>}
         <Link to="/admin/articles/new" className="a-btn-primary btn-cta">New article</Link>
       </PageHeader>
-      <div className="grid grid-cols-2 items-stretch gap-4 sm:grid-cols-3 xl:grid-cols-6">
-        {stats.map(([l, v]) => <div key={l} className="a-card flex h-full min-h-[96px] flex-col justify-between p-4"><p className="text-sm text-ad-mute">{l}</p><p className="mt-1 text-3xl font-bold">{v}</p></div>)}
+      {/* All the numbers in ONE compact card */}
+      <div className="a-card divide-y divide-ad-rule">
+        <div className="grid grid-cols-3 gap-x-3 gap-y-2 p-3 sm:grid-cols-6">
+          {articleStats.map(([l, v]) => <div key={l} className="min-w-0"><p className="truncate text-xs text-ad-mute">{l}</p><p className="text-xl font-bold leading-tight">{v}</p></div>)}
+        </div>
+        <ul className="px-3 py-1">
+          {otherStats.map(([l, v, sub]) => (
+            <li key={l} className="flex items-baseline justify-between gap-3 py-1 text-sm">
+              <span className="text-ad-mute">{l}</span>
+              <span><b className="text-base">{v}</b>{sub && <span className="ms-2 text-xs text-ad-mute">{sub}</span>}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {side.map(([l, v, sub]) => <div key={l} className="a-card p-4"><p className="text-sm text-ad-mute">{l}</p><p className="mt-1 text-3xl font-bold">{v}</p>{sub && <p className="text-xs text-ad-mute">{sub}</p>}</div>)}
-      </div>
-      <h2 className="mb-3 mt-8 text-lg font-bold">Drafts</h2>
+      <h2 className="mb-2 mt-6 text-lg font-bold">Drafts</h2>
       <div className="a-card divide-y divide-ad-rule overflow-hidden">
         {drafts.length === 0 && <p className="p-6 text-center text-sm text-ad-mute">Koi draft nahi hai.</p>}
         {drafts.map((a, i) => (
@@ -50,7 +58,7 @@ export default function Dashboard() {
         ))}
         {counts.draft > drafts.length && <Link to="/admin/articles" className="block px-4 py-2 text-center text-xs text-ad-mute hover:bg-ad-bg">Saare {counts.draft} drafts Articles page par dekhein →</Link>}
       </div>
-      <h2 className="mb-3 mt-8 text-lg font-bold">Recently updated</h2>
+      <h2 className="mb-2 mt-6 text-lg font-bold">Recently updated</h2>
       <div className="a-card divide-y divide-ad-rule overflow-hidden">
         {recent.length === 0 && <p className="p-6 text-center text-sm text-ad-mute">No articles yet.</p>}
         {recent.map((a) => (
