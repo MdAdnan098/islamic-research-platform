@@ -6,20 +6,18 @@ import { ErrorBox, PageHeader, Spinner, StatusBadge } from "../components/ui.jsx
 
 export default function Dashboard() {
   const { data, error, loading, reload } = useAsync(async (signal) => {
-    const [articles, categories, references] = await Promise.all([
-      adminApi.articles.list({ limit: 100 }, signal),
+    const [{ articles, counts }, categories, references] = await Promise.all([
+      adminApi.articles.listWithCounts({ limit: 6, sort: "updated" }, signal), // 6 recently edited + the real totals from the server
       adminApi.categories.list({}, signal),
       adminApi.references.list({ limit: 100 }, signal),
     ]);
-    return { articles, categories, references };
+    return { articles, counts, categories, references };
   }, []);
 
   if (loading && !data) return <Spinner />;
   if (error && !data) return <ErrorBox error={error} onRetry={reload} />;
-  const { articles, categories, references } = data;
-  const count = (s) => articles.filter((a) => a.status === s).length;
-  const stats = [["Total articles", articles.length], ["Published", count("published")], ["Drafts", count("draft")], ["Archived", count("archived")], ["Categories", categories.length], ["References", references.length]];
-  const recent = [...articles].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 6);
+  const { articles: recent, counts, categories, references } = data;
+  const stats = [["Total articles", counts.total], ["Published", counts.published], ["Drafts", counts.draft], ["Archived", counts.archived], ["Categories", categories.length], ["References", references.length]];
 
   return (
     <>

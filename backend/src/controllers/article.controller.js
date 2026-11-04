@@ -6,6 +6,7 @@ import { safeParseJson } from "../utils/validate.js";
 import {
   createArticle,
   listArticles,
+  countArticlesByStatus,
   findArticleById,
   updateArticle,
   archiveArticle,
@@ -82,12 +83,15 @@ export async function list(request, env) {
     topicId: url.searchParams.get("topicId") || undefined,
     status: url.searchParams.get("status") || undefined,
     language: url.searchParams.get("language") || undefined,
+    sort: url.searchParams.get("sort") === "updated" ? "updated" : undefined,
     limit,
     skip: (page - 1) * limit,
   };
 
   const articles = await listArticles(config, filters);
-  return jsonSuccess({ articles: articles.map(toAdminArticle), page, limit }, { allowedOrigin: config.allowedOrigin });
+  // ?counts=1 adds the real totals (whole collection), used by the dashboard.
+  const counts = url.searchParams.get("counts") === "1" ? await countArticlesByStatus(config) : undefined;
+  return jsonSuccess({ articles: articles.map(toAdminArticle), page, limit, ...(counts ? { counts } : {}) }, { allowedOrigin: config.allowedOrigin });
 }
 
 export async function getOne(request, env, ctx, params) {

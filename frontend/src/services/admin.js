@@ -31,6 +31,7 @@ export const adminApi = {
   },
   articles: {
     ...crud("/api/admin/articles", "articles", "article"),
+    listWithCounts: (params, signal) => request(`/api/admin/articles${qs({ ...params, counts: 1 })}`, { signal }), // { articles, counts: { total, published, draft, archived } }
     remove: (id) => request(`/api/admin/articles/${id}`, { method: "DELETE" }),
     removeAll: () => request("/api/admin/articles", { method: "DELETE" }),
     highlights: (id, body) => request(`/api/admin/articles/${id}/highlights`, json("PATCH", body)).then((d) => d.article),

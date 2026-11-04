@@ -216,10 +216,22 @@ export async function listArticles(config, filters = {}) {
 
   return collection
     .find(query)
-    .sort({ createdAt: -1 })
+    .sort(filters.sort === "updated" ? { updatedAt: -1 } : { createdAt: -1 }) // "updated": recently edited first (dashboard)
     .skip(skip)
     .limit(limit)
     .toArray();
+}
+
+/** Real totals over the whole collection (not just one page): { total, published, draft, archived }. */
+export async function countArticlesByStatus(config) {
+  const collection = await getArticlesCollection(config);
+  const rows = await collection.aggregate([{ $group: { _id: "$status", n: { $sum: 1 } } }]).toArray();
+  const counts = { total: 0, published: 0, draft: 0, archived: 0 };
+  for (const r of rows) {
+    counts.total += r.n;
+    if (r._id in counts) counts[r._id] += r.n;
+  }
+  return counts;
 }
 
 export async function updateArticle(config, id, updates) {
