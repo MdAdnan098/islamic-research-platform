@@ -43,7 +43,7 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
     <article className="select-text" style={{ "--reading-font-scale": scale }}>
       <ReadingProgress />
       {banner && <div className="bg-accent/10 px-4 py-2 text-center text-sm font-medium text-accent">{banner}</div>}
-      <header className="container-article max-w-3xl pb-6 pt-10 sm:pt-14">
+      <header className="container-article max-w-6xl pb-6 pt-10 sm:pt-14">
         <div className="mb-4 flex items-start justify-between gap-3 text-xs text-mute">
           {crumbs.length > 0 ? (
             <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -67,7 +67,7 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
         {article.excerpt && <Text as="p" className="article-excerpt mt-5 text-lg text-mute">{article.excerpt}</Text>}
       </header>
       {cover && <div className="container-page max-w-4xl"><img src={cover} alt="" className="w-full rounded-xl border border-rule" /></div>}
-      <div ref={bodyRef} className={`container-article max-w-3xl pb-6 pt-4 ${editor?.enabled ? "hl-editing" : ""}`}>
+      <div ref={bodyRef} className={`container-article max-w-6xl pb-6 pt-4 ${editor?.enabled ? "hl-editing" : ""}`}>
         <BlockRenderer blocks={article.blocks} references={references} baseLang={article.language} hlEdit={!!editor?.enabled} inline={inline} edit={edit} />
       </div>
       {editor?.enabled && (
