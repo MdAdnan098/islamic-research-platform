@@ -567,7 +567,7 @@ export function toAdminArticle(article) {
   const p = article.pending;
   return {
     ...safe,
-    pending: p ? { blocks: p.blocks || [], references: (p.references || []).map((r) => String(r)), savedAt: p.savedAt } : null,
+    pending: p ? { blocks: p.blocks || [], references: (p.references || []).map((r) => String(r)), savedAt: p.savedAt, meta: p.meta || null } : null,
     rev: (p && p.savedAt) || article.updatedAt,
   };
 }
@@ -578,7 +578,29 @@ export function toAdminArticle(article) {
  * - draft / archived post: nobody sees it anyway, so the blocks are saved straight into the post.
  * Compare-and-swap on `baseRev` means a stale page can never overwrite a newer save (409 instead).
  */
-export async function saveArticleDraft(config, id, { blocks, references, baseRev }) {
+/** The post settings that may wait in the unpublished copy together with the blocks (applied on publish). */
+const PENDING_META_KEYS = ["title", "titleTr", "categoryId", "topicId", "coverKey", "slug", "excerpt", "seoTitle", "seoDescription"];
+
+/** Keeps only the allowed settings and validates them; undefined when nothing was sent. */
+async function cleanPendingMeta(config, existing, meta) {
+  if (meta === undefined || meta === null) return undefined;
+  if (typeof meta !== "object" || Array.isArray(meta)) throwValidationError(["meta must be an object."]);
+  const data = {};
+  for (const k of PENDING_META_KEYS) if (meta[k] !== undefined) data[k] = typeof meta[k] === "string" ? meta[k].trim() : meta[k];
+  if (data.slug !== undefined) data.slug = normalizeSlug(data.slug);
+  const errors = validateArticleInput(data, { partial: true });
+  if (errors.length > 0) throwValidationError(errors);
+  if (data.categoryId !== undefined && !(await findCategoryById(config, data.categoryId))) throwCategoryNotFound();
+  if (data.topicId) {
+    const topic = await findTopicById(config, data.topicId);
+    if (!topic) throwTopicNotFound();
+    const effectiveCategoryId = data.categoryId !== undefined ? data.categoryId : existing.categoryId;
+    if (String(topic.categoryId) !== String(effectiveCategoryId)) throwTopicCategoryMismatch();
+  }
+  return data;
+}
+
+export async function saveArticleDraft(config, id, { blocks, references, baseRev, meta }) {
   const existing = await findArticleById(config, id);
   if (!existing) throwNotFound();
   const refs = Array.isArray(references) ? references : [];
@@ -594,11 +616,17 @@ export async function saveArticleDraft(config, id, { blocks, references, baseRev
   const currentRev = (existing.pending && existing.pending.savedAt) || existing.updatedAt;
   if (base && currentRev && new Date(currentRev).getTime() !== base.getTime()) throwConflict();
 
+  // Settings sent with this save replace the waiting ones; a save without `meta` (View-site editing) keeps them.
+  const cleanMeta = await cleanPendingMeta(config, existing, meta);
+  const keptMeta = cleanMeta !== undefined ? cleanMeta : (existing.pending && existing.pending.meta) || undefined;
+
   const collection = await getArticlesCollection(config);
   const savedAt = nextUpdatedAt(currentRev);
+  const pending = { blocks, references: refs.map((r) => new ObjectId(r)), savedAt };
+  if (keptMeta && Object.keys(keptMeta).length) pending.meta = keptMeta;
   const res = await collection.updateOne(
     { _id: existing._id, updatedAt: existing.updatedAt, "pending.savedAt": (existing.pending && existing.pending.savedAt) ?? null },
-    { $set: { pending: { blocks, references: refs.map((r) => new ObjectId(r)), savedAt } } }
+    { $set: { pending } }
   );
   if (res.matchedCount === 0) throwConflict();
   return findArticleById(config, id);

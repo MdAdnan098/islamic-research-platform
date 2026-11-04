@@ -12,7 +12,7 @@ import { flattenTree, folderLabel } from "../../lib/folders.js";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { PublicLayout } from "../../layouts/PublicLayout.jsx";
 import { ErrorState, Skeleton } from "../../components/ui/feedback.jsx";
-import { Field, Modal, StatusBadge, moveItem, useToast } from "../components/ui.jsx";
+import { Field, Modal, StatusBadge, moveItem, useConfirm, useToast } from "../components/ui.jsx";
 import { FolderForm } from "../components/FolderForm.jsx";
 import { MediaUploader } from "../components/MediaUploader.jsx";
 import { VersionsPanel } from "../components/VersionsPanel.jsx";
@@ -27,6 +27,23 @@ const cleanTr = (tr) => Object.fromEntries(Object.entries(tr || {}).filter(([, v
 const clock = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 /**
+ * The working copy of a stored post: a live post keeps edits that are not published yet in `pending`
+ * (blocks + the settings that were changed with them); for everything else it is the post itself.
+ */
+function workOf(a) {
+  const p = a.pending;
+  const m = (p && p.meta) || {};
+  const pick = (k) => (m[k] !== undefined ? m[k] : a[k]);
+  return {
+    title: pick("title") || "", titleTr: pick("titleTr") || {}, categoryId: pick("categoryId"), topicId: pick("topicId") || "",
+    coverKey: pick("coverKey") || "", excerpt: pick("excerpt") || "", slug: pick("slug"),
+    blocks: (p ? p.blocks : a.blocks) || [],
+  };
+}
+// Version token for the next save: a live post is saved into its unpublished copy (rev), anything else is saved as the post (updatedAt).
+const revOf = (a) => (a.status === "published" ? a.rev : a.updatedAt);
+
+/**
  * "New article" as a live page: the post looks exactly like it will on the site (heading, paragraphs, references,
  * images ...). The heading is a field at the top; under every block there are Edit / Up / Down / Delete / Add buttons.
  * Every Save stores the WHOLE post as a draft (the first one creates it), so nothing is lost if the browser reloads the tab.
@@ -37,6 +54,7 @@ export default function ArticleComposer() {
   useNoPattern(); // post pages: plain page colour, no geometric pattern
   const { id: routeId } = useParams();
   const toast = useToast();
+  const [confirm, dialog] = useConfirm();
   const nav = useNavigate();
   const { pinLang, contentLang } = useI18n();
   // Same three switches as on the live post page: Highlight / Add buttons / Edit buttons.
@@ -52,6 +70,7 @@ export default function ArticleComposer() {
   const [extra, setExtra] = useState({ titleTr: {}, coverKey: "", excerpt: "" }); // converted heading, cover image (saved with the post)
   const [status, setStatus] = useState({ text: "", tone: "", detail: "", time: "" }); // text: Saving… / Saved ✓ / Failed, retry
   const [busy, setBusy] = useState(false);
+  const [hasPending, setHasPending] = useState(false); // live post with edits that are not published yet
   const [addFolder, setAddFolder] = useState(false);
 
   const latest = useRef({});
@@ -85,20 +104,31 @@ export default function ArticleComposer() {
   const topicsRes = useAsync((s) => (meta.categoryId ? adminApi.topics.list({ categoryId: meta.categoryId }, s) : []), [meta.categoryId]);
   const topicOptions = flattenTree((topicsRes.data || []).filter((t) => t.status === "active" || t.id === meta.topicId));
 
+  // Puts a stored post (its working copy: unpublished edits first) on the page.
+  function applyArticle(a) {
+    const w = workOf(a);
+    const bl = withIds(w.blocks);
+    const locked = bl.some((b) => typeof b.text === "string" && b.text.trim());
+    // the stored original language is permanent for a post that already has text
+    const nextMeta = { categoryId: w.categoryId, topicId: w.topicId, slug: w.slug, status: a.status, sourceLanguage: a.sourceLanguage || a.language, langLocked: locked };
+    const nextExtra = { titleTr: w.titleTr, coverKey: w.coverKey, excerpt: w.excerpt };
+    setTitle(w.title); savedTitle.current = w.title;
+    savedTr.current = JSON.stringify(cleanTr(w.titleTr));
+    setBlocks(bl); setMeta(nextMeta); setExtra(nextExtra);
+    setHasPending(!!a.pending);
+    rev.current = revOf(a);
+    latest.current = { ...latest.current, id: a.id, title: w.title, blocks: bl, meta: nextMeta, extra: nextExtra };
+    return { ...w, blocks: bl };
+  }
+
   // An existing article opens with its stored content.
   const loaded = useAsync(async (s) => {
     if (!routeId) return null;
     const a = await adminApi.articles.get(routeId, s);
-    setTitle(a.title); savedTitle.current = a.title;
-    savedTr.current = JSON.stringify(cleanTr(a.titleTr));
-    setBlocks(withIds(a.blocks));
-    // the stored original language is permanent for a post that already has text
-    setMeta({ categoryId: a.categoryId, topicId: a.topicId || "", slug: a.slug, status: a.status, sourceLanguage: a.sourceLanguage || a.language, langLocked: (a.blocks || []).some((b) => typeof b.text === "string" && b.text.trim()) });
-    setExtra({ titleTr: a.titleTr || {}, coverKey: a.coverKey || "", excerpt: a.excerpt || "" });
-    rev.current = a.updatedAt;
+    const w = applyArticle(a);
     pinLang(LANG_KEY_BY_CODE[a.sourceLanguage || a.language]);
-    if (!(a.blocks || []).length) setAddOn(true);
-    const found = await Promise.all(referenceIdsOf(a.blocks).map((r) => adminApi.references.get(r, s).catch(() => null)));
+    if (!w.blocks.length) setAddOn(true);
+    const found = await Promise.all(referenceIdsOf(w.blocks).map((r) => adminApi.references.get(r, s).catch(() => null)));
     setRefs(found.filter(Boolean));
     return a;
   }, [routeId]);
@@ -144,24 +174,33 @@ export default function ArticleComposer() {
         setId(a.id);
         try { window.history.replaceState(null, "", `/admin/articles/${a.id}`); } catch { /* ignore */ }
         writeTitle("");
+      } else if (cur.meta.status === "published") {
+        // Live post: the edit goes into the unpublished copy; visitors keep seeing the published text until "Publish changes".
+        const res = await adminApi.articles.saveDraft(cur.id, {
+          blocks: body.blocks, references: body.references, baseRev: rev.current,
+          meta: { title: t, titleTr: body.titleTr, categoryId: body.categoryId, topicId: body.topicId, coverKey: body.coverKey },
+        });
+        a = res.article;
       } else {
         a = await adminApi.articles.update(cur.id, { ...body, baseUpdatedAt: rev.current });
       }
-      rev.current = a.updatedAt;
-      savedTitle.current = a.title;
+      const w = workOf(a);
+      rev.current = revOf(a);
+      setHasPending(!!a.pending);
+      savedTitle.current = w.title;
       savedTr.current = JSON.stringify(body.titleTr);
-      const saved = withIds(a.blocks);
+      const saved = withIds(w.blocks);
       // Updated at once (not only on the next render) so a queued save sees the new id / blocks.
       const lockedNow = saved.some((b) => typeof b.text === "string" && b.text.trim());
-      latest.current = { ...latest.current, id: a.id, blocks: saved, meta: { ...latest.current.meta, slug: a.slug, status: a.status, sourceLanguage: lockedNow ? (a.sourceLanguage || a.language) : latest.current.meta.sourceLanguage, langLocked: lockedNow } };
+      latest.current = { ...latest.current, id: a.id, blocks: saved, meta: { ...latest.current.meta, slug: w.slug, status: a.status, sourceLanguage: lockedNow ? (a.sourceLanguage || a.language) : latest.current.meta.sourceLanguage, langLocked: lockedNow } };
       setBlocks(saved);
-      setMeta((m) => ({ ...m, slug: a.slug, status: a.status, sourceLanguage: lockedNow ? (a.sourceLanguage || a.language) : m.sourceLanguage, langLocked: lockedNow }));
+      setMeta((m) => ({ ...m, slug: w.slug, status: a.status, sourceLanguage: lockedNow ? (a.sourceLanguage || a.language) : m.sourceLanguage, langLocked: lockedNow }));
       // references used by the blocks are loaded so they are drawn straight away
       const known = new Map(cur.refs.map((r) => [r.id, r]));
-      const need = referenceIdsOf(a.blocks);
+      const need = referenceIdsOf(w.blocks);
       const fresh = await Promise.all(need.map((rid) => (known.has(rid) ? known.get(rid) : adminApi.references.get(rid).catch(() => null))));
       setRefs(fresh.filter(Boolean));
-      setStatus({ text: "Saved ✓", tone: "ok", detail: "", time: clock() });
+      setStatus({ text: a.status === "published" ? "Saved ✓ (abhi live nahi)" : "Saved ✓", tone: "ok", detail: "", time: clock() });
       return a;
     };
     const p = chain.current.then(run);
@@ -174,14 +213,43 @@ export default function ArticleComposer() {
     try { await persist(); } catch (e) { fail(e); } finally { setBusy(false); }
   }
 
-  async function publishToggle() {
+  // Draft: "Publish". Live post: "Publish changes" - only now do the unpublished edits go live.
+  async function publishNow() {
     setBusy(true);
     try {
-      const a = await persist();
-      const next = a.status === "published" ? "unpublish" : "publish";
-      const r = await adminApi.articles.action(a.id, next);
-      setMeta((m) => ({ ...m, status: r.status })); rev.current = r.updatedAt;
-      toast(next === "publish" ? "Post publish ho gayi" : "Post draft mein wapas gayi");
+      const saved = await persist(); // flushes the latest edit into the working copy first
+      const r = await adminApi.articles.action(saved.id, "publish");
+      applyArticle(r);
+      setStatus({ text: "Saved ✓", tone: "ok", detail: "", time: clock() });
+      toast(live ? "Changes live ho gaye" : "Post publish ho gayi");
+    } catch (e) { fail(e); } finally { setBusy(false); }
+  }
+
+  async function unpublishNow() {
+    if (!(await confirm({ title: "Post unpublish karein?", message: "Post site se hat jayegi aur draft ban jayegi. Aapke likhe hue badlav safe rahenge.", confirm: "Unpublish" }))) return;
+    setBusy(true);
+    try {
+      await chain.current;
+      const r = await adminApi.articles.action(latest.current.id, "unpublish");
+      applyArticle(r);
+      toast("Post draft mein wapas gayi");
+    } catch (e) { toast(e.message, "error"); } finally { setBusy(false); }
+  }
+
+  // Drops the unpublished edits; the live post stays exactly as visitors see it.
+  async function discardChanges() {
+    if (!(await confirm({ title: "Changes hatayein?", message: "Publish nahi kiye hue saare badlav hat jayenge. Live post jaisi abhi hai waisi hi rahegi.", confirm: "Yes, hatao", danger: true }))) return;
+    setBusy(true);
+    try {
+      const p = chain.current.then(async () => {
+        const res = await adminApi.articles.discardDraft(latest.current.id);
+        applyArticle(res.article);
+        setRefs(res.references || []);
+      });
+      chain.current = p.catch(() => {});
+      await p;
+      setStatus({ text: "", tone: "", detail: "", time: "" });
+      toast("Changes hat gaye — live post pehle jaisi hai");
     } catch (e) { toast(e.message, "error"); } finally { setBusy(false); }
   }
 
@@ -238,7 +306,7 @@ export default function ArticleComposer() {
     },
   };
   const edit = !editOn ? undefined : {
-    saveLabel: meta.status === "published" ? "Save (live update)" : "Save Draft",
+    saveLabel: meta.status === "published" ? "Save (abhi live nahi)" : "Save Draft",
     onSave: async (index, nb) => {
       await persist((cur) => {
         let at = nb.id ? cur.findIndex((b) => b.id === nb.id) : -1;
@@ -360,14 +428,21 @@ export default function ArticleComposer() {
               {status.tone === "err" && <button type="button" className="a-btn !px-2 !py-0.5" disabled={busy} onClick={saveNow}>Retry</button>}
             </div>
             {status.tone === "err" && status.detail && <p className="text-[11px] text-mute">{status.detail}</p>}
+            {live && hasPending && <p className="font-semibold text-ad-warn">Unpublished changes — live post abhi purani hai</p>}
             <div className="flex gap-1.5">
               <button type="button" className="a-btn flex-1 !px-2 !py-1" disabled={busy} onClick={saveNow}>{busy ? "Saving…" : live ? "Save Changes" : "Save Draft"}</button>
-              <button type="button" className="a-btn-primary btn-cta flex-1 !px-2 !py-1" disabled={busy} onClick={publishToggle}>{live ? "Unpublish" : "Publish"}</button>
+              <button type="button" className="a-btn-primary btn-cta flex-1 !px-2 !py-1" disabled={busy || (live && !hasPending)} title={live && !hasPending ? "Koi unpublished change nahi hai" : undefined} onClick={publishNow}>{live ? "Publish changes" : "Publish"}</button>
             </div>
+            {live && (
+              <div className="flex gap-1.5">
+                {hasPending && <button type="button" className="a-btn flex-1 !px-2 !py-1" disabled={busy} onClick={discardChanges}>Discard changes</button>}
+                <button type="button" className="a-btn flex-1 !px-2 !py-1" disabled={busy} onClick={unpublishNow}>Unpublish</button>
+              </div>
+            )}
           </div>
         ) : (
           <button type="button" onClick={toggleBar} aria-label="Save card kholein" title="Save / Publish kholein" className="animate-fade inline-flex items-center gap-1.5 rounded-full border border-rule bg-card/95 px-3 py-1.5 text-xs font-semibold shadow-elev backdrop-blur hover:bg-tint">
-            <Icon name="down" size={14} />{live ? "Live post" : "Draft"}
+            <Icon name="down" size={14} />{live ? (hasPending ? "Live · changes pending" : "Live post") : "Draft"}
             {status.tone === "err" && <span className="h-2 w-2 rounded-full bg-ad-danger" aria-label="Error" />}
           </button>
         )}
@@ -438,6 +513,7 @@ export default function ArticleComposer() {
         </div>
       </section>
 
+      {dialog}
       {addFolder && (
         <Modal wide title="New folder" onClose={() => setAddFolder(false)}>
           <FolderForm

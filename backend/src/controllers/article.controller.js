@@ -118,6 +118,17 @@ export async function update(request, env, ctx, params) {
 
   await assertReferencesExist(config, body.references);
 
+  // A full save would silently throw away the unpublished copy of a live post. Callers must say so on purpose.
+  if (body.blocks !== undefined && body.overwritePending !== true) {
+    const existing = await findArticleById(config, params.id);
+    if (existing && existing.status === "published" && existing.pending) {
+      const err = new Error("This live post has unpublished changes. Publish or discard them first.");
+      err.status = 409;
+      err.code = "PENDING_EXISTS";
+      throw err;
+    }
+  }
+
   const article = await updateArticle(config, params.id, body);
   return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }
@@ -145,8 +156,9 @@ export async function publish(request, env, ctx, params) {
     throwInvalidInput("Cannot publish an article with no content blocks.");
   }
 
+  // The settings that waited with the unpublished copy (heading, category, folder, cover ...) go live together with it.
   const article = pending
-    ? await updateArticle(config, params.id, { blocks, references: (pending.references || []).map(String), status: "published" })
+    ? await updateArticle(config, params.id, { ...(pending.meta || {}), blocks, references: (pending.references || []).map(String), status: "published" })
     : await updateArticle(config, params.id, { status: "published" });
   return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }

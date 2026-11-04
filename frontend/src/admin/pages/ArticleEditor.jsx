@@ -96,7 +96,7 @@ export default function ArticleEditor() {
     try {
       let a;
       try {
-        a = isNew ? await adminApi.articles.create(body) : await adminApi.articles.update(id, { ...body, baseUpdatedAt: rev.current });
+        a = isNew ? await adminApi.articles.create(body) : await adminApi.articles.update(id, { ...body, baseUpdatedAt: rev.current, overwritePending: true });
       } catch (e) {
         // Same link name already used by another article: add a short suffix and retry once.
         if (!isNew || !/slug/i.test(e.message)) throw e;
