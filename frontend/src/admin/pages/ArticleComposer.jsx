@@ -36,7 +36,7 @@ function workOf(a) {
   const pick = (k) => (m[k] !== undefined ? m[k] : a[k]);
   return {
     title: pick("title") || "", titleTr: pick("titleTr") || {}, categoryId: pick("categoryId"), topicId: pick("topicId") || "",
-    coverKey: pick("coverKey") || "", excerpt: pick("excerpt") || "", slug: pick("slug"),
+    coverKey: pick("coverKey") || "", excerpt: pick("excerpt") || "", seoTitle: pick("seoTitle") || "", seoDescription: pick("seoDescription") || "", slug: pick("slug"),
     blocks: (p ? p.blocks : a.blocks) || [],
   };
 }
@@ -67,7 +67,7 @@ export default function ArticleComposer() {
   const [blocks, setBlocks] = useState([]);
   const [refs, setRefs] = useState([]);
   const [meta, setMeta] = useState({ categoryId: "", topicId: "", slug: "", status: "draft", sourceLanguage: "", langLocked: false });
-  const [extra, setExtra] = useState({ titleTr: {}, coverKey: "", excerpt: "" }); // converted heading, cover image (saved with the post)
+  const [extra, setExtra] = useState({ titleTr: {}, coverKey: "", excerpt: "", seoTitle: "", seoDescription: "" }); // converted heading, cover image, excerpt + SEO texts (saved with the post)
   const [status, setStatus] = useState({ text: "", tone: "", detail: "", time: "" }); // text: Saving… / Saved ✓ / Failed, retry
   const [busy, setBusy] = useState(false);
   const [hasPending, setHasPending] = useState(false); // live post with edits that are not published yet
@@ -78,6 +78,8 @@ export default function ArticleComposer() {
   const rev = useRef(null); // updatedAt of the stored copy this page is based on
   const savedTitle = useRef("");
   const savedTr = useRef("{}"); // converted headings as last stored
+  const savedSeo = useRef(""); // slug / excerpt / SEO texts as last stored (blur saves only when they changed)
+  const seoKey = (m, x) => JSON.stringify([m.slug || "", x.excerpt || "", x.seoTitle || "", x.seoDescription || ""]);
   const chain = useRef(Promise.resolve());
 
   // Save card (top right): folded by default; on every change it shakes / peeks open for 2 s and shows Save Draft, then folds again.
@@ -111,7 +113,8 @@ export default function ArticleComposer() {
     const locked = bl.some((b) => typeof b.text === "string" && b.text.trim());
     // the stored original language is permanent for a post that already has text
     const nextMeta = { categoryId: w.categoryId, topicId: w.topicId, slug: w.slug, status: a.status, sourceLanguage: a.sourceLanguage || a.language, langLocked: locked };
-    const nextExtra = { titleTr: w.titleTr, coverKey: w.coverKey, excerpt: w.excerpt };
+    const nextExtra = { titleTr: w.titleTr, coverKey: w.coverKey, excerpt: w.excerpt, seoTitle: w.seoTitle, seoDescription: w.seoDescription };
+    savedSeo.current = seoKey(nextMeta, nextExtra);
     setTitle(w.title); savedTitle.current = w.title;
     savedTr.current = JSON.stringify(cleanTr(w.titleTr));
     setBlocks(bl); setMeta(nextMeta); setExtra(nextExtra);
@@ -163,10 +166,15 @@ export default function ArticleComposer() {
         blocks: cleanBlocksHl(next, language), references: referenceIdsOf(next),
         titleTr: cleanTr(cur.extra.titleTr),
         coverKey: cur.extra.coverKey || null,
+        excerpt: (cur.extra.excerpt || "").trim() || null,
+        seoTitle: (cur.extra.seoTitle || "").trim() || null,
+        seoDescription: (cur.extra.seoDescription || "").trim() || null,
       };
+      // the link name: the one typed in Post settings (a valid one), else made from the heading on the first save
+      const typedSlug = isSlug(cur.meta.slug) ? cur.meta.slug : "";
       let a;
       if (!cur.id) {
-        let slug = isSlug(slugify(t)) ? slugify(t) : "article-" + Math.random().toString(36).slice(2, 8);
+        let slug = typedSlug || (isSlug(slugify(t)) ? slugify(t) : "article-" + Math.random().toString(36).slice(2, 8));
         try { a = await adminApi.articles.create({ ...body, slug }); } catch (e) {
           if (!/slug/i.test(e.message)) throw e;
           a = await adminApi.articles.create({ ...body, slug: `${slug}-${Math.random().toString(36).slice(2, 6)}` });
@@ -178,17 +186,21 @@ export default function ArticleComposer() {
         // Live post: the edit goes into the unpublished copy; visitors keep seeing the published text until "Publish changes".
         const res = await adminApi.articles.saveDraft(cur.id, {
           blocks: body.blocks, references: body.references, baseRev: rev.current,
-          meta: { title: t, titleTr: body.titleTr, categoryId: body.categoryId, topicId: body.topicId, coverKey: body.coverKey },
+          meta: {
+            title: t, titleTr: body.titleTr, categoryId: body.categoryId, topicId: body.topicId, coverKey: body.coverKey,
+            excerpt: body.excerpt, seoTitle: body.seoTitle, seoDescription: body.seoDescription, ...(typedSlug ? { slug: typedSlug } : {}),
+          },
         });
         a = res.article;
       } else {
-        a = await adminApi.articles.update(cur.id, { ...body, baseUpdatedAt: rev.current });
+        a = await adminApi.articles.update(cur.id, { ...body, ...(typedSlug ? { slug: typedSlug } : {}), baseUpdatedAt: rev.current });
       }
       const w = workOf(a);
       rev.current = revOf(a);
       setHasPending(!!a.pending);
       savedTitle.current = w.title;
       savedTr.current = JSON.stringify(body.titleTr);
+      savedSeo.current = seoKey({ slug: w.slug }, w);
       const saved = withIds(w.blocks);
       // Updated at once (not only on the next render) so a queued save sees the new id / blocks.
       const lockedNow = saved.some((b) => typeof b.text === "string" && b.text.trim());
@@ -268,6 +280,23 @@ export default function ArticleComposer() {
   }
 
   function fail(e) { setStatus({ text: "Failed, retry", tone: "err", detail: e.message, time: "" }); toast(e.message, "error"); }
+
+  // Slug / excerpt / SEO fields: typing only changes the page; the post is stored when the admin leaves the field.
+  function typeExtra(patch) { latest.current = { ...latest.current, extra: { ...latest.current.extra, ...patch } }; setExtra((x) => ({ ...x, ...patch })); }
+  function typeSlug(v) { latest.current = { ...latest.current, meta: { ...latest.current.meta, slug: v } }; setMeta((m) => ({ ...m, slug: v })); }
+  function onSeoBlur() {
+    const cur = latest.current;
+    const fixed = slugify(cur.meta.slug || "");
+    if (fixed !== cur.meta.slug) typeSlug(fixed);
+    if (fixed && !isSlug(fixed)) return toast("Link naam mein sirf a-z, 0-9 aur '-' chalte hain.", "error");
+    if (!cur.id) return; // before the first save these wait and are stored with it
+    if (!fixed) { // an empty link name is not allowed: back to the stored one
+      const back = JSON.parse(savedSeo.current)[0];
+      typeSlug(back); return;
+    }
+    if (seoKey({ slug: fixed }, cur.extra) === savedSeo.current || !cur.title.trim()) return;
+    persist().catch(fail);
+  }
 
   // Floating card "Settings": smooth scroll to the Post settings section below the page.
   function goSettings() {
@@ -505,6 +534,22 @@ export default function ArticleComposer() {
           </div>
 
           <VersionsPanel baseLang={lang} title={title} titleTr={extra.titleTr} setTitleTr={setTitleTr} blocks={blocks} setBlocks={setBlocksSaved} toast={toast} />
+
+          <div className="a-card space-y-3 p-4">
+            <h3 className="text-sm font-semibold">Link &amp; SEO</h3>
+            <Field label="Slug (link naam)" hint={live ? "Live post ka link badalna purane links tod sakta hai. Ye bhi 'Publish changes' ke baad hi live hoga." : "Khali chhodein to heading se ban jayega. Sirf a-z, 0-9 aur '-'."}>
+              <input className="a-input" dir="ltr" value={meta.slug || ""} maxLength={120} placeholder="post-ka-link-naam" onChange={(e) => typeSlug(e.target.value)} onBlur={onSeoBlur} />
+            </Field>
+            <Field label="Excerpt (chhota saaransh)" hint={`${(extra.excerpt || "").length}/1000`}>
+              <textarea className="a-input min-h-[5rem]" dir="auto" value={extra.excerpt || ""} maxLength={1000} onChange={(e) => typeExtra({ excerpt: e.target.value })} onBlur={onSeoBlur} />
+            </Field>
+            <Field label="SEO title" hint={`${(extra.seoTitle || "").length}/200 · khali ho to post ka heading use hoga`}>
+              <input className="a-input" dir="auto" value={extra.seoTitle || ""} maxLength={200} onChange={(e) => typeExtra({ seoTitle: e.target.value })} onBlur={onSeoBlur} />
+            </Field>
+            <Field label="SEO description" hint={`${(extra.seoDescription || "").length}/400`}>
+              <textarea className="a-input min-h-[5rem]" dir="auto" value={extra.seoDescription || ""} maxLength={400} onChange={(e) => typeExtra({ seoDescription: e.target.value })} onBlur={onSeoBlur} />
+            </Field>
+          </div>
 
           <div className="a-card space-y-3 p-4">
             <h3 className="text-sm font-semibold">Cover image</h3>
