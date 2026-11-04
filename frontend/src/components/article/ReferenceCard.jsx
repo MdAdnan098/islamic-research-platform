@@ -62,9 +62,9 @@ export function ReferenceCard({ reference: r }) {
         isPdfKey(r.mediaKey) ? (
           <a href={scan} target="_blank" rel="noopener noreferrer" className="btn-outline mt-4"><Icon name="file" size={16} />{t.article.openPdf}</a>
         ) : (
-          <button onClick={() => setOpen(true)} className="group mx-auto mt-4 block w-full max-w-[36rem] overflow-hidden rounded-xl border border-rule bg-rule/30 p-3 text-start transition hover:border-accent/60" aria-label={t.article.openScan}>
+          <button onClick={() => setOpen(true)} className="group mx-auto mt-4 block w-full max-w-[36rem] overflow-hidden text-start transition hover:border-accent/60" aria-label={t.article.openScan}>
             <img src={scan} alt={t.article.scan} loading="lazy" decoding="async" className="mx-auto block h-auto w-auto max-h-72 max-w-full rounded-md border border-rule bg-paper object-contain sm:max-h-[22rem]" />
-            <span className="mt-3 flex items-center justify-between border-t border-rule pt-2.5 text-xs font-medium text-mute">
+            <span className="mt-2 flex items-center justify-between text-xs font-medium text-mute">
               {t.article.openScan}<Icon name="zoomIn" size={15} />
             </span>
           </button>
