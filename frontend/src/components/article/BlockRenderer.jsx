@@ -80,7 +80,7 @@ function Quote({ b, text, layers, attrs }) {
   );
 }
 
-function Figure({ pages, caption, startOpen }) {
+function Figure({ pages, caption, rtl }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(null);
   const many = pages.length > 1;
@@ -88,9 +88,10 @@ function Figure({ pages, caption, startOpen }) {
   // so tap -> fullscreen viewer shows it in full quality.
   return (
     <figure className="my-6">
-      <div className="flex flex-wrap items-start justify-center gap-3 sm:justify-start">
+      {/* Urdu / Arabic view: the pages start from the RIGHT (like the text); other languages from the left. Phones stay centred. */}
+      <div dir={rtl ? "rtl" : "ltr"} className="flex flex-wrap items-start justify-center gap-3 sm:justify-start">
         {pages.map((p, i) => (
-          <button key={i} onClick={() => setOpen(i)} className="group relative inline-block max-w-full overflow-hidden rounded-lg border border-rule bg-paper transition hover:border-accent/60" aria-label={p.caption || t.article.openScan} title={t.article.openScan}>
+          <button key={i} dir="ltr" onClick={() => setOpen(i)} className="group relative inline-block max-w-full overflow-hidden rounded-lg border border-rule bg-paper transition hover:border-accent/60" aria-label={p.caption || t.article.openScan} title={t.article.openScan}>
             <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-auto w-auto max-h-[22rem] max-w-full object-contain sm:max-h-[28rem]" />
             <span className="absolute bottom-1.5 end-1.5 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[11px] font-medium text-white">
               <Icon name="zoomIn" size={13} />{many && <span className="tabular-nums">{i + 1}/{pages.length}</span>}
@@ -138,6 +139,9 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
   // and so sits at the left edge, in line with the Roman / Hindi text (the letters still run right-to-left). A long one
   // fills the full width exactly as before. The translation that follows is pulled close. Urdu / Arabic views stay as they are.
   const runsOf = (b) => splitParagraphs(cleanText(txt(b))).flatMap((seg) => splitScriptRuns(seg.text, seg.start));
+  // The language the reader actually sees: the picked one when the article has it, else the original. Urdu / Arabic reads right-to-left.
+  const pageLang = contentLang === baseLang || blocks.some((x) => typeof x.tr?.[contentLang] === "string" && x.tr[contentLang].trim()) ? contentLang : baseLang;
+  const rtlView = pageLang === "ur" || pageLang === "ar";
   const ltrView = (b) => { const l = shownLang(b, baseLang, contentLang); return l !== "ur" && l !== "ar"; };
   const arabicOnly = (b) => { if (b?.type !== "text" || !ltrView(b)) return false; const r = runsOf(b); return r.length > 0 && r.every((x) => x.script === "arabic"); };
   function renderBlock(b, i) {
@@ -178,10 +182,10 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           case "reference":
             return refMap[b.referenceId] ? <ReferenceCard key={key} reference={pickRef(refMap[b.referenceId], b.tr, baseLang, contentLang)} /> : null;
           case "image":
-            return b.key ? <Figure key={key} pages={[{ src: mediaUrl(b.key), alt: b.alt, caption: b.caption }]} caption={b.caption} /> : null;
+            return b.key ? <Figure key={key} pages={[{ src: mediaUrl(b.key), alt: b.alt, caption: b.caption }]} caption={b.caption} rtl={rtlView} /> : null;
           case "scan": {
             const pages = (b.pages || []).filter((p) => p.key).map((p) => ({ src: mediaUrl(p.key), caption: p.caption }));
-            return pages.length ? <Figure key={key} pages={pages} caption={b.caption} /> : null;
+            return pages.length ? <Figure key={key} pages={pages} caption={b.caption} rtl={rtlView} /> : null;
           }
           case "pdf":
             return <Pdf key={key} b={b} />;
