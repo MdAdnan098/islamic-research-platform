@@ -8,6 +8,7 @@ import { TEXT_COLORS, layersOf, markClass, segmentsOf, shownLang, sliceLayers, s
 import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
+import { spanOf } from "../../lib/groups.js";
 
 // Admin-only inline "add block" control: loaded on demand, so public visitors never download it.
 const InlineAdd = lazy(() => import("../../admin/components/InlineAdd.jsx"));
@@ -118,6 +119,16 @@ function Figure({ pages, caption, rtl }) {
   );
 }
 
+/** Admin-only label of a Block (same "Label #n" style as the dashboard list); readers never see it. */
+function GroupHeader({ n }) {
+  return (
+    <div dir="ltr" className="flex items-center gap-2 pt-2 font-sans text-xs font-semibold text-mute">
+      <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-accent">Block <span className="opacity-60">#{n}</span></span>
+      <span className="h-px flex-1 border-t border-dashed border-accent/30" aria-hidden="true" />
+    </div>
+  );
+}
+
 function Pdf({ b }) {
   const { t } = useI18n();
   const [preview, setPreview] = useState(false);
@@ -148,6 +159,20 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
   const [editingKey, setEditingKey] = useState(null); // the block whose inline editor is open (admin only)
   const txt = (b) => (b.kind === "ayat" || b.kind === "hadith" ? b.text : pickVersion(b.text, b.tr, baseLang, contentLang));
   const refMap = Object.fromEntries(references.map((r) => [r.id, r]));
+  // Blocks (groups) are stored flat: a marker + the blocks after it carrying gid = marker id (lib/groups.js). Admin-only look; readers see no change.
+  const groupIds = new Set(blocks.filter((x) => x.type === "group" && x.id).map((x) => x.id));
+  const groupOf = (x) => (x.type === "group" ? x.id : x.gid && groupIds.has(x.gid) ? x.gid : null);
+  // "+ Add" under block `b` (position i). Inside a Block, new items join that Block; a new Block goes after the whole current Block.
+  const insertAt = (b, i) => (block, prevId, k = 0) => {
+    const gid = groupOf(b);
+    if (!gid) return inline.onInsert(i + k, block, prevId || b.id || null);
+    if (block.type === "group") {
+      const sp = spanOf(blocks, gid);
+      const end = sp ? sp[1] - 1 : i;
+      return inline.onInsert(end + k, block, prevId || blocks[end]?.id || null);
+    }
+    return inline.onInsert(i + k, block.gid ? block : { ...block, gid }, prevId || b.id || null);
+  };
   // Hindi / Roman view: an Arabic run is right-to-left inside left-to-right text. A SHORT Arabic line shrinks to its own width
   // and so sits at the left edge, in line with the Roman / Hindi text (the letters still run right-to-left). A long one
   // fills the full width exactly as before. The translation that follows is pulled close. Urdu / Arabic views stay as they are.
@@ -213,6 +238,8 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           }
           case "pdf":
             return <Pdf key={key} b={b} />;
+          case "group":
+            return inline || edit ? <GroupHeader n={i + 1} /> : null;
           case "divider":
             return (
               <div key={key} className="my-10 flex items-center gap-4 text-gold" aria-hidden="true">
@@ -232,8 +259,10 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
         const editing = !!edit && editingKey === key;
         // Reference blocks keep their converted fields per reader language, other blocks per shown script version.
         const editLang = b.type === "reference" ? contentLang : shownLang(b, baseLang, contentLang);
-        return (
-        <Fragment key={key}>
+        const member = !!(inline || edit) && b.type !== "group" && !!b.gid && groupIds.has(b.gid);
+        const wrap = (kids) => (member ? <div key={key} className="border-s-2 border-accent/30 ps-3">{kids}</div> : <Fragment key={key}>{kids}</Fragment>);
+        return wrap(
+        <>
           {editing
             ? <Suspense fallback={null}><InlineEdit block={b} baseLang={baseLang} lang={editLang} onCancel={() => setEditingKey(null)} saveLabel={edit.saveLabel} onSave={async (nb) => { await edit.onSave(i, nb); setEditingKey(null); }} /></Suspense>
             : (inline || edit) ? <div className="[&>*]:!my-2">{renderBlock(b, i)}</div> : renderBlock(b, i)}
@@ -242,15 +271,15 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
               <BlockTools
                 embedded={!!inline}
                 index={i} count={blocks.length} block={b}
-                onEdit={b.type !== "divider" ? () => setEditingKey(key) : null}
+                onEdit={b.type !== "divider" && b.type !== "group" ? () => setEditingKey(key) : null}
                 onMove={edit.onMove ? (dir) => edit.onMove(i, dir, b.id || null) : null}
                 onRemove={edit.onRemove ? () => edit.onRemove(i, b.id || null) : null}
               />
             ) : null;
-            if (inline) return <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={(block, prevId, k = 0) => inline.onInsert(i + k, block, prevId || b.id || null)} tools={tools} /></Suspense>;
+            if (inline) return <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={insertAt(b, i)} tools={tools} /></Suspense>;
             return tools ? <Suspense fallback={null}>{tools}</Suspense> : null;
           })()}
-        </Fragment>
+        </>
         );
       })}
     </div>
