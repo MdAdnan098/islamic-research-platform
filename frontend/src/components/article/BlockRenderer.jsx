@@ -131,11 +131,16 @@ function SelectRow({ n, type, checked, onChange }) {
 }
 
 /** Admin-only label of a Block (same "Label #n" style as the dashboard list); readers never see it. */
-function GroupHeader({ n }) {
+function GroupHeader({ n, onDelete }) {
   return (
     <div dir="ltr" className="flex items-center gap-2 pt-2 font-sans text-xs font-semibold text-mute">
       <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-accent">Block <span className="opacity-60">#{n}</span></span>
       <span className="h-px flex-1 border-t border-dashed border-accent/30" aria-hidden="true" />
+      {onDelete && (
+        <button type="button" onClick={onDelete} title="Sirf ye Block hatayein (andar ka content rahega)" aria-label={`Block ${n} hatayein`} className="inline-flex items-center gap-1 rounded-full border border-rule bg-card/70 px-2 py-0.5 text-[11px] font-semibold text-mute transition hover:border-ad-danger/50 hover:text-ad-danger">
+          <Icon name="trash" size={12} />Block hatao
+        </button>
+      )}
     </div>
   );
 }
@@ -251,7 +256,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           case "pdf":
             return <Pdf key={key} b={b} />;
           case "group":
-            return inline || edit || sel ? <GroupHeader n={i + 1} /> : null;
+            return inline || edit || sel ? <GroupHeader n={i + 1} onDelete={sel && b.id ? () => sel.askDelete(b.id) : undefined} /> : null;
           case "divider":
             return (
               <div key={key} className="my-10 flex items-center gap-4 text-gold" aria-hidden="true">

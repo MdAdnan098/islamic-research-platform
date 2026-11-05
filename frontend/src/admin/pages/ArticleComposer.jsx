@@ -357,12 +357,13 @@ export default function ArticleComposer() {
     },
     // Delete (the confirmation "Yes, Delete / Cancel" is asked before this is called).
     onRemove: async (index, blockId) => {
+      const wasBlock = latest.current.blocks.some((b) => b.id === blockId && b.type === "group");
       await persist((cur) => {
         const next = removeBlock(cur, blockId, index); // deleting a Block deletes everything inside it
         if (!next) throw new Error("Ye hissa post mein nahi mila. Page refresh karke dobara koshish karein.");
         return next;
       });
-      toast("Hissa delete ho gaya");
+      toast(wasBlock ? "Block hat gaya, andar ka content post mein hai" : "Hissa delete ho gaya");
     },
   };
 

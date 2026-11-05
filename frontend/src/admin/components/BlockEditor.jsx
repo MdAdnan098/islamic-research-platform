@@ -183,7 +183,7 @@ export function BlockEditor({ blocks, onChange, baseLang }) {
             <div className="flex">
               <IconBtn icon="up" label="Move up" disabled={i === 0} onClick={() => { setFreshId(null); onChange(moveBlock(blocks, b.id, -1)); }} />
               <IconBtn icon="down" label="Move down" disabled={i === blocks.length - 1} onClick={() => { setFreshId(null); onChange(moveBlock(blocks, b.id, 1)); }} />
-              <IconBtn icon="trash" label="Delete block" danger onClick={() => { if (b.type === "group" && !window.confirm("Ye poora Block (iske andar ka sab kuch) delete ho jayega. Delete karein?")) return; setFreshId(null); onChange(removeBlock(blocks, b.id, i) || blocks); }} />
+              <IconBtn icon="trash" label="Delete block" danger onClick={() => { if (b.type === "group" && !window.confirm("Sirf ye Block hatega; iske andar ka content post mein rahega. Block hatayein?")) return; setFreshId(null); onChange(removeBlock(blocks, b.id, i) || blocks); }} />
             </div>
           </header>
           <div className="p-3.5"><Fields block={b} set={(p) => patch(i, p)} /></div>

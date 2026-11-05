@@ -1,7 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "../../components/ui/icons.jsx";
 import { uid } from "../../lib/blocks.js";
-import { groupsOf, isGroup, moveIntoBlock, restoreStructure } from "../../lib/groups.js";
+import { addEmptyBlock, groupsOf, isGroup, moveIntoBlock, removeBlock, restoreStructure } from "../../lib/groups.js";
 import { useConfirm, useToast } from "./ui.jsx";
 
 /**
@@ -16,6 +16,7 @@ export function useBlockSelect(blocks) {
   const [on, setOn] = useState(false);
   const [ids, setIds] = useState(() => new Set());
   const [range, setRange] = useState(false);
+  const [pendingDelete, askDelete] = useState(null); // a Block whose "Block hatao" was tapped on the page (MoveBar asks and deletes)
   const anchor = useRef(null);
   const live = useRef(blocks);
   live.current = blocks;
@@ -40,7 +41,7 @@ export function useBlockSelect(blocks) {
   };
   const clear = () => { setIds(new Set()); anchor.current = null; };
   const turn = (v) => { setOn(v); if (!v) { clear(); setRange(false); } };
-  return { on, ids, range, setRange, toggle, clear, setOn: turn };
+  return { on, ids, range, setRange, toggle, clear, setOn: turn, pendingDelete, askDelete };
 }
 
 const pill = "inline-flex items-center gap-1 rounded-full border border-rule bg-card px-2.5 py-1 text-xs font-semibold text-mute transition hover:border-accent/60 hover:text-ink disabled:opacity-40";
@@ -76,12 +77,54 @@ export default function MoveBar({ sel, blocks, apply }) {
         after = moveIntoBlock(cur, [...sel.ids], pick).blocks;
         return after;
       });
-      setUndo({ before: snap, afterIds: new Set(after.map((b) => b.id)), n: dry.moved });
+      setUndo({ before: snap, afterIds: new Set(after.map((b) => b.id)), text: `${dry.moved} hissa move hua` });
       sel.clear();
       setTarget("new");
       toast(`${dry.moved} hissa Block mein chala gaya`);
     } catch (e) { toast(e?.message || "Move nahi ho paya.", "error"); } finally { setBusy(false); }
   }
+
+  /** One undo-able change of the block list: `change(cur)` returns the new blocks. */
+  async function change(change, doneText, n) {
+    setBusy(true);
+    try {
+      let snap = null;
+      let after = null;
+      await apply((cur) => { snap = cur; after = change(cur); return after; });
+      setUndo({ before: snap, afterIds: new Set(after.map((b) => b.id)), text: n });
+      toast(doneText);
+      return true;
+    } catch (e) { toast(e?.message || "Nahi ho paya.", "error"); return false; } finally { setBusy(false); }
+  }
+
+  // A new EMPTY Block (at the end of the post): items are then moved or added into it.
+  async function createBlock() {
+    const id = uid();
+    const ok = await change((cur) => addEmptyBlock(cur, id), "Naya Block ban gaya", "Naya Block bana");
+    if (ok) setTarget(id);
+  }
+
+  // Deletes ONLY the Block: its content stays in the post as normal blocks.
+  async function deleteBlock(gid) {
+    const g = groupsOf(blocks).find((x) => x.id === gid);
+    if (!g) return;
+    const yes = await confirm({
+      title: `Block #${g.n} hatayein?`,
+      message: g.size ? `Sirf ye Block hatega. Iske andar ke ${g.size} hisse post mein waise hi rahenge (text, baaki zabaanon ka text, highlight sab wahi), bas Block ke bina. Undo ka button milega.` : "Ye Block khali hai, hata diya jayega.",
+      confirm: "Yes, Block hatao",
+    });
+    if (!yes) return;
+    const ok = await change((cur) => { const r = removeBlock(cur, gid); if (!r) throw new Error("Ye Block post mein nahi mila. Page refresh karke dobara koshish karein."); return r; }, "Block hat gaya, content post mein hai", `Block #${g.n} hata`);
+    if (ok && target === gid) setTarget("new");
+  }
+
+  // "Block hatao" on a Block's label (page) -> same flow
+  useEffect(() => {
+    if (!sel.pendingDelete) return;
+    const id = sel.pendingDelete;
+    sel.askDelete(null);
+    deleteBlock(id);
+  }, [sel.pendingDelete]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function back() {
     if (!undo) return;
@@ -114,12 +157,16 @@ export default function MoveBar({ sel, blocks, apply }) {
               </select>
               <button type="button" className="a-btn-primary !px-3 !py-1" disabled={busy || !count} onClick={go}>{busy ? "Moving…" : "Move"}</button>
             </div>
+            <div className="flex flex-wrap items-center gap-1.5 border-t border-rule pt-2">
+              <button type="button" className={pill} disabled={busy} onClick={createBlock} title="Post ke aakhir mein ek khali Block banta hai"><Icon name="plus" size={12} />Naya Block</button>
+              <button type="button" className={`${pill} hover:!border-ad-danger/50 hover:!text-ad-danger`} disabled={busy || !chosen} onClick={() => chosen && deleteBlock(chosen.id)} title="Upar dropdown mein chuna hua Block hatayein (andar ka content rahega)"><Icon name="trash" size={12} />{chosen ? `Block #${chosen.n} hatao` : "Block hatao"}</button>
+            </div>
             {!count && <p className="text-mute">Jo hissa move karna hai uske upar wale box ko tick karein.</p>}
           </>
         )}
         {undo && (
           <div className="flex items-center gap-2">
-            <span className="text-mute">{undo.n} hissa move hua</span>
+            <span className="text-mute">{undo.text}</span>
             <button type="button" className={pill} disabled={busy} onClick={back}>Undo</button>
             <button type="button" className="text-mute hover:text-ink" onClick={() => setUndo(null)} aria-label="Hatayein"><Icon name="x" size={12} /></button>
           </div>

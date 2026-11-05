@@ -63,15 +63,24 @@ export function moveBlock(blocks, id, dir) {
   return order.flatMap((it) => (it.group ? [it.group, ...it.members.map((m) => m.b)] : [it.single]));
 }
 
-/** Deleting a Block deletes everything inside it; any other block is removed alone. */
+/** Deleting a Block removes ONLY the Block itself (its marker): everything that was inside stays in the post, in the same
+ *  order, as normal blocks (they just lose their `gid`; text, tr, highlights, align, ids are untouched).
+ *  Any other block is removed alone. */
 export function removeBlock(blocks, id, fallbackIndex = -1) {
   let at = id ? blocks.findIndex((b) => b.id === id) : -1;
   if (at < 0) at = fallbackIndex;
   if (at < 0 || at >= blocks.length) return null;
-  const span = blocks[at].id ? spanOf(blocks, blocks[at].id) : [at, at + 1];
-  const [s, e] = span || [at, at + 1];
-  return blocks.filter((_, i) => i < s || i >= e);
+  const target = blocks[at];
+  if (isGroup(target)) {
+    return blocks
+      .filter((_, i) => i !== at)
+      .map((b) => { if (b.gid !== target.id || isGroup(b)) return b; const { gid: _g, ...rest } = b; return rest; });
+  }
+  return blocks.filter((_, i) => i !== at);
 }
+
+/** A new, empty Block at the end of the post (items are moved / added into it afterwards). */
+export const addEmptyBlock = (blocks, id) => [...blocks, { id, type: "group" }];
 
 /** Existing Blocks of a post, in order: [{ id, n, size }] (n = the same "#n" position number the page shows on the Block's label). */
 export function groupsOf(blocks = []) {

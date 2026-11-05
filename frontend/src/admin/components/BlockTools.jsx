@@ -26,10 +26,10 @@ export default function BlockTools({ index, count, block, onEdit, onMove, onRemo
     const ok = await confirm({
       title: "Delete karein?",
       message: block.type === "group"
-        ? "Kya aap ye poora Block delete karna chahte hain? Iske andar ka heading, text, hawala, scan sab kuch post se hat jayega."
+        ? "Sirf ye Block hatega. Iske andar ka heading, text, hawala, scan sab post mein waise hi rahega (bas Block ke bina)."
         : `Kya aap ye ${label} delete karna chahte hain? Delete karne par ye post se hat jayega.`,
-      confirm: "Yes, Delete",
-      danger: true,
+      confirm: block.type === "group" ? "Yes, Block hatao" : "Yes, Delete",
+      danger: block.type !== "group",
     });
     if (ok) await run(onRemove);
   }
