@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { referenceIdsOf, withIds } from "./blocks.js";
 import { applyEdits, cleanBlocksHl } from "./highlights.js";
 import { setLineHeading } from "./lineHeading.js";
+import { removeBlock } from "./groups.js";
 
 /**
  * Admin-only "working copy" of a post for the View-site / Preview editing.
@@ -96,9 +97,9 @@ export function useAdminDraft({ article, references, enabled = true, initial = n
       return blocks.map((b, i) => (i === at ? { ...block, id: b.id } : b));
     }),
     onRemove: (index, blockId) => change((blocks) => {
-      const at = indexOf(blocks, index, blockId);
-      if (at < 0 || at >= blocks.length) throw new Error("Ye hissa post mein nahi mila. Page refresh karke dobara koshish karein.");
-      return blocks.filter((_, i) => i !== at);
+      const next = removeBlock(blocks, blockId, index); // deleting a Block deletes everything inside it
+      if (!next) throw new Error("Ye hissa post mein nahi mila. Page refresh karke dobara koshish karein.");
+      return next;
     }),
   };
 

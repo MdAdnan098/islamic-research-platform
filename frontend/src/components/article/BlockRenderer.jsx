@@ -8,6 +8,7 @@ import { TEXT_COLORS, layersOf, markClass, segmentsOf, shownLang, sliceLayers, s
 import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
+import { itemsOf } from "../../lib/groups.js";
 
 // Admin-only inline "add block" control: loaded on demand, so public visitors never download it.
 const InlineAdd = lazy(() => import("../../admin/components/InlineAdd.jsx"));
@@ -224,34 +225,83 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
         }
   }
 
+  // ---- rows (one block + its admin tools) ---------------------------------------------------------------
+  // o.gid: the Block this row sits in (its add / edit / delete stay inside it); o.index / o.count: place among its siblings.
+  const admin = !!(inline || edit);
+  function row(b, i, o = {}) {
+    const key = b.id || i;
+    const editing = !!edit && editingKey === key;
+    // Reference blocks keep their converted fields per reader language, other blocks per shown script version.
+    const editLang = b.type === "reference" ? contentLang : shownLang(b, baseLang, contentLang);
+    const isGrp = b.type === "group";
+    const shape = (block) => (o.gid ? { ...block, gid: o.gid } : block);
+    const body = editing
+      ? <Suspense fallback={null}><InlineEdit block={b} baseLang={baseLang} lang={editLang} onCancel={() => setEditingKey(null)} saveLabel={edit.saveLabel} onSave={async (nb) => { await edit.onSave(i, nb); setEditingKey(null); }} /></Suspense>
+      : o.gid ? <div className={memberClass(b)}>{renderBlock(b, i)}</div>
+      : admin ? <div className="[&>*]:!my-2">{renderBlock(b, i)}</div> : renderBlock(b, i);
+    const tools = edit && !editing ? (
+      <BlockTools
+        embedded={!!inline}
+        index={o.index ?? i} count={o.count ?? blocks.length} block={b}
+        onEdit={b.type !== "divider" && !isGrp ? () => setEditingKey(key) : null}
+        onMove={edit.onMove ? (dir) => edit.onMove(i, dir, b.id || null) : null}
+        onRemove={edit.onRemove ? () => edit.onRemove(i, b.id || null) : null}
+      />
+    ) : null;
+    return (
+      <Fragment key={key}>
+        {body}
+        {inline
+          ? <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} noGroup={!!o.gid} label={o.addLabel} onInsert={(block) => inline.onInsert(o.addAt ?? i, shape(block), o.addAfter ?? (b.id || null))} tools={tools} /></Suspense>
+          : tools ? <Suspense fallback={null}>{tools}</Suspense> : null}
+      </Fragment>
+    );
+  }
+
+  // ---- a Block (group): no colour, no box. Fixed, professional spacing; the admin never sets a gap. ------------
+  //  heading -> next: a little roomier (gap + mb-2) | everything else inside: one equal, smaller gap | Block -> Block: big gap
+  function memberClass(b) {
+    const base = "[&>*]:!my-0 [&>h2]:!border-t-0 [&>h2]:!pt-0";
+    if (b.type === "heading") return `${base} ${admin ? "" : "mb-2"}`;
+    if (labelOnly(b)) return `${base} ${admin ? "" : "-mb-1.5"}`;
+    return base;
+  }
+  function groupItem(it, n) {
+    const g = it.group;
+    const members = it.members;
+    if (!admin) {
+      if (!members.length) return null;
+      return (
+        <section key={g.id || it.at} className="entry-block my-12 sm:my-14">
+          <div className="flex flex-col gap-3">
+            {members.map((m) => <div key={m.b.id || m.i} className={memberClass(m.b)}>{renderBlock(m.b, m.i)}</div>)}
+          </div>
+        </section>
+      );
+    }
+    const last = members.length ? members[members.length - 1] : null;
+    return (
+      <Fragment key={g.id || it.at}>
+        {/* Admin only: a faint dashed edge so the Block's start and end are visible while editing; visitors never see it. */}
+        <div className="my-4 border-s-2 border-dashed border-accent/40 ps-3 sm:ps-4">
+          <p dir="ltr" className="font-sans text-[11px] font-semibold uppercase tracking-wide text-mute">▢ Block {n}{members.length === 0 ? " — khali hai, neeche Add dabakar heading / paragraph / hawala jodein" : ""}</p>
+          {inline && members.length === 0 && <Suspense fallback={null}><InlineAdd noGroup backupKey={inline.scope ? `fs_add:${inline.scope}:${g.id}:in` : undefined} onInsert={(block) => inline.onInsert(it.at, { ...block, gid: g.id }, g.id || null)} /></Suspense>}
+          {members.map((m, k) => row(m.b, m.i, { gid: g.id, index: k, count: members.length }))}
+        </div>
+        {row(g, it.at, { addAt: last ? last.i : it.at, addAfter: last ? last.b.id : g.id, addLabel: "Add (Block ke bahar)", index: n - 1, count: itemCount })}
+      </Fragment>
+    );
+  }
+
+  const items = itemsOf(blocks);
+  const itemCount = items.length;
+  let groupNo = 0;
   return (
     <div className="reading">
       {inline && blocks.length === 0 && <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:start` : undefined} onInsert={(block) => inline.onInsert(-1, block, null)} /></Suspense>}
-      {blocks.map((b, i) => {
-        const key = b.id || i;
-        const editing = !!edit && editingKey === key;
-        // Reference blocks keep their converted fields per reader language, other blocks per shown script version.
-        const editLang = b.type === "reference" ? contentLang : shownLang(b, baseLang, contentLang);
-        return (
-        <Fragment key={key}>
-          {editing
-            ? <Suspense fallback={null}><InlineEdit block={b} baseLang={baseLang} lang={editLang} onCancel={() => setEditingKey(null)} saveLabel={edit.saveLabel} onSave={async (nb) => { await edit.onSave(i, nb); setEditingKey(null); }} /></Suspense>
-            : (inline || edit) ? <div className="[&>*]:!my-2">{renderBlock(b, i)}</div> : renderBlock(b, i)}
-          {(() => {
-            const tools = edit && !editing ? (
-              <BlockTools
-                embedded={!!inline}
-                index={i} count={blocks.length} block={b}
-                onEdit={b.type !== "divider" ? () => setEditingKey(key) : null}
-                onMove={edit.onMove ? (dir) => edit.onMove(i, dir, b.id || null) : null}
-                onRemove={edit.onRemove ? () => edit.onRemove(i, b.id || null) : null}
-              />
-            ) : null;
-            if (inline) return <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={(block) => inline.onInsert(i, block, b.id || null)} tools={tools} /></Suspense>;
-            return tools ? <Suspense fallback={null}>{tools}</Suspense> : null;
-          })()}
-        </Fragment>
-        );
+      {items.map((it, k) => {
+        if (it.group) { groupNo += 1; return groupItem(it, groupNo); }
+        return row(it.single, it.at, { index: k, count: itemCount });
       })}
     </div>
   );

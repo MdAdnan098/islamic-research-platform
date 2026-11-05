@@ -12,7 +12,8 @@ import { flattenTree, folderLabel } from "../../lib/folders.js";
 import { ArticleView } from "../../components/article/ArticleView.jsx";
 import { PublicLayout } from "../../layouts/PublicLayout.jsx";
 import { ErrorState, Skeleton } from "../../components/ui/feedback.jsx";
-import { Field, Modal, StatusBadge, moveItem, useConfirm, useToast } from "../components/ui.jsx";
+import { Field, Modal, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
+import { moveBlock, removeBlock } from "../../lib/groups.js";
 import { FolderForm } from "../components/FolderForm.jsx";
 import { MediaUploader } from "../components/MediaUploader.jsx";
 import { VersionsPanel } from "../components/VersionsPanel.jsx";
@@ -347,18 +348,17 @@ export default function ArticleComposer() {
     // Up / Down: swaps the block with its neighbour and stores the new order.
     onMove: async (index, dir, blockId) => {
       await persist((cur) => {
-        const at = blockId ? cur.findIndex((b) => b.id === blockId) : index;
-        const to = at + dir;
-        if (at < 0 || to < 0 || to >= cur.length) return cur;
-        return moveItem(cur, at, to);
+        const id = blockId || cur[index]?.id;
+        if (!id) return cur;
+        return moveBlock(cur, id, dir); // a Block moves with everything inside it; a block inside a Block stays in it (lib/groups.js)
       });
     },
     // Delete (the confirmation "Yes, Delete / Cancel" is asked before this is called).
     onRemove: async (index, blockId) => {
       await persist((cur) => {
-        const at = blockId ? cur.findIndex((b) => b.id === blockId) : index;
-        if (at < 0 || at >= cur.length) throw new Error("Ye hissa post mein nahi mila. Page refresh karke dobara koshish karein.");
-        return cur.filter((_, i) => i !== at);
+        const next = removeBlock(cur, blockId, index); // deleting a Block deletes everything inside it
+        if (!next) throw new Error("Ye hissa post mein nahi mila. Page refresh karke dobara koshish karein.");
+        return next;
       });
       toast("Hissa delete ho gaya");
     },

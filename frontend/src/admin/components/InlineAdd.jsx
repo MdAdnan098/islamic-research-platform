@@ -5,6 +5,9 @@ import { Icon } from "../../components/ui/icons.jsx";
 import { Fields, MENU_GROUPS } from "./BlockEditor.jsx";
 import { ToastProvider } from "./ui.jsx";
 
+/** Only offered outside a Block (a Block cannot hold another Block). */
+const LAYOUT_GROUP = { title: "Layout", types: ["group"] };
+
 /** Is the draft filled in enough to be added? Returns an error message, or "" when fine. */
 function problem(b) {
   if (["heading", "text", "quote"].includes(b.type) && !String(b.text || "").trim()) return "Pehle text likhein.";
@@ -54,8 +57,14 @@ function Draft({ initial, onSave, onCancel, backupKey, restored }) {
  * "Insert below" in the editor; the new block is filled in right here and saved straight into the post,
  * so the admin never has to go back to the dashboard.
  */
-export default function InlineAdd({ onInsert, backupKey, tools = null }) {
+export default function InlineAdd({ onInsert, backupKey, tools = null, noGroup = false, label = "Add" }) {
   const [menu, setMenu] = useState(false);
+  const [menuErr, setMenuErr] = useState("");
+  // "Block" needs no form: it is added empty right away; the admin then fills it with the usual + Add inside it.
+  async function addGroup() {
+    setMenu(false); setMenuErr("");
+    try { await onInsert(newBlock("group")); } catch (e) { setMenuErr(e?.message || "Block add nahi ho paya."); }
+  }
   const [restored] = useState(() => readBackup(backupKey));
   const [draft, setDraft] = useState(restored);
   const closeDraft = () => { writeBackup(backupKey, null); setDraft(null); };
@@ -67,19 +76,20 @@ export default function InlineAdd({ onInsert, backupKey, tools = null }) {
     <div dir="ltr" className="my-0 font-sans">
       <div className="flex items-center gap-2 opacity-40 transition-opacity focus-within:opacity-100 hover:opacity-100">
         <button type="button" aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rule bg-card/70 px-2.5 py-0 text-[11px] font-semibold leading-5 text-mute transition hover:border-accent/60 hover:text-ink">
-          <Icon name="plus" size={12} />Add
+          <Icon name="plus" size={12} />{label}
         </button>
         <span className="h-px flex-1 border-t border-dashed border-rule" aria-hidden="true" />
         {tools}
       </div>
+      {menuErr && <p role="alert" className="mt-1 text-sm text-ad-danger">{menuErr}</p>}
       {menu && (
         <div className="mt-2 space-y-2 rounded-xl border border-rule bg-card p-2 text-ink shadow-soft">
-          {MENU_GROUPS.map((g) => (
+          {(noGroup ? MENU_GROUPS : [...MENU_GROUPS, LAYOUT_GROUP]).map((g) => (
             <div key={g.title}>
               <p className="px-2 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-mute">{g.title}</p>
               <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
                 {g.types.map((t) => (
-                  <button key={t} type="button" className="flex items-center gap-2 rounded-md px-2.5 py-2 text-start text-sm hover:bg-rule/40" onClick={() => { setMenu(false); setDraft(newBlock(t)); }}>
+                  <button key={t} type="button" className="flex items-center gap-2 rounded-md px-2.5 py-2 text-start text-sm hover:bg-rule/40" onClick={() => { if (t === "group") { addGroup(); return; } setMenu(false); setDraft(newBlock(t)); }}>
                     <span className="w-4 shrink-0 text-center text-mute">{BLOCK_META[t].icon}</span>{BLOCK_META[t].label}
                   </button>
                 ))}

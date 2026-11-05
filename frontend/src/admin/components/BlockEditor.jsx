@@ -109,6 +109,8 @@ export function Fields({ block, set }) {
           <Field label="Title"><I value={block.title} onChange={(title) => set({ title })} /></Field>
         </div>
       );
+    case "group":
+      return <p className="text-sm text-ad-mute">Block ki shuruaat. Iske baad ke blocks ismein aate hain. Block mein kuch jodne ya hatane ke liye post ka "View site" / Preview use karein.</p>;
     default:
       return <p className="text-sm text-ad-mute">A decorative divider — nothing to edit.</p>;
   }

@@ -10,6 +10,7 @@
  *  scan      { pages: [{ key, caption }], caption }
  *  pdf       { key, title }
  *  divider   {}
+ *  group     {}   a "Block": marks where it starts; the blocks after it with gid = this id belong to it (see lib/groups.js)
  */
 export const BLOCK_META = {
   heading: { label: "Heading", icon: "H" },
@@ -20,6 +21,7 @@ export const BLOCK_META = {
   scan: { label: "Book Scan", icon: "▤" },
   pdf: { label: "PDF Document", icon: "⎘" },
   divider: { label: "Divider", icon: "—" },
+  group: { label: "Block", icon: "▢" },
 };
 export const BLOCK_TYPES = Object.keys(BLOCK_META);
 
@@ -34,11 +36,15 @@ const DEFAULTS = {
   scan: { pages: [], caption: "" },
   pdf: { key: "", title: "" },
   divider: {},
+  group: {},
 };
 
 export const newBlock = (type) => ({ id: uid(), type, ...structuredClone(DEFAULTS[type] || {}) });
 export const withIds = (blocks = []) => blocks.map((b) => (b.id ? b : { ...b, id: uid() }));
-export const cloneBlocks = (blocks = []) => blocks.map((b) => ({ ...structuredClone(b), id: uid() }));
+export const cloneBlocks = (blocks = []) => {
+  const ids = new Map(blocks.filter((b) => b.id).map((b) => [b.id, uid()])); // a copy keeps every block inside its own (copied) Block
+  return blocks.map((b) => ({ ...structuredClone(b), id: ids.get(b.id) || uid(), ...(b.gid && ids.has(b.gid) ? { gid: ids.get(b.gid) } : {}) }));
+};
 
 /** One-line label for a reference in lists / dropdowns (works for old book-style references and new single-field ones). */
 export const referenceLabel = (r, max = 80) => {
