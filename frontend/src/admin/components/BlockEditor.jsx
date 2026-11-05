@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BLOCK_META, newBlock, referenceLabel } from "../../lib/blocks.js";
 import { withTextEdit } from "../../lib/highlights.js";
+import { moveBlock, removeBlock } from "../../lib/groups.js";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { Icon } from "../../components/ui/icons.jsx";
@@ -109,6 +110,8 @@ export function Fields({ block, set }) {
           <Field label="Title"><I value={block.title} onChange={(title) => set({ title })} /></Field>
         </div>
       );
+    case "group":
+      return <p className="text-sm text-ad-mute">Block ki shuruaat. Iske neeche wale items (jo is Block ke andar hain) is Block ke saath hi hilte aur delete hote hain.</p>;
     default:
       return <p className="text-sm text-ad-mute">A decorative divider — nothing to edit.</p>;
   }
@@ -160,23 +163,31 @@ export function BlockEditor({ blocks, onChange, baseLang }) {
     const next = text !== undefined ? withTextEdit(b, baseLang, text) : b;
     return { ...next, ...rest };
   }));
-  const insert = (at, type) => { const nb = newBlock(type); setFreshId(nb.id); onChange([...blocks.slice(0, at), nb, ...blocks.slice(at)]); };
+  // Inserting under a Block (or under an item inside one) puts the new block INSIDE that Block.
+  const insert = (at, type, after = null) => {
+    const nb = newBlock(type);
+    const gid = after ? (after.type === "group" ? after.id : after.gid) : null;
+    if (gid && type !== "group" && blocks.some((x) => x.id === gid && x.type === "group")) nb.gid = gid;
+    setFreshId(nb.id);
+    onChange([...blocks.slice(0, at), nb, ...blocks.slice(at)]);
+  };
+  const inGroup = (b) => b.type !== "group" && !!b.gid && blocks.some((x) => x.id === b.gid && x.type === "group");
 
   return (
     <div className="space-y-3">
       {blocks.length === 0 && <div className="a-card border-dashed p-8 text-center text-sm text-ad-mute">No blocks yet — add the first one below.</div>}
       {blocks.map((b, i) => (
-        <section key={b.id} ref={b.id === freshId ? freshRef : null} className={`a-card ${b.id === freshId ? "border-dashed !border-ad-brand/70 ring-2 ring-ad-brand/25" : ""}`}>
+        <section key={b.id} ref={b.id === freshId ? freshRef : null} className={`a-card ${inGroup(b) ? "ms-5 !border-s-2 !border-s-ad-brand/40" : ""} ${b.id === freshId ? "border-dashed !border-ad-brand/70 ring-2 ring-ad-brand/25" : ""}`}>
           <header className="flex items-center justify-between border-b border-ad-rule px-3 py-1.5">
             <span className="flex items-center gap-2 text-xs font-medium text-ad-mute"><span className="w-4 text-center">{BLOCK_META[b.type]?.icon}</span>{BLOCK_META[b.type]?.label} <span className="text-ad-mute/60">#{i + 1}</span>{b.id === freshId && <span className="rounded-full bg-ad-brand px-2 py-0.5 text-[11px] font-semibold text-white">Naya block</span>}</span>
             <div className="flex">
-              <IconBtn icon="up" label="Move up" disabled={i === 0} onClick={() => { setFreshId(null); onChange(moveItem(blocks, i, i - 1)); }} />
-              <IconBtn icon="down" label="Move down" disabled={i === blocks.length - 1} onClick={() => { setFreshId(null); onChange(moveItem(blocks, i, i + 1)); }} />
-              <IconBtn icon="trash" label="Delete block" danger onClick={() => { setFreshId(null); onChange(blocks.filter((_, j) => j !== i)); }} />
+              <IconBtn icon="up" label="Move up" disabled={i === 0} onClick={() => { setFreshId(null); onChange(moveBlock(blocks, b.id, -1)); }} />
+              <IconBtn icon="down" label="Move down" disabled={i === blocks.length - 1} onClick={() => { setFreshId(null); onChange(moveBlock(blocks, b.id, 1)); }} />
+              <IconBtn icon="trash" label="Delete block" danger onClick={() => { if (b.type === "group" && !window.confirm("Ye poora Block (iske andar ka sab kuch) delete ho jayega. Delete karein?")) return; setFreshId(null); onChange(removeBlock(blocks, b.id, i) || blocks); }} />
             </div>
           </header>
           <div className="p-3.5"><Fields block={b} set={(p) => patch(i, p)} /></div>
-          <footer className="border-t border-ad-rule px-3 py-1.5"><AddMenu label="Insert below" onAdd={(t) => insert(i + 1, t)} /></footer>
+          <footer className="border-t border-ad-rule px-3 py-1.5"><AddMenu label="Insert below" onAdd={(t) => insert(i + 1, t, b)} /></footer>
         </section>
       ))}
       {blocks.length === 0 && <AddMenu onAdd={(t) => insert(0, t)} />}

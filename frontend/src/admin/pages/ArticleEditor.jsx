@@ -16,6 +16,7 @@ import { Icon } from "../../components/ui/icons.jsx";
 import { VersionsPanel } from "../components/VersionsPanel.jsx";
 import { detectLang } from "../../lib/versions.js";
 import AdminDock from "../components/AdminDock.jsx";
+import MoveBar, { useBlockSelect } from "../components/BlockMover.jsx";
 import { useNoPattern } from "../../lib/useNoPattern.js";
 import { ErrorBox, Field, Modal, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 
@@ -31,6 +32,7 @@ export default function ArticleEditor() {
   const [confirm, dialog] = useConfirm();
   const [f, setF] = useState(BLANK);
   const [blocks, setBlocks] = useState(() => [newBlock("text")]);
+  const sel = useBlockSelect(blocks); // Select & Move (preview): tick written blocks and move them into a Block
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(null);
   const [addFolder, setAddFolder] = useState(false);
@@ -205,6 +207,7 @@ export default function ArticleEditor() {
             </div>
           </div>
           <ArticleView showFontControls={false} article={{ ...f, language: lang || "en", title: f.title.trim() || "(Title abhi nahi likha)", blocks, excerpt: f.excerpt.trim() || null, coverKey: f.coverKey || null, createdAt: new Date().toISOString() }} references={preview.refs}
+            select={sel.on ? sel : undefined}
             inline={addOn ? { onInsert: async (index, block) => { setBlocks((bs) => [...bs.slice(0, index + 1), block, ...bs.slice(index + 1)]); if (block.type === "reference" && block.referenceId) { const r = await adminApi.references.get(block.referenceId).catch(() => null); if (r) setPreview((p) => ({ ...p, refs: [...p.refs.filter((x) => x.id !== r.id), r] })); } } } : undefined}
             edit={editOn ? { saveLabel: "Apply", onSave: async (index, nb) => { setBlocks((bs) => bs.map((b, j) => (j === index ? { ...nb, id: b.id } : b))); if (nb.type === "reference" && nb.referenceId) { const r = await adminApi.references.get(nb.referenceId).catch(() => null); if (r) setPreview((p) => ({ ...p, refs: [...p.refs.filter((x) => x.id !== r.id), r] })); } } } : undefined}
             editor={hlOn ? { enabled: true, onApply: async (edits) => setBlocks((bs) => applyEdits(bs, edits)), onTransform: async (pieces, level) => { const res = setLineHeading(blocks, lang || "en", pieces, level); if (!res.error) setBlocks(res.blocks); return res.error; }, onAlign: async (blockId, align) => setBlocks((bs) => bs.map((b) => (b.id === blockId ? { ...b, align } : b))) } : undefined} />
@@ -212,8 +215,10 @@ export default function ArticleEditor() {
             <button type="button" aria-pressed={hlOn} onClick={() => setHlOn((v) => !v)} className="text-start font-semibold">Admin · Highlight mode: {hlOn ? "ON" : "OFF"}</button>
             <button type="button" aria-pressed={addOn} onClick={() => setAddOn((v) => !v)} className="text-start font-semibold">Admin · Add buttons: {addOn ? "ON" : "OFF"}</button>
             <button type="button" aria-pressed={editOn} onClick={() => setEditOn((v) => !v)} className="text-start font-semibold">Admin · Edit buttons: {editOn ? "ON" : "OFF"}</button>
+            <button type="button" aria-pressed={sel.on} onClick={() => sel.setOn(!sel.on)} className="text-start font-semibold">Admin · Select &amp; Move to Block: {sel.on ? "ON" : "OFF"}</button>
             {editOn && <span className="text-mute">Edit ke baad "Apply" dabayein, phir editor mein Save karein.</span>}
           </AdminDock>
+          <MoveBar sel={sel} blocks={blocks} apply={async (mutate) => { setBlocks(mutate(withIds(blocks))); }} />
         </div>,
         document.body
       )}

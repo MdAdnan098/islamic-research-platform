@@ -30,7 +30,7 @@ function ReadingProgress() {
 }
 
 /** Shared by the public article page and the admin preview. */
-export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline, edit, titleNode, hideLanguage = false, showFontControls = true }) {
+export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline, edit, select, titleNode, hideLanguage = false, showFontControls = true }) {
   useNoPattern(); // post pages: plain page colour, no geometric pattern
   const bodyRef = useRef(null);
   const { t, contentLang } = useI18n();
@@ -68,7 +68,7 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
       </header>
       {cover && <div className="article-col"><img src={cover} alt="" className="block h-auto w-full rounded-xl border border-rule" /></div>}
       <div ref={bodyRef} className={`article-col pb-6 pt-6 ${editor?.enabled ? "hl-editing" : ""}`}>
-        <BlockRenderer blocks={article.blocks} references={references} baseLang={article.language} hlEdit={!!editor?.enabled} inline={inline} edit={edit} />
+        <BlockRenderer blocks={article.blocks} references={references} baseLang={article.language} hlEdit={!!editor?.enabled} inline={inline} edit={edit} select={select} />
       </div>
       {editor?.enabled && (
         <Suspense fallback={null}>

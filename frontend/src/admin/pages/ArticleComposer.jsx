@@ -14,6 +14,7 @@ import { PublicLayout } from "../../layouts/PublicLayout.jsx";
 import { ErrorState, Skeleton } from "../../components/ui/feedback.jsx";
 import { Field, Modal, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 import { moveBlock, removeBlock } from "../../lib/groups.js";
+import MoveBar, { useBlockSelect } from "../components/BlockMover.jsx";
 import { FolderForm } from "../components/FolderForm.jsx";
 import { MediaUploader } from "../components/MediaUploader.jsx";
 import { VersionsPanel } from "../components/VersionsPanel.jsx";
@@ -66,6 +67,7 @@ export default function ArticleComposer() {
   const [id, setId] = useState(routeId || null);
   const [title, setTitle] = useState(() => (routeId ? "" : readTitle()));
   const [blocks, setBlocks] = useState([]);
+  const sel = useBlockSelect(blocks); // Select & Move: tick written blocks and move them into a Block
   const [refs, setRefs] = useState([]);
   const [meta, setMeta] = useState({ categoryId: "", topicId: "", slug: "", status: "draft", sourceLanguage: "", langLocked: false });
   const [extra, setExtra] = useState({ titleTr: {}, coverKey: "", excerpt: "", seoTitle: "", seoDescription: "" }); // converted heading, cover image, excerpt + SEO texts (saved with the post)
@@ -485,7 +487,9 @@ export default function ArticleComposer() {
         editor={editor}
         inline={inline}
         edit={edit}
+        select={sel.on ? sel : undefined}
       />
+      <MoveBar sel={sel} blocks={blocks} apply={(mutate) => persist(mutate)} />
 
       <AdminDock extra="font-sans" resetKey={routeId || "new"}>
         <button type="button" aria-pressed={hlOn} disabled={!id} onClick={() => setHlOn((v) => !v)} className="text-start font-semibold disabled:opacity-50">
@@ -496,6 +500,9 @@ export default function ArticleComposer() {
         </button>
         <button type="button" aria-pressed={editOn} onClick={() => setEditOn((v) => !v)} className="text-start font-semibold">
           Admin · Edit buttons: {editOn ? "ON" : "OFF"}
+        </button>
+        <button type="button" aria-pressed={sel.on} disabled={!id || !blocks.length} onClick={() => sel.setOn(!sel.on)} className="text-start font-semibold disabled:opacity-50">
+          Admin · Select &amp; Move to Block: {sel.on ? "ON" : "OFF"}
         </button>
         {hlOn && id && <span className="text-mute">Text select karein, phir Highlight dabayein.</span>}
         {!id && <span className="text-mute">Highlight ke liye pehle post save karein.</span>}

@@ -9,6 +9,7 @@ import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
 import { spanOf } from "../../lib/groups.js";
+import { BLOCK_META } from "../../lib/blocks.js";
 
 // Admin-only inline "add block" control: loaded on demand, so public visitors never download it.
 const InlineAdd = lazy(() => import("../../admin/components/InlineAdd.jsx"));
@@ -119,6 +120,16 @@ function Figure({ pages, caption, rtl }) {
   );
 }
 
+/** Admin-only (Select & Move): the tick box above a block. */
+function SelectRow({ n, type, checked, onChange }) {
+  return (
+    <label dir="ltr" className="flex w-fit cursor-pointer items-center gap-2 py-1 font-sans text-xs font-semibold text-mute">
+      <input type="checkbox" checked={checked} onChange={onChange} className="h-5 w-5 cursor-pointer accent-accent" />
+      <span>{BLOCK_META[type]?.label || type} <span className="opacity-60">#{n}</span></span>
+    </label>
+  );
+}
+
 /** Admin-only label of a Block (same "Label #n" style as the dashboard list); readers never see it. */
 function GroupHeader({ n }) {
   return (
@@ -154,7 +165,8 @@ function Pdf({ b }) {
   );
 }
 
-export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", hlEdit = false, inline, edit }) {
+export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", hlEdit = false, inline, edit, select }) {
+  const sel = select?.on ? select : null; // admin Select & Move: tick boxes instead of the Add / Edit buttons
   const { contentLang } = useI18n();
   const [editingKey, setEditingKey] = useState(null); // the block whose inline editor is open (admin only)
   const txt = (b) => (b.kind === "ayat" || b.kind === "hadith" ? b.text : pickVersion(b.text, b.tr, baseLang, contentLang));
@@ -239,7 +251,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           case "pdf":
             return <Pdf key={key} b={b} />;
           case "group":
-            return inline || edit ? <GroupHeader n={i + 1} /> : null;
+            return inline || edit || sel ? <GroupHeader n={i + 1} /> : null;
           case "divider":
             return (
               <div key={key} className="my-10 flex items-center gap-4 text-gold" aria-hidden="true">
@@ -259,15 +271,17 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
         const editing = !!edit && editingKey === key;
         // Reference blocks keep their converted fields per reader language, other blocks per shown script version.
         const editLang = b.type === "reference" ? contentLang : shownLang(b, baseLang, contentLang);
-        const member = !!(inline || edit) && b.type !== "group" && !!b.gid && groupIds.has(b.gid);
+        const member = !!(inline || edit || sel) && b.type !== "group" && !!b.gid && groupIds.has(b.gid);
         const wrap = (kids) => (member ? <div key={key} className="border-s-2 border-accent/30 ps-3">{kids}</div> : <Fragment key={key}>{kids}</Fragment>);
         return wrap(
         <>
+          {sel && b.type !== "group" && b.id && <SelectRow n={i + 1} type={b.type} checked={sel.ids.has(b.id)} onChange={() => sel.toggle(b.id)} />}
           {editing
             ? <Suspense fallback={null}><InlineEdit block={b} baseLang={baseLang} lang={editLang} onCancel={() => setEditingKey(null)} saveLabel={edit.saveLabel} onSave={async (nb) => { await edit.onSave(i, nb); setEditingKey(null); }} /></Suspense>
+            : sel ? <div className={`[&>*]:!my-2 ${b.id && sel.ids.has(b.id) ? "rounded-lg bg-accent/10 ring-1 ring-accent/40" : ""}`}>{renderBlock(b, i)}</div>
             : (inline || edit) ? <div className="[&>*]:!my-2">{renderBlock(b, i)}</div> : renderBlock(b, i)}
           {(() => {
-            const tools = edit && !editing ? (
+            const tools = edit && !editing && !sel ? (
               <BlockTools
                 embedded={!!inline}
                 index={i} count={blocks.length} block={b}
@@ -276,7 +290,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
                 onRemove={edit.onRemove ? () => edit.onRemove(i, b.id || null) : null}
               />
             ) : null;
-            if (inline) return <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={insertAt(b, i)} tools={tools} /></Suspense>;
+            if (inline && !sel) return <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={insertAt(b, i)} tools={tools} /></Suspense>;
             return tools ? <Suspense fallback={null}>{tools}</Suspense> : null;
           })()}
         </>
