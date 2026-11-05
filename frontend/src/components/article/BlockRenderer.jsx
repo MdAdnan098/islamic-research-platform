@@ -226,7 +226,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
 
   return (
     <div className="reading">
-      {inline && blocks.length === 0 && <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:start` : undefined} onInsert={(block) => inline.onInsert(-1, block, null)} /></Suspense>}
+      {inline && blocks.length === 0 && <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:start` : undefined} onInsert={(block, prevId, k = 0) => inline.onInsert(-1 + k, block, prevId || null)} /></Suspense>}
       {blocks.map((b, i) => {
         const key = b.id || i;
         const editing = !!edit && editingKey === key;
@@ -247,7 +247,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
                 onRemove={edit.onRemove ? () => edit.onRemove(i, b.id || null) : null}
               />
             ) : null;
-            if (inline) return <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={(block) => inline.onInsert(i, block, b.id || null)} tools={tools} /></Suspense>;
+            if (inline) return <Suspense fallback={null}><InlineAdd backupKey={inline.scope ? `fs_add:${inline.scope}:${key}` : undefined} onInsert={(block, prevId, k = 0) => inline.onInsert(i + k, block, prevId || b.id || null)} tools={tools} /></Suspense>;
             return tools ? <Suspense fallback={null}>{tools}</Suspense> : null;
           })()}
         </Fragment>
