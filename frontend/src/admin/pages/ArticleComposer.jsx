@@ -484,6 +484,7 @@ export default function ArticleComposer() {
         references={refs}
         titleNode={titleField}
         hideLanguage
+        split={false}
         showFontControls={false}
         editor={editor}
         inline={inline}

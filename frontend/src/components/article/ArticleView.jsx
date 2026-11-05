@@ -30,7 +30,7 @@ function ReadingProgress() {
 }
 
 /** Shared by the public article page and the admin preview. */
-export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline, edit, select, titleNode, hideLanguage = false, showFontControls = true }) {
+export function ArticleView({ article, references, crumbs = [], banner, sectionBase, editor, inline, edit, select, titleNode, hideLanguage = false, showFontControls = true, split = true }) {
   useNoPattern(); // post pages: plain page colour, no geometric pattern
   const bodyRef = useRef(null);
   const { t, contentLang } = useI18n();
@@ -43,7 +43,10 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
     <article className="select-text" style={{ "--reading-font-scale": scale }}>
       <ReadingProgress />
       {banner && <div className="bg-accent/10 px-4 py-2 text-center text-sm font-medium text-accent">{banner}</div>}
-      <header className="article-col pb-6 pt-10 sm:pt-14">
+      {/* split (public pages): on laptops the text column sits on the RIGHT (heading first), the cover on the LEFT starting level with the heading.
+          Phones / tablets (and the admin composer, split={false}) keep the single centred column. */}
+      <div className={split ? "art-split" : ""}>
+      <div className={split ? "art-top" : "article-col pt-10 sm:pt-14"}>
         <div className="mb-4 flex items-start justify-between gap-3 text-xs text-mute">
           {crumbs.length > 0 ? (
             <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -63,12 +66,15 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
             <ArticleLanguage />
           </div>
         )}
+      </div>
+      <header className={split ? "art-title pb-6" : "article-col pb-6"}>
         {titleNode ?? <Text as="h1" className="font-display article-title text-2xl font-semibold leading-[1.25] sm:text-5xl">{title}</Text>}
         {article.excerpt && <Text as="p" className="article-excerpt mt-5 text-lg text-mute">{article.excerpt}</Text>}
       </header>
-      {cover && <div className="article-col"><img src={cover} alt="" className="block h-auto w-full rounded-xl border border-rule" /></div>}
-      <div ref={bodyRef} className={`article-col pb-6 pt-6 ${editor?.enabled ? "hl-editing" : ""}`}>
+      {cover && <div className={split ? "art-cover" : "article-col"}><img src={cover} alt="" className="block h-auto w-full rounded-xl border border-rule" /></div>}
+      <div ref={bodyRef} className={`${split ? "art-body" : "article-col"} pb-6 pt-6 ${editor?.enabled ? "hl-editing" : ""}`}>
         <BlockRenderer blocks={article.blocks} references={references} baseLang={article.language} hlEdit={!!editor?.enabled} inline={inline} edit={edit} select={select} />
+      </div>
       </div>
       {editor?.enabled && (
         <Suspense fallback={null}>
