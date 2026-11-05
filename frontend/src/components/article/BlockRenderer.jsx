@@ -93,11 +93,11 @@ function Figure({ pages, caption, rtl }) {
   // so tap -> fullscreen viewer shows it in full quality.
   return (
     <figure className="my-7">
-      <div className={`${many ? "w-full" : "mx-auto w-full max-w-[36rem] lg:max-w-[42rem]"} `}>
+      <div className={`${many ? "w-full" : "mx-auto w-full max-w-[36rem] min-[900px]:max-w-[42rem]"} `}>
         {many ? (
           <div dir={rtl ? "rtl" : "ltr"} className="flex flex-wrap items-start justify-start gap-3">
             {pages.map((p, i) => (
-              <button key={i} dir="ltr" onClick={() => setOpen(i)} className="group relative aspect-[3/4] w-28 overflow-hidden rounded-lg border border-rule bg-paper transition hover:border-accent/60 sm:w-36 lg:w-40" aria-label={p.caption || t.article.openScan} title={t.article.openScan}>
+              <button key={i} dir="ltr" onClick={() => setOpen(i)} className="group relative aspect-[3/4] w-28 overflow-hidden rounded-lg border border-rule bg-paper transition hover:border-accent/60 sm:w-36 min-[900px]:w-40" aria-label={p.caption || t.article.openScan} title={t.article.openScan}>
                 <img src={p.src} alt={p.alt || p.caption || ""} loading="lazy" decoding="async" className="block h-full w-full object-contain" />
                 <span className="absolute bottom-1.5 end-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-medium tabular-nums text-white">{i + 1}/{pages.length}</span>
               </button>
@@ -105,7 +105,7 @@ function Figure({ pages, caption, rtl }) {
           </div>
         ) : (
           <button dir="ltr" onClick={() => setOpen(0)} className="group block w-full" aria-label={pages[0].caption || t.article.openScan} title={t.article.openScan}>
-            <img src={pages[0].src} alt={pages[0].alt || pages[0].caption || ""} loading="lazy" decoding="async" className="mx-auto block h-auto max-h-[30rem] w-auto max-w-full rounded-md border border-rule bg-paper object-contain sm:max-h-[34rem] lg:max-h-[40rem]" />
+            <img src={pages[0].src} alt={pages[0].alt || pages[0].caption || ""} loading="lazy" decoding="async" className="mx-auto block h-auto max-h-[30rem] w-auto max-w-full rounded-md border border-rule bg-paper object-contain sm:max-h-[34rem] min-[900px]:max-h-[40rem]" />
           </button>
         )}
         <div dir={rtl ? "rtl" : "ltr"} className="mt-2 flex items-center justify-between gap-3 text-xs text-mute">

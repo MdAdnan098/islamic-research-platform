@@ -181,10 +181,10 @@
   .container-article { @apply mx-auto w-full max-w-4xl px-2.5 sm:px-6 lg:px-8; }
   /* Post page: title, cover, text, scans and references all share ONE column (1000px of content on laptops) */
   .article-col { @apply mx-auto w-full px-2.5 sm:px-6 lg:px-8; max-width: 1064px; }
-  /* Post page, laptops (>=1024px): text column on the RIGHT (~60% of the screen, like a blog), cover on the LEFT, top only,
+  /* Post page, laptops / phone "Desktop site" (>=900px): text column on the RIGHT (~60% of the screen, like a blog), cover on the LEFT, top only,
      starting level with the heading. Same in Urdu / Hindi / Roman. Phones and tablets keep the single column. */
   .art-split > * { @apply mx-auto w-full px-2.5 sm:px-6; max-width: 1064px; }
-  @media (min-width: 1024px) {
+  @media (min-width: 900px) {
     .art-split { display: grid; max-width: 1280px; margin-inline: auto; padding-inline: 2rem; column-gap: 2.5rem; grid-template-columns: clamp(250px, 28%, 360px) minmax(0, 1fr); grid-template-rows: auto auto auto; }
     .art-split > * { max-width: none; margin: 0; padding-inline: 0; }
     .art-split > .art-top { grid-column: 2; grid-row: 1; }
