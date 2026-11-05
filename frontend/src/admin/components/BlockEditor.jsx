@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BLOCK_META, newBlock, referenceLabel } from "../../lib/blocks.js";
 import { withTextEdit } from "../../lib/highlights.js";
 import { adminApi } from "../../services/admin.js";
@@ -109,8 +109,6 @@ export function Fields({ block, set }) {
           <Field label="Title"><I value={block.title} onChange={(title) => set({ title })} /></Field>
         </div>
       );
-    case "group":
-      return <p className="text-sm text-ad-mute">Block ki shuruaat. Iske baad ke blocks ismein aate hain. Block mein kuch jodne ya hatane ke liye post ka "View site" / Preview use karein.</p>;
     default:
       return <p className="text-sm text-ad-mute">A decorative divider — nothing to edit.</p>;
   }
@@ -152,6 +150,9 @@ function AddMenu({ onAdd, label = "Add block" }) {
 }
 
 export function BlockEditor({ blocks, onChange, baseLang }) {
+  const [freshId, setFreshId] = useState(null); // the block just added: marked "Naya block" until something else is done
+  const freshRef = useRef(null);
+  useEffect(() => { if (freshId) freshRef.current?.scrollIntoView({ block: "center", behavior: "smooth" }); }, [freshId]);
   // Editing a block's text keeps its highlights attached to the same words (see lib/highlights.js remapRanges).
   const patch = (i, p) => onChange(blocks.map((b, j) => {
     if (j !== i) return b;
@@ -159,19 +160,19 @@ export function BlockEditor({ blocks, onChange, baseLang }) {
     const next = text !== undefined ? withTextEdit(b, baseLang, text) : b;
     return { ...next, ...rest };
   }));
-  const insert = (at, type) => onChange([...blocks.slice(0, at), newBlock(type), ...blocks.slice(at)]);
+  const insert = (at, type) => { const nb = newBlock(type); setFreshId(nb.id); onChange([...blocks.slice(0, at), nb, ...blocks.slice(at)]); };
 
   return (
     <div className="space-y-3">
       {blocks.length === 0 && <div className="a-card border-dashed p-8 text-center text-sm text-ad-mute">No blocks yet — add the first one below.</div>}
       {blocks.map((b, i) => (
-        <section key={b.id} className="a-card">
+        <section key={b.id} ref={b.id === freshId ? freshRef : null} className={`a-card ${b.id === freshId ? "border-dashed !border-ad-brand/70 ring-2 ring-ad-brand/25" : ""}`}>
           <header className="flex items-center justify-between border-b border-ad-rule px-3 py-1.5">
-            <span className="flex items-center gap-2 text-xs font-medium text-ad-mute"><span className="w-4 text-center">{BLOCK_META[b.type]?.icon}</span>{BLOCK_META[b.type]?.label} <span className="text-ad-mute/60">#{i + 1}</span></span>
+            <span className="flex items-center gap-2 text-xs font-medium text-ad-mute"><span className="w-4 text-center">{BLOCK_META[b.type]?.icon}</span>{BLOCK_META[b.type]?.label} <span className="text-ad-mute/60">#{i + 1}</span>{b.id === freshId && <span className="rounded-full bg-ad-brand px-2 py-0.5 text-[11px] font-semibold text-white">Naya block</span>}</span>
             <div className="flex">
-              <IconBtn icon="up" label="Move up" disabled={i === 0} onClick={() => onChange(moveItem(blocks, i, i - 1))} />
-              <IconBtn icon="down" label="Move down" disabled={i === blocks.length - 1} onClick={() => onChange(moveItem(blocks, i, i + 1))} />
-              <IconBtn icon="trash" label="Delete block" danger onClick={() => onChange(blocks.filter((_, j) => j !== i))} />
+              <IconBtn icon="up" label="Move up" disabled={i === 0} onClick={() => { setFreshId(null); onChange(moveItem(blocks, i, i - 1)); }} />
+              <IconBtn icon="down" label="Move down" disabled={i === blocks.length - 1} onClick={() => { setFreshId(null); onChange(moveItem(blocks, i, i + 1)); }} />
+              <IconBtn icon="trash" label="Delete block" danger onClick={() => { setFreshId(null); onChange(blocks.filter((_, j) => j !== i)); }} />
             </div>
           </header>
           <div className="p-3.5"><Fields block={b} set={(p) => patch(i, p)} /></div>
