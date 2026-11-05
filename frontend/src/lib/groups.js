@@ -79,12 +79,42 @@ export function removeBlock(blocks, id, fallbackIndex = -1) {
   return blocks.filter((_, i) => i !== at);
 }
 
-/** A new, empty Block at the end of the post (items are moved / added into it afterwards). */
-export const addEmptyBlock = (blocks, id) => [...blocks, { id, type: "group" }];
+/** Block numbers come from the ORDER of the Blocks in the post (first Block = 1, second = 2 ...), never from a saved number or the
+ *  flat position of the marker. Returns Map(markerId -> n). Reordering, adding or deleting a Block renumbers by itself. */
+export function blockNumbers(blocks = []) {
+  const map = new Map();
+  for (const b of blocks) if (isGroup(b) && b.id && !map.has(b.id)) map.set(b.id, map.size + 1);
+  return map;
+}
 
-/** Existing Blocks of a post, in order: [{ id, n, size }] (n = the same "#n" position number the page shows on the Block's label). */
+/** A position in `blocks` that never lands INSIDE a Block: if `at` is between two members of one Block (or between its marker
+ *  and its first member), it moves to just after that Block's last member. */
+export function safeIndex(blocks, at) {
+  let i = Math.max(0, Math.min(at, blocks.length));
+  while (i > 0 && i < blocks.length && !isGroup(blocks[i]) && blocks[i].gid && (blocks[i - 1].gid === blocks[i].gid || blocks[i - 1].id === blocks[i].gid)) i += 1;
+  return i;
+}
+
+/** A new, empty Block (items are moved / added into it afterwards).
+ *  where = { before: blockId } -> starts where that block is   |   { after: blockId } -> right after that block
+ *  (if that block is inside a Block, after the whole Block)    |   nothing -> end of the post.
+ *  It never cuts another Block in two. Existing blocks are untouched (only the new marker is inserted). */
+export function addEmptyBlock(blocks, id, where = null) {
+  let at = blocks.length;
+  const ref = where?.before || where?.after;
+  const k = ref ? blocks.findIndex((b) => b.id === ref) : -1;
+  if (k >= 0) {
+    if (where.before) at = k;
+    else { const sp = spanOf(blocks, ref); at = sp ? sp[1] : k + 1; }
+  }
+  at = safeIndex(blocks, at);
+  return [...blocks.slice(0, at), { id, type: "group" }, ...blocks.slice(at)];
+}
+
+/** Existing Blocks of a post, in order: [{ id, n, size }] (n = 1, 2, 3 ... by order, the same number the page shows on the Block's label). */
 export function groupsOf(blocks = []) {
-  return itemsOf(blocks).filter((it) => it.group).map((it) => ({ id: it.group.id, n: it.at + 1, size: it.members.length }));
+  const nums = blockNumbers(blocks);
+  return itemsOf(blocks).filter((it) => it.group).map((it) => ({ id: it.group.id, n: nums.get(it.group.id), size: it.members.length }));
 }
 
 /**
@@ -119,9 +149,9 @@ export function moveIntoBlock(blocks, selectedIds, target) {
   } else {
     gid = target.id;
     if (!gid || blocks.some((b) => b.id === gid)) throw new Error("Naye Block ki id sahi nahi hai.");
-    let at = blocks.findIndex((b) => moveIds.has(b.id)); // the new Block starts where the first selected block was
-    // never cut another Block in two: if that spot is inside a Block, the new one starts right after that Block's remaining blocks
-    while (at > 0 && at < rest.length && !isGroup(rest[at]) && rest[at].gid && (rest[at - 1].gid === rest[at].gid || rest[at - 1].id === rest[at].gid)) at += 1;
+    // the new Block starts where the first selected block was; never cut another Block in two:
+    // if that spot is inside a Block, the new one starts right after that Block's remaining blocks
+    const at = safeIndex(rest, blocks.findIndex((b) => moveIds.has(b.id)));
     next = [...rest.slice(0, at), { id: gid, type: "group" }, ...toMove.map((b) => ({ ...b, gid })), ...rest.slice(at)];
   }
 

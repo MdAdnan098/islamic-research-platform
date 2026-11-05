@@ -8,7 +8,7 @@ import { TEXT_COLORS, layersOf, markClass, segmentsOf, shownLang, sliceLayers, s
 import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
-import { spanOf } from "../../lib/groups.js";
+import { spanOf, blockNumbers } from "../../lib/groups.js";
 import { BLOCK_META } from "../../lib/blocks.js";
 
 // Admin-only inline "add block" control: loaded on demand, so public visitors never download it.
@@ -121,9 +121,9 @@ function Figure({ pages, caption, rtl }) {
 }
 
 /** Admin-only (Select & Move): the tick box above a block. */
-function SelectRow({ n, type, checked, onChange }) {
+function SelectRow({ n, id, type, checked, onChange }) {
   return (
-    <label dir="ltr" className="flex w-fit cursor-pointer items-center gap-2 py-1 font-sans text-xs font-semibold text-mute">
+    <label dir="ltr" data-bid={id} className="flex w-fit cursor-pointer items-center gap-2 py-1 font-sans text-xs font-semibold text-mute">
       <input type="checkbox" checked={checked} onChange={onChange} className="h-5 w-5 cursor-pointer accent-accent" />
       <span>{BLOCK_META[type]?.label || type} <span className="opacity-60">#{n}</span></span>
     </label>
@@ -177,6 +177,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
   const txt = (b) => (b.kind === "ayat" || b.kind === "hadith" ? b.text : pickVersion(b.text, b.tr, baseLang, contentLang));
   const refMap = Object.fromEntries(references.map((r) => [r.id, r]));
   // Blocks (groups) are stored flat: a marker + the blocks after it carrying gid = marker id (lib/groups.js). Admin-only look; readers see no change.
+  const blockNo = blockNumbers(blocks); // Block #1, #2, #3 ... by order in the post (not by flat position)
   const groupIds = new Set(blocks.filter((x) => x.type === "group" && x.id).map((x) => x.id));
   const groupOf = (x) => (x.type === "group" ? x.id : x.gid && groupIds.has(x.gid) ? x.gid : null);
   // "+ Add" under block `b` (position i). Inside a Block, new items join that Block; a new Block goes after the whole current Block.
@@ -256,7 +257,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           case "pdf":
             return <Pdf key={key} b={b} />;
           case "group":
-            return inline || edit || sel ? <GroupHeader n={i + 1} onDelete={sel && b.id ? () => sel.askDelete(b.id) : undefined} /> : null;
+            return inline || edit || sel ? <GroupHeader n={blockNo.get(b.id) || 1} onDelete={sel && b.id ? () => sel.askDelete(b.id) : undefined} /> : null;
           case "divider":
             return (
               <div key={key} className="my-10 flex items-center gap-4 text-gold" aria-hidden="true">
@@ -280,7 +281,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
         const wrap = (kids) => (member ? <div key={key} className="border-s-2 border-accent/30 ps-3">{kids}</div> : <Fragment key={key}>{kids}</Fragment>);
         return wrap(
         <>
-          {sel && b.type !== "group" && b.id && <SelectRow n={i + 1} type={b.type} checked={sel.ids.has(b.id)} onChange={() => sel.toggle(b.id)} />}
+          {sel && b.type !== "group" && b.id && <SelectRow n={i + 1} id={b.id} type={b.type} checked={sel.ids.has(b.id)} onChange={() => sel.toggle(b.id)} />}
           {editing
             ? <Suspense fallback={null}><InlineEdit block={b} baseLang={baseLang} lang={editLang} onCancel={() => setEditingKey(null)} saveLabel={edit.saveLabel} onSave={async (nb) => { await edit.onSave(i, nb); setEditingKey(null); }} /></Suspense>
             : sel ? <div className={`[&>*]:!my-2 ${b.id && sel.ids.has(b.id) ? "rounded-lg bg-accent/10 ring-1 ring-accent/40" : ""}`}>{renderBlock(b, i)}</div>

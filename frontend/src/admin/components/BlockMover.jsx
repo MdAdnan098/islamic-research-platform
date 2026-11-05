@@ -41,7 +41,8 @@ export function useBlockSelect(blocks) {
   };
   const clear = () => { setIds(new Set()); anchor.current = null; };
   const turn = (v) => { setOn(v); if (!v) { clear(); setRange(false); } };
-  return { on, ids, range, setRange, toggle, clear, setOn: turn, pendingDelete, askDelete };
+  const lastId = () => anchor.current; // the block ticked / un-ticked last (where "+ Naya Block" goes when nothing is ticked)
+  return { on, ids, range, setRange, toggle, clear, setOn: turn, pendingDelete, askDelete, lastId };
 }
 
 const pill = "inline-flex items-center gap-1 rounded-full border border-rule bg-card px-2.5 py-1 text-xs font-semibold text-mute transition hover:border-accent/60 hover:text-ink disabled:opacity-40";
@@ -57,11 +58,12 @@ export default function MoveBar({ sel, blocks, apply }) {
   const chosen = target === "new" ? null : groups.find((g) => g.id === target) || null;
   const count = [...sel.ids].filter((id) => blocks.some((b) => b.id === id && !isGroup(b))).length;
 
-  async function go() {
-    const pick = chosen ? { gid: chosen.id } : { create: true, id: uid() };
+  async function go(forceNew = false) {
+    const useChosen = chosen && !forceNew;
+    const pick = useChosen ? { gid: chosen.id } : { create: true, id: uid() };
     let dry;
     try { dry = moveIntoBlock(blocks, [...sel.ids], pick); } catch (e) { toast(e.message, "error"); return; }
-    const where = chosen ? `Block #${chosen.n} ke andar (sabse neeche)` : "ek naya Block banakar uske andar";
+    const where = useChosen ? `Block #${chosen.n} ke andar (sabse neeche)` : "pehle tick kiye hisse ki jagah par ek naya Block banakar uske andar";
     const ok = await confirm({
       title: "Block mein move karein?",
       message: `${dry.moved} hissa ${where} chala jayega. Unka order, baaki zabaanon ka text, highlight, alignment aur reference sab waisa hi rahega. Move ke baad Undo ka button milega.`,
@@ -97,10 +99,39 @@ export default function MoveBar({ sel, blocks, apply }) {
     } catch (e) { toast(e?.message || "Nahi ho paya.", "error"); return false; } finally { setBusy(false); }
   }
 
-  // A new EMPTY Block (at the end of the post): items are then moved or added into it.
+  // The block nearest the middle of the screen (select mode draws a tick row with data-bid above every block).
+  function viewedId() {
+    const mid = window.innerHeight / 2;
+    let best = null;
+    let bestD = Infinity;
+    document.querySelectorAll("[data-bid]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const d = Math.abs((r.top + r.bottom) / 2 - mid);
+      if (d < bestD) { bestD = d; best = el.getAttribute("data-bid"); }
+    });
+    return best;
+  }
+
+  // "+ Naya Block":
+  //  - some blocks ticked  -> a new Block is made where the first ticked block was and they move into it (same as Naya Block banao + Move)
+  //  - nothing ticked      -> an EMPTY Block right after the block you ticked last, else after the block on screen (never in the middle of a Block, never blindly at the end)
   async function createBlock() {
+    if (count) { await go(true); return; }
+    const hit = (id) => (id && blocks.some((b) => b.id === id && !isGroup(b)) ? id : null);
+    const anchorId = hit(sel.lastId()) || hit(viewedId());
+    if (!anchorId) { toast("Pehle jis hisse ke baad Block chahiye use tick karein, phir \"Naya Block\" dabayein.", "error"); return; }
+    const flat = blocks.findIndex((b) => b.id === anchorId);
+    const yes = await confirm({
+      title: "Khali Block banayein?",
+      message: `Ek khali Block hisse #${flat + 1} ke baad ban jayega (Block ke beech mein nahi katega). Uske baad aap hisse tick karke usme Move kar sakte hain. Undo ka button milega.`,
+      confirm: "Yes, Block banao",
+    });
+    if (!yes) return;
     const id = uid();
-    const ok = await change((cur) => addEmptyBlock(cur, id), "Naya Block ban gaya", "Naya Block bana");
+    const ok = await change((cur) => {
+      if (!cur.some((b) => b.id === anchorId)) throw new Error("Wo hissa post mein nahi mila. Page refresh karke dobara koshish karein.");
+      return addEmptyBlock(cur, id, { after: anchorId });
+    }, "Naya Block ban gaya", "Naya Block bana");
     if (ok) setTarget(id);
   }
 
@@ -155,10 +186,10 @@ export default function MoveBar({ sel, blocks, apply }) {
                 <option value="new">Naya Block banao</option>
                 {groups.map((g) => <option key={g.id} value={g.id}>Block #{g.n} ke andar ({g.size})</option>)}
               </select>
-              <button type="button" className="a-btn-primary !px-3 !py-1" disabled={busy || !count} onClick={go}>{busy ? "Moving…" : "Move"}</button>
+              <button type="button" className="a-btn-primary !px-3 !py-1" disabled={busy || !count} onClick={() => go()}>{busy ? "Moving…" : "Move"}</button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 border-t border-rule pt-2">
-              <button type="button" className={pill} disabled={busy} onClick={createBlock} title="Post ke aakhir mein ek khali Block banta hai"><Icon name="plus" size={12} />Naya Block</button>
+              <button type="button" className={pill} disabled={busy} onClick={createBlock} title="Tick kiye hisse hon to unki jagah naya Block banakar unhe usme le aata hai; tick na ho to aakhri tick / dekhe ja rahe hisse ke baad khali Block banata hai"><Icon name="plus" size={12} />Naya Block</button>
               <button type="button" className={`${pill} hover:!border-ad-danger/50 hover:!text-ad-danger`} disabled={busy || !chosen} onClick={() => chosen && deleteBlock(chosen.id)} title="Upar dropdown mein chuna hua Block hatayein (andar ka content rahega)"><Icon name="trash" size={12} />{chosen ? `Block #${chosen.n} hatao` : "Block hatao"}</button>
             </div>
             {!count && <p className="text-mute">Jo hissa move karna hai uske upar wale box ko tick karein.</p>}

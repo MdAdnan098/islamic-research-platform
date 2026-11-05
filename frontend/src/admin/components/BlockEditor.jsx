@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BLOCK_META, newBlock, referenceLabel } from "../../lib/blocks.js";
 import { withTextEdit } from "../../lib/highlights.js";
-import { moveBlock, removeBlock } from "../../lib/groups.js";
+import { blockNumbers, moveBlock, removeBlock } from "../../lib/groups.js";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { Icon } from "../../components/ui/icons.jsx";
@@ -171,6 +171,7 @@ export function BlockEditor({ blocks, onChange, baseLang }) {
     setFreshId(nb.id);
     onChange([...blocks.slice(0, at), nb, ...blocks.slice(at)]);
   };
+  const blockNo = blockNumbers(blocks); // Blocks are numbered 1, 2, 3 ... by order
   const inGroup = (b) => b.type !== "group" && !!b.gid && blocks.some((x) => x.id === b.gid && x.type === "group");
 
   return (
@@ -179,7 +180,7 @@ export function BlockEditor({ blocks, onChange, baseLang }) {
       {blocks.map((b, i) => (
         <section key={b.id} ref={b.id === freshId ? freshRef : null} className={`a-card ${inGroup(b) ? "ms-5 !border-s-2 !border-s-ad-brand/40" : ""} ${b.id === freshId ? "border-dashed !border-ad-brand/70 ring-2 ring-ad-brand/25" : ""}`}>
           <header className="flex items-center justify-between border-b border-ad-rule px-3 py-1.5">
-            <span className="flex items-center gap-2 text-xs font-medium text-ad-mute"><span className="w-4 text-center">{BLOCK_META[b.type]?.icon}</span>{BLOCK_META[b.type]?.label} <span className="text-ad-mute/60">#{i + 1}</span>{b.id === freshId && <span className="rounded-full bg-ad-brand px-2 py-0.5 text-[11px] font-semibold text-white">Naya block</span>}</span>
+            <span className="flex items-center gap-2 text-xs font-medium text-ad-mute"><span className="w-4 text-center">{BLOCK_META[b.type]?.icon}</span>{BLOCK_META[b.type]?.label} <span className="text-ad-mute/60">#{b.type === "group" ? blockNo.get(b.id) || 1 : i + 1}</span>{b.id === freshId && <span className="rounded-full bg-ad-brand px-2 py-0.5 text-[11px] font-semibold text-white">Naya block</span>}</span>
             <div className="flex">
               <IconBtn icon="up" label="Move up" disabled={i === 0} onClick={() => { setFreshId(null); onChange(moveBlock(blocks, b.id, -1)); }} />
               <IconBtn icon="down" label="Move down" disabled={i === blocks.length - 1} onClick={() => { setFreshId(null); onChange(moveBlock(blocks, b.id, 1)); }} />
