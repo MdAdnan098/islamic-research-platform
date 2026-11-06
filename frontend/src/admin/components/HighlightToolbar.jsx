@@ -230,10 +230,10 @@ export default function HighlightToolbar({ containerRef, blocks, baseLang, onApp
 
   const btn = "rounded-full px-3.5 py-2 text-sm font-semibold disabled:opacity-50";
   const swatches = [
-    { field: "hl", label: "Yellow", style: { background: "#FFE600", color: "#D90000" } },
+    { field: "hl", label: "Yellow", style: { background: "#fde047", color: "#000" } },
     { field: "hlPink", label: "Pink", style: { background: "#FF6EB4", color: "#000" } },
     { field: "hlBlue", label: "Blue", style: { background: "#AEACFF", color: "#000" } },
-    { field: "hlGreen", label: "Green", style: { background: "#009E3D", color: "#fff" } },
+    { field: "hlGreen", label: "Green", style: { background: "#16a34a", color: "#000" } },
   ];
   return (
     <>

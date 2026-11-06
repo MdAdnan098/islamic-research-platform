@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 /**
  * Hidden shortcut to the EXISTING admin login page (/admin/login). It authenticates nobody: the normal
  * username + password sign-in (JWT, rate limiting …) is still required after it.
- *   - Phones AND desktop: five quick taps / mouse clicks on the empty space of the footer's bottom bar (<AdminTapZone/>).
- *   - Desktop also: Ctrl+Shift+A (Windows/Linux) or Cmd+Shift+A (macOS).
+ *   - Phones: five quick touch taps on the empty space of the footer's bottom bar (<AdminTapZone/>).
+ *   - Desktop: Ctrl+Shift+A (Windows/Linux) or Cmd+Shift+A (macOS); the five-tap does nothing there.
  * Both only ask for confirmation through <AdminAccessDialog/>. No visible "Admin" text or button exists.
  */
 const OPEN_EVENT = "fs:admin-access";
@@ -19,7 +19,7 @@ const requestAdminAccess = () => window.dispatchEvent(new Event(OPEN_EVENT));
 /**
  * The footer's bottom bar (copyright row) turned into the tap area. Only taps that land on the bar ITSELF count —
  * its empty padding and the blank space beside / between the text lines. A tap whose target is the text, a link,
- * the logo, a button or any other child is not accepted and resets the sequence. Works with touch, pen and mouse, at any screen width.
+ * the logo, a button or any other child is not accepted and resets the sequence. Phone-sized layouts + touch only.
  */
 export function AdminTapZone({ className = "", children }) {
   const zone = useRef(null);
@@ -27,16 +27,14 @@ export function AdminTapZone({ className = "", children }) {
   const reset = () => { taps.current.count = 0; taps.current.first = 0; taps.current.down = null; };
 
   useEffect(() => {
-    // Any press that starts anywhere else (text, links, buttons, content…) breaks the sequence.
-    const outside = (e) => { if (e.target !== zone.current) { taps.current.count = 0; taps.current.first = 0; taps.current.down = null; } };
+    // Any touch that starts anywhere else (text, links, buttons, content…) breaks the sequence.
+    const outside = (e) => { if (e.pointerType === "touch" && e.target !== zone.current) { taps.current.count = 0; taps.current.first = 0; taps.current.down = null; } };
     document.addEventListener("pointerdown", outside, true);
     return () => document.removeEventListener("pointerdown", outside, true);
   }, []);
 
-  const accepts = (e) => (e.pointerType !== "mouse" || e.button === 0) && e.target === e.currentTarget;
+  const accepts = (e) => e.pointerType === "touch" && e.target === e.currentTarget && window.matchMedia("(max-width: 767px)").matches;
   const onDown = (e) => { if (accepts(e)) taps.current.down = { x: e.clientX, y: e.clientY }; };
-  // Fast repeated mouse clicks on blank space would otherwise select the nearby text (double / triple click).
-  const onMouseDown = (e) => { if (e.target === e.currentTarget) e.preventDefault(); };
   const onUp = (e) => {
     const t = taps.current;
     if (!accepts(e) || !t.down) return;
@@ -53,7 +51,6 @@ export function AdminTapZone({ className = "", children }) {
     <div
       ref={zone}
       onPointerDown={onDown}
-      onMouseDown={onMouseDown}
       onPointerUp={onUp}
       onPointerCancel={reset}
       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}

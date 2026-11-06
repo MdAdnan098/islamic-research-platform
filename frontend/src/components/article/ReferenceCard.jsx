@@ -64,6 +64,9 @@ export function ReferenceCard({ reference: r }) {
         ) : (
           <button onClick={() => setOpen(true)} className="group mx-auto mt-4 block w-full max-w-[36rem] overflow-hidden text-start transition hover:border-accent/60" aria-label={t.article.openScan}>
             <img src={scan} alt={t.article.scan} loading="lazy" decoding="async" className="mx-auto block h-auto w-auto max-h-72 max-w-full rounded-md border border-rule bg-paper object-contain sm:max-h-[22rem]" />
+            <span className="mt-2 flex items-center justify-between text-xs font-medium text-mute">
+              {t.article.openScan}<Icon name="zoomIn" size={15} />
+            </span>
           </button>
         )
       )}

@@ -181,6 +181,17 @@
   .container-article { @apply mx-auto w-full max-w-4xl px-2.5 sm:px-6 lg:px-8; }
   /* Post page: title, cover, text, scans and references all share ONE column (1000px of content on laptops) */
   .article-col { @apply mx-auto w-full px-2.5 sm:px-6 lg:px-8; max-width: 1064px; }
+  /* Post page, laptops / phone "Desktop site" (>=900px): text column on the RIGHT (~60% of the screen, like a blog), cover on the LEFT, top only,
+     starting level with the heading. Same in Urdu / Hindi / Roman. Phones and tablets keep the single column. */
+  .art-split > * { @apply mx-auto w-full px-2.5 sm:px-6; max-width: 1064px; }
+  @media (min-width: 900px) {
+    .art-split { display: grid; max-width: 1280px; margin-inline: auto; padding-inline: 2rem; column-gap: 2.5rem; grid-template-columns: clamp(250px, 28%, 360px) minmax(0, 1fr); grid-template-rows: auto auto auto; }
+    .art-split > * { max-width: none; margin: 0; padding-inline: 0; }
+    .art-split > .art-top { grid-column: 2; grid-row: 1; }
+    .art-split > .art-title { grid-column: 2; grid-row: 2; }
+    .art-split > .art-body { grid-column: 2; grid-row: 3; }
+    .art-split > .art-cover { grid-column: 1; grid-row: 2 / span 2; align-self: start; }
+  }
   .eyebrow { @apply text-sm font-semibold text-accent; }
   .rule-gold { @apply h-px w-12 bg-accent; }
 
@@ -288,13 +299,12 @@
   .article-title { font-size: clamp(1.5rem, calc(1.75rem * var(--reading-font-scale, 1)), 3.75rem); line-height: 1.25; }
   @media (min-width: 640px) { .article-title { font-size: clamp(1.85rem, calc(2.5rem * var(--reading-font-scale, 1)), 3.75rem); } }
   .article-excerpt { font-size: calc(1.125rem * var(--reading-font-scale, 1)); line-height: 1.6; }
-  /* Saved text highlight: vivid yellow + red text, pink / blue + black text, vivid green + white text.
-     Same bright colours in every theme (Light, Sepia, Dark). No padding so Urdu/Arabic letters keep joining. */
-  .hl-mark { background: #FFE600; color: #D90000; border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
-  .hl-mark.hl-yellow { background: #FFE600; color: #D90000; }
+  /* Saved text highlight: yellow background + red text (original), plus pink / blue / green. Same in every theme.
+     No padding so Urdu/Arabic letters keep joining. */
+  .hl-mark { background: #fbec96; color: #000; border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
   .hl-mark.hl-pink { background: #FF6EB4; color: #000; }
   .hl-mark.hl-blue { background: #AEACFF; color: #000; }
-  .hl-mark.hl-green { background: #009E3D; color: #fff; }
+  .hl-mark.hl-green { background: #008000; color: #000; }
   /* Arabic text the admin turned red by hand (text colour only). Inside a coloured highlight the highlight's own colours win. */
   .ar-red { color: var(--ar-red, #ee0000); }
   .hl-mark .ar-red { color: inherit; }
@@ -302,7 +312,11 @@
   .tc-red { color: #dc2626; } .tc-blue { color: #2563eb; } .tc-green { color: #16a34a; } .tc-gold { color: #b45309; }
   .dark .tc-red { color: #ff8a80; } .dark .tc-blue { color: #7db4ff; } .dark .tc-green { color: #6fdc8c; } .dark .tc-gold { color: #f0c060; }
   .hl-mark .tc-red, .hl-mark .tc-blue, .hl-mark .tc-green, .hl-mark .tc-gold { color: inherit; }
-  /* Dark: the highlight colours stay exactly as vivid as in Light (no dimmed variants). */
+  /* Dark: the same four highlight colours, a little calmer so they do not glare at night. */
+  .dark .hl-mark.hl-yellow { background: #c2b057; color: #0b0b0b; }
+  .dark .hl-mark.hl-pink { background: #d4609f; color: #0b0b0b; }
+  .dark .hl-mark.hl-blue { background: #9b99dc; color: #0b0b0b; }
+  .dark .hl-mark.hl-green { background: #1d7a38; color: #0b0b0b; }
   /* Dark: normal Arabic in a post is warm ivory; red / highlighted words keep their own colours. */
   .dark .reading .script-arabic, .dark .reading .inl-ar { color: rgb(var(--ar-ink)); }
   /* Dark: pictures inside a post (images, scans, reference scans) are dimmed a little. */

@@ -22,10 +22,10 @@ export function shownLang(b, baseLang, want) {
 
 /**
  * Mark layers. Every layer has the same shape ({ en?: [[s, e], ...], hi?: [...], ur?: [...] }) and its own block field:
- *   hl       vivid yellow background, red text (the original highlight)
+ *   hl       yellow background, red text (the original highlight)
  *   hlPink   #FF6EB4 background, black text
  *   hlBlue   #AEACFF background, black text
- *   hlGreen  vivid green background, white text
+ *   hlGreen  green background, black text
  *   arRed    red TEXT colour for Arabic (no background) - set by hand, never guessed
  * The four background colours exclude each other on the same characters; arRed is independent of them.
  */
