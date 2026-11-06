@@ -23,6 +23,9 @@ export function Navbar() {
     if (v) { nav(`/search?q=${encodeURIComponent(v)}`); setQ(""); } else nav("/search");
   };
   useEffect(() => { setOpen(false); }, [pathname]);
+  // Laptop / desktop (>= 900px) on a post page: the bar scrolls away with the page (not pinned), so the text gets the full screen height.
+  // Home and every other page, and phones / tablets, keep the pinned bar.
+  const onArticle = pathname.startsWith("/article/");
 
   // Page behind the drawer must not scroll while it is open.
   useEffect(() => {
@@ -60,7 +63,7 @@ export function Navbar() {
     `flex items-center gap-3 border-b border-rule py-3.5 text-lg font-semibold ${isActive ? "text-accent" : "text-ink"}`;
 
   return (
-    <header ref={header} className="bar-teal sticky top-0 z-40 border-b border-rule bg-paper">
+    <header ref={header} className={`bar-teal sticky top-0 z-40 border-b border-rule bg-paper${onArticle ? " min-[900px]:static" : ""}`}>
       <div className="container-page flex h-16 items-center justify-between gap-2">
         <Link to="/" aria-label="AthariTV" className="-ms-2 min-w-0"><Logo size={32} badge /></Link>
 
