@@ -299,12 +299,13 @@
   .article-title { font-size: clamp(1.5rem, calc(1.75rem * var(--reading-font-scale, 1)), 3.75rem); line-height: 1.25; }
   @media (min-width: 640px) { .article-title { font-size: clamp(1.85rem, calc(2.5rem * var(--reading-font-scale, 1)), 3.75rem); } }
   .article-excerpt { font-size: calc(1.125rem * var(--reading-font-scale, 1)); line-height: 1.6; }
-  /* Saved text highlight: yellow background + red text (original), plus pink / blue / green. Same in every theme.
-     No padding so Urdu/Arabic letters keep joining. */
-  .hl-mark { background: #fbec96; color: #000; border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  /* Saved text highlight: vivid yellow + red text, pink / blue + black text, vivid green + white text.
+     Same bright colours in every theme (Light, Sepia, Dark). No padding so Urdu/Arabic letters keep joining. */
+  .hl-mark { background: #FFE600; color: #D90000; border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  .hl-mark.hl-yellow { background: #FFE600; color: #D90000; }
   .hl-mark.hl-pink { background: #FF6EB4; color: #000; }
   .hl-mark.hl-blue { background: #AEACFF; color: #000; }
-  .hl-mark.hl-green { background: #008000; color: #000; }
+  .hl-mark.hl-green { background: #009E3D; color: #fff; }
   /* Arabic text the admin turned red by hand (text colour only). Inside a coloured highlight the highlight's own colours win. */
   .ar-red { color: var(--ar-red, #ee0000); }
   .hl-mark .ar-red { color: inherit; }
@@ -312,11 +313,7 @@
   .tc-red { color: #dc2626; } .tc-blue { color: #2563eb; } .tc-green { color: #16a34a; } .tc-gold { color: #b45309; }
   .dark .tc-red { color: #ff8a80; } .dark .tc-blue { color: #7db4ff; } .dark .tc-green { color: #6fdc8c; } .dark .tc-gold { color: #f0c060; }
   .hl-mark .tc-red, .hl-mark .tc-blue, .hl-mark .tc-green, .hl-mark .tc-gold { color: inherit; }
-  /* Dark: the same four highlight colours, a little calmer so they do not glare at night. */
-  .dark .hl-mark.hl-yellow { background: #c2b057; color: #0b0b0b; }
-  .dark .hl-mark.hl-pink { background: #d4609f; color: #0b0b0b; }
-  .dark .hl-mark.hl-blue { background: #9b99dc; color: #0b0b0b; }
-  .dark .hl-mark.hl-green { background: #1d7a38; color: #0b0b0b; }
+  /* Dark: the highlight colours stay exactly as vivid as in Light (no dimmed variants). */
   /* Dark: normal Arabic in a post is warm ivory; red / highlighted words keep their own colours. */
   .dark .reading .script-arabic, .dark .reading .inl-ar { color: rgb(var(--ar-ink)); }
   /* Dark: pictures inside a post (images, scans, reference scans) are dimmed a little. */

@@ -108,12 +108,11 @@ function Figure({ pages, caption, rtl }) {
             <img src={pages[0].src} alt={pages[0].alt || pages[0].caption || ""} loading="lazy" decoding="async" className="mx-auto block h-auto max-h-[30rem] w-auto max-w-full rounded-md border border-rule bg-paper object-contain sm:max-h-[34rem] min-[900px]:max-h-[40rem]" />
           </button>
         )}
-        <div dir={rtl ? "rtl" : "ltr"} className="mt-2 flex items-center justify-between gap-3 text-xs text-mute">
-          {note ? <Text as="span" className="min-w-0 break-words">{note}</Text> : <span />}
-          <button type="button" onClick={() => setOpen(0)} className="inline-flex shrink-0 items-center gap-1.5 hover:text-ink" aria-label={t.article.openScan}>
-            <Icon name="zoomIn" size={14} />{many && <span className="tabular-nums">{pages.length}</span>}
-          </button>
-        </div>
+        {note && (
+          <div dir={rtl ? "rtl" : "ltr"} className="mt-2 text-xs text-mute">
+            <Text as="span" className="min-w-0 break-words">{note}</Text>
+          </div>
+        )}
       </div>
       {open !== null && <ScanViewer pages={pages} start={open} onClose={() => setOpen(null)} />}
     </figure>

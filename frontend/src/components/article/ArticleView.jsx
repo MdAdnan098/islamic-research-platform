@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
 import { formatDate } from "../../lib/format.js";
 import { mediaUrl } from "../../lib/media.js";
@@ -47,25 +46,12 @@ export function ArticleView({ article, references, crumbs = [], banner, sectionB
           Phones / tablets (and the admin composer, split={false}) keep the single centred column. */}
       <div className={split ? "art-split" : ""}>
       <div className={split ? "art-top" : "article-col pt-10 sm:pt-14"}>
-        <div className="mb-4 flex items-start justify-between gap-3 text-xs text-mute">
-          {crumbs.length > 0 ? (
-            <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              {crumbs.map((c, i) => (
-                <span key={i} className="flex items-center gap-2">
-                  {i > 0 && <span aria-hidden="true">/</span>}
-                  {c.to ? <Link to={c.to} className="hover:text-bronze">{c.label}</Link> : <span>{c.label}</span>}
-                </span>
-              ))}
-            </nav>
-          ) : <span />}
-          <span className="ms-auto shrink-0">{formatDate(article.publishedAt || article.createdAt)}</span>
+        {/* One line: language dropdown on the left, post date on the right. (The post path / breadcrumb is not shown.)
+            Font size lives in ONE place: the floating pill (FloatingReaderControls). */}
+        <div dir="ltr" className="mb-3 flex flex-nowrap items-center justify-between gap-3">
+          {!hideLanguage ? <ArticleLanguage /> : <span />}
+          <span className="shrink-0 text-xs text-mute">{formatDate(article.publishedAt || article.createdAt)}</span>
         </div>
-        {/* Reading toolbar: Language selector only. Font size lives in ONE place: the floating pill (FloatingReaderControls). */}
-        {!hideLanguage && (
-          <div dir="ltr" className="mb-3 flex flex-nowrap items-center justify-between gap-3">
-            <ArticleLanguage />
-          </div>
-        )}
       </div>
       <header className={split ? "art-title pb-6" : "article-col pb-6"}>
         {titleNode ?? <Text as="h1" className="font-display article-title text-2xl font-semibold leading-[1.25] sm:text-5xl">{title}</Text>}
