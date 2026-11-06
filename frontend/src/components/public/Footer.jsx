@@ -45,7 +45,7 @@ export function Footer() {
   const info = [["/about", t.nav.about], ["/disclaimer", t.nav.disclaimer], ["/privacy", t.nav.privacy]];
   return (
     <footer className="bar-teal mt-20 border-t border-rule bg-footer">
-      <div className="container-page grid gap-10 py-14 md:grid-cols-[1.2fr_1fr_1fr_1.2fr] lg:grid-cols-[1.4fr_.8fr_.8fr_1.2fr_.95fr]">
+      <div className="container-page grid gap-10 py-14 md:grid-cols-[1fr_.8fr_.9fr_1.7fr] lg:grid-cols-[1.15fr_.7fr_.8fr_1.8fr_.9fr]">
         <div>
           <Link to="/" aria-label={BRAND.name} className="inline-block"><Logo size={36} badge /></Link>
           <p className="mt-5 max-w-sm text-base text-mute">{t.footer.about}</p>
@@ -69,21 +69,24 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        {/* Two separate groups: Contact (phone + email) and Follow us on (social icons).
-            Phones: side by side in one row (shorter than before). md: stacked in the 4th column. lg+: two own columns. */}
-        <div className="flex items-start justify-between gap-x-5 md:block md:space-y-5 lg:contents lg:space-y-0">
+        {/* Two separate groups: Contact Us (phone + email) and Follow us on (social icons).
+            Phones: side by side in one row (Contact Us left, Follow us on pushed right). md: stacked in the 4th column. lg+: two own columns
+            (Links, Information, Contact Us, then Follow us on last). */}
+        <div className="flex items-start justify-between gap-x-3 sm:gap-x-5 md:block md:space-y-5 lg:contents lg:space-y-0">
           {(CONTACT.phone || CONTACT.email) && (
           <div className="min-w-0">
-            <p className="text-lg font-bold">{t.footer.contact}</p>
-            <ul className="mt-3 space-y-2 text-sm lg:mt-4 lg:space-y-2.5 lg:text-base">
+            <p className="foot-head text-lg font-bold">Contact Us</p>
+            <ul className="mt-3 space-y-2.5 text-[13px] leading-5 sm:text-sm lg:mt-4 lg:text-[15px]">
               {CONTACT.phone && <li>
-                <a href={`tel:${CONTACT.phone.replace(/[^+\d]/g, "")}`} dir="ltr" className="inline-flex items-center gap-2 text-mute transition-colors hover:text-ink">
-                  <PhoneIcon />{CONTACT.phone}
+                <a href={`tel:${CONTACT.phone.replace(/[^+\d]/g, "")}`} dir="ltr" className="inline-flex items-start gap-2 text-mute transition-colors hover:text-ink">
+                  <span className="mt-0.5 shrink-0"><PhoneIcon /></span><span>{CONTACT.phone}</span>
                 </a>
               </li>}
               {CONTACT.email && <li>
-                <a href={`mailto:${CONTACT.email}`} dir="ltr" className="inline-flex items-center gap-2 break-all text-mute transition-colors hover:text-ink">
-                  <MailIcon />{CONTACT.email}
+                {/* If the column is narrow the address breaks cleanly before the @ (never in the middle of a word). */}
+                <a href={`mailto:${CONTACT.email}`} dir="ltr" className="inline-flex items-start gap-2 text-mute transition-colors hover:text-ink">
+                  <span className="mt-0.5 shrink-0"><MailIcon /></span>
+                  <span className="min-w-0 [overflow-wrap:anywhere]">{CONTACT.email.split("@")[0]}<wbr />{CONTACT.email.includes("@") ? `@${CONTACT.email.split("@")[1]}` : ""}</span>
                 </a>
               </li>}
             </ul>
@@ -91,7 +94,7 @@ export function Footer() {
           )}
           <div className="shrink-0">
             <p className="foot-head text-lg font-bold">{t.footer.follow}</p>
-            <div className="mt-3 flex gap-2 lg:mt-4 lg:gap-3">
+            <div className="mt-3 flex gap-1.5 sm:gap-2 lg:mt-4 lg:gap-3">
               {SOCIALS.map(({ key, label, Glyph, bg }) => (
                 <a
                   key={key}
@@ -101,7 +104,7 @@ export function Footer() {
                   aria-label={label}
                   title={label}
                   style={{ background: bg }}
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full shadow-soft transition duration-200 hover:-translate-y-0.5 hover:opacity-90 lg:h-11 lg:w-11"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full shadow-soft transition duration-200 hover:-translate-y-0.5 hover:opacity-90 sm:h-10 sm:w-10 lg:h-11 lg:w-11"
                 >
                   <Glyph />
                 </a>

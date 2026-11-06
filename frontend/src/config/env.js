@@ -9,10 +9,10 @@ export const SOCIAL = {
   instagram: import.meta.env.VITE_INSTAGRAM_URL || "https://www.instagram.com/athari_tv?stkn=bnpsd3dubmpveTA=",
   whatsapp: import.meta.env.VITE_WHATSAPP_URL || "https://whatsapp.com/channel/0029VbBjiQFAzNbr5kz9zq3b",
 };
-// Contact details shown in the footer. Set VITE_CONTACT_PHONE / VITE_CONTACT_EMAIL (Cloudflare Pages env vars);
-// anything left empty is simply not shown - there are no placeholder numbers or addresses.
+// Contact details shown in the footer ("Contact Us"). The defaults below are the real ones; VITE_CONTACT_PHONE /
+// VITE_CONTACT_EMAIL (Cloudflare Pages env vars) override them. An empty value is simply not shown.
 export const CONTACT = {
-  phone: (import.meta.env.VITE_CONTACT_PHONE || "").trim(),
-  email: (import.meta.env.VITE_CONTACT_EMAIL || "").trim(),
+  phone: (import.meta.env.VITE_CONTACT_PHONE || "+91 98042 23604").trim(),
+  email: (import.meta.env.VITE_CONTACT_EMAIL || "debatermuhammadrazasalafi@gmail.com").trim(),
 };
 export const BRAND = { name: "AthariTV", tagline: "Quran • Sunnah • Ahle Hadees" };
