@@ -46,7 +46,7 @@ export function Navbar() {
   const links = [
     { to: "/", label: t.nav.home, end: true },
     { to: "/aqaid", label: t.nav.aqaid },
-    { to: "/masail", label: t.nav.masail },
+    { to: "/masail", label: "Furu'i Masa'il" },
   ];
   // Drawer order: Home, Aqaid, Masail, Folders, Latest Posts, Live Sessions, Our Courses, About
   const drawerLinks = [
@@ -111,7 +111,7 @@ export function Navbar() {
 
               <div className="flex gap-5 pt-4 text-sm text-mute">
                 <Link to="/disclaimer" className="hover:text-ink">{t.nav.disclaimer}</Link>
-                <Link to="/privacy" className="hover:text-ink">{t.nav.privacy}</Link>
+                <Link to="/privacy" className="hover:text-ink">Privacy Policy</Link>
               </div>
 
               <div className="flex items-center gap-3 pt-5">

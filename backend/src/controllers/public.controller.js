@@ -182,12 +182,31 @@ export async function folders(request, env) {
 
   // ?pin=all puts the pinned folders first. One shared pin covers "View all folders" and the Aqaid / Masail pages.
   const pinKey = ["all", "section"].includes(url.searchParams.get("pin")) ? "pinAll" : null;
-  // ?q= keeps only folders whose name contains every typed word (accents / spelling variants normalised).
-  const words = normalizeForSearch(String(url.searchParams.get("q") || "").slice(0, 100)).split(/\s+/).filter(Boolean);
+  // ?q= keeps only folders whose name matches the typed words. Same forgiving rule as the home-page search (see search() below):
+  // the name contains the words, or merely SOUNDS like them, or is one letter away (Muaviya = Muwaviya = معاویہ).
+  const rawQ = String(url.searchParams.get("q") || "").slice(0, 100);
+  const words = normalizeForSearch(rawQ).split(/\s+/).filter(Boolean);
 
   const ctx = await loadPublicContext(config, { type });
   let roots = rootFolders(ctx, pinKey);
-  if (words.length) roots = roots.filter((f) => { const name = normalizeForSearch(String(f.title || "")); return words.every((w) => name.includes(w)); });
+  if (words.length) {
+    const parsed = parseSearchQuery(rawQ);
+    if (parsed.ok) {
+      const { tokens, normalized } = parsed;
+      const phonetic = phoneticQueryTokens(normalized);
+      const exactHit = (name) => {
+        const n = normalizeForSearch(String(name || ""));
+        return !!n && (n.includes(normalized) || tokens.every((t) => n.includes(t)));
+      };
+      const nameMatcher = makeMatcher(tokens);
+      const nameHit = (name) => exactHit(name) || phoneticNameMatch(normalizeForSearch(String(name || "")), phonetic) || nameMatcher.test(buildNameFields(String(name || "")));
+      // exact name matches first, then the ones that only sound alike (stable: the pinned / configured order is kept inside each group)
+      roots = roots.filter((f) => nameHit(f.title)).sort((a, b) => Number(exactHit(b.title)) - Number(exactHit(a.title)));
+    } else {
+      // a single letter is too short for fuzzy matching: plain "name contains it"
+      roots = roots.filter((f) => { const name = normalizeForSearch(String(f.title || "")); return words.every((w) => name.includes(w)); });
+    }
+  }
   const slice = roots.slice((page - 1) * limit, page * limit);
   return jsonSuccess({ folders: slice, total: roots.length, hasMore: page * limit < roots.length, page, limit }, { allowedOrigin: config.allowedOrigin, headers: LIST_CACHE });
 }
