@@ -41,11 +41,11 @@ export const SOCIALS = [
 
 export function Footer() {
   const { t } = useI18n();
-  const links = [["/", t.nav.home], ["/aqaid", t.nav.aqaid], ["/masail", t.nav.masail]];
-  const info = [["/about", t.nav.about], ["/disclaimer", t.nav.disclaimer], ["/privacy", t.nav.privacy]];
+  const links = [["/", t.nav.home], ["/aqaid", t.nav.aqaid], ["/masail", "Furu'i Masa'il"]];
+  const info = [["/about", t.nav.about], ["/disclaimer", t.nav.disclaimer], ["/privacy", "Privacy Policy"]];
   return (
     <footer className="bar-teal mt-20 border-t border-rule bg-footer">
-      <div className="container-page grid gap-10 py-14 md:grid-cols-[1fr_.8fr_.9fr_1.7fr] lg:grid-cols-[1.15fr_.7fr_.8fr_1.8fr_.9fr]">
+      <div className="container-page grid gap-10 py-14 md:grid-cols-[1fr_1fr_1fr_1.6fr] lg:grid-cols-[1fr_.85fr_.85fr_1.8fr_.9fr]">
         <div>
           <Link to="/" aria-label={BRAND.name} className="inline-block"><Logo size={36} badge /></Link>
           <p className="mt-5 max-w-sm text-base text-mute">{t.footer.about}</p>
