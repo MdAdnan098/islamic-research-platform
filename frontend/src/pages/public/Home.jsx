@@ -32,7 +32,7 @@ const LATEST_MAX_PAGES = 5; // 1 2 3 4 5 - older posts than that live under "Vie
 /** Centered numbered pager: 1 2 3 4 5. The active number is a small disc in the website button colour (--cta: maroon in Light, blue in Dark). */
 function PagerNumbers({ page, pages, onPage }) {
   return (
-    <nav className="mt-10 flex flex-wrap items-center justify-center gap-1.5" aria-label="Latest posts pages">
+    <nav className="mt-5 flex flex-wrap items-center justify-center gap-1" aria-label="Latest posts pages">
       {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
         <button
           key={n}
@@ -40,7 +40,7 @@ function PagerNumbers({ page, pages, onPage }) {
           onClick={() => onPage(n)}
           aria-label={`Page ${n}`}
           aria-current={n === page ? "page" : undefined}
-          className={`grid h-8 w-8 place-items-center rounded-full border text-[13px] font-semibold tabular-nums transition ${n === page ? "btn-cta border-transparent" : "border-rule text-ink hover:border-transparent hover:bg-[rgb(var(--cta))] hover:text-white"}`}
+          className={`grid h-6 w-6 place-items-center rounded-full border text-[11px] font-semibold leading-none tabular-nums transition ${n === page ? "btn-cta border-transparent" : "border-rule text-ink hover:border-transparent hover:bg-[rgb(var(--cta))] hover:text-white"}`}
         >
           {n}
         </button>
