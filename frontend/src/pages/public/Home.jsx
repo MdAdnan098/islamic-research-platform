@@ -117,8 +117,11 @@ export default function Home() {
       <FoldersCard folders={data?.folders} total={data?.foldersTotal} loading={loading} error={error} onRetry={reload} onChanged={reload} />
 
       <section className="container-page py-16 sm:py-20">
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex items-end justify-between gap-3 sm:gap-4">
           <SectionHeading title={t.home.latest} />
+          {latestAll.length > 0 && (
+            <p className="mb-2 shrink-0 text-[11px] tabular-nums text-mute sm:text-xs" dir="ltr">{Math.min(curPage * LATEST_PER_PAGE, latestAll.length)} of {latestAll.length}</p>
+          )}
           <Link to="/latest" className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium view-all transition hover:bg-btn hover:text-white">
             {t.home.viewAll} <Icon name="arrow" size={15} className="rtl:rotate-180" />
           </Link>
@@ -132,7 +135,7 @@ export default function Home() {
               <div key={curPage} className="grid animate-fade-up items-stretch gap-x-5 gap-y-10 sm:grid-cols-2">
                 {latestShown.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} showPath />)}
               </div>
-              {latestPages > 1 && <PagerNumbers page={curPage} pages={latestPages} onPage={setLatestPage} />}
+              <PagerNumbers page={curPage} pages={latestPages} onPage={setLatestPage} />
             </>
           )}
         </div>
