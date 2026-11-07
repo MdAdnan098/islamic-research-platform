@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../../i18n/index.jsx";
 import { publicApi } from "../../services/public.js";
@@ -22,6 +23,29 @@ function HeroCalligraphy() {
       <span style={{ bottom: "-6%", insetInlineEnd: "-4%", fontSize: "clamp(4rem, 13vw, 9rem)", transform: "rotate(-3deg)" }}>وَقُل رَّبِّ زِدْنِى عِلْمًا</span>
       <span style={{ top: "34%", insetInlineStart: "18%", fontSize: "clamp(3rem, 9vw, 6.5rem)", transform: "rotate(2deg)" }}>بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</span>
     </div>
+  );
+}
+
+const LATEST_PER_PAGE = 6; // posts shown at once on the homepage (newest on top)
+const LATEST_MAX_PAGES = 5; // 1 2 3 4 5 - older posts than that live under "View all"
+
+/** Centered numbered pager: 1 2 3 4 5 */
+function PagerNumbers({ page, pages, onPage }) {
+  return (
+    <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Latest posts pages">
+      {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onPage(n)}
+          aria-label={`Page ${n}`}
+          aria-current={n === page ? "page" : undefined}
+          className={`grid h-10 w-10 place-items-center rounded-full border text-sm font-semibold tabular-nums transition ${n === page ? "border-transparent bg-btn text-white" : "border-rule text-ink hover:bg-btn hover:text-white"}`}
+        >
+          {n}
+        </button>
+      ))}
+    </nav>
   );
 }
 
@@ -58,9 +82,14 @@ export default function Home() {
     []
   );
 
+  const [latestPage, setLatestPage] = useState(1);
   const [heroA, heroB] = t.hero.title.split(", ");
   const cats = data?.categories || [];
   const catById = Object.fromEntries(cats.map((c) => [c.id, c]));
+  const latestAll = data?.articles || [];
+  const latestPages = Math.min(LATEST_MAX_PAGES, Math.max(1, Math.ceil(latestAll.length / LATEST_PER_PAGE)));
+  const curPage = Math.min(latestPage, latestPages);
+  const latestShown = latestAll.slice((curPage - 1) * LATEST_PER_PAGE, curPage * LATEST_PER_PAGE);
 
   return (
     <>
@@ -98,9 +127,13 @@ export default function Home() {
           {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : data.articles.length === 0 ? (
             <EmptyState>{t.home.noPosts}</EmptyState>
           ) : (
-            <div className="grid items-stretch gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-              {data.articles.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} showPath />)}
-            </div>
+            <>
+              {/* Phones: one card per row, 6 posts. Laptop / desktop: two cards per row. Newest first. */}
+              <div key={curPage} className="grid animate-fade-up items-stretch gap-x-5 gap-y-10 sm:grid-cols-2">
+                {latestShown.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} showPath />)}
+              </div>
+              {latestPages > 1 && <PagerNumbers page={curPage} pages={latestPages} onPage={setLatestPage} />}
+            </>
           )}
         </div>
       </section>

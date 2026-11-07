@@ -22,8 +22,8 @@ import { buildNameFields, makeMatcher, normalizeForSearch, parseSearchQuery, pho
 import { enforceRateLimit } from "../middleware/rateLimit.js";
 import { isValidObjectIdString } from "../utils/validate.js";
 
-/** The homepage "Latest Posts" card count. Unchanged from the original site (5); the homepage asks for exactly this many. */
-const HOME_LATEST_LIMIT = 5;
+/** The homepage "Latest Posts" pool: 5 pages x 6 posts, newest first. The page shows 6 at a time with a 1-2-3-4-5 pager. */
+const HOME_LATEST_LIMIT = 30;
 /** Folders shown on the homepage "Folders" card (newest first; the rest live under View All). */
 const HOME_FOLDERS_LIMIT = 10;
 /** Short browser cache for list endpoints that change rarely (admin edits show up within ~30 s). */
