@@ -265,7 +265,7 @@ const SLIDE_MS = 3500;
  * with a finger in either direction. Autoplay pauses while touching and while the "Open YouTube?" dialog is open.
  * `sessions` is newest -> oldest and is laid out left to right in that order.
  */
-function MobileLiveCarousel({ sessions, now }) {
+function MobileLiveCarousel({ sessions, now, onCount }) {
   // While the latest session is still upcoming (countdown running) or live, it stays pinned: only that card is shown,
   // static, with no auto-slide and no swipe. The moment it ends it is simply the first card of the normal carousel.
   const pinned = sessions.length > 0 && viewState(sessions[0], now) !== "ended";
@@ -276,10 +276,10 @@ function MobileLiveCarousel({ sessions, now }) {
       </div>
     );
   }
-  return <SlidingLiveCarousel sessions={sessions} now={now} />;
+  return <SlidingLiveCarousel sessions={sessions} now={now} onCount={onCount} />;
 }
 
-function SlidingLiveCarousel({ sessions, now }) {
+function SlidingLiveCarousel({ sessions, now, onCount }) {
   const n = sessions.length;
   const [pos, setPos] = useState({ i: 0, anim: true });
   const [touching, setTouching] = useState(false);
@@ -290,6 +290,9 @@ function SlidingLiveCarousel({ sessions, now }) {
   const moved = useRef(false);
 
   useEffect(() => { setPos({ i: 0, anim: true }); }, [n]);
+  // Counter shown next to the section heading: "1 of 10", "2 of 10" ... and it starts again from 1 when the carousel wraps.
+  useEffect(() => { onCount?.(n >= 2 ? `${Math.min(pos.i, n - 1) + 1} of ${n}` : null); }, [pos.i, n, onCount]);
+  useEffect(() => () => onCount?.(null), [onCount]);
   useEffect(() => {
     if (n < 2 || touching || asking) return undefined;
     const id = setTimeout(() => {
@@ -364,12 +367,79 @@ function SlidingLiveCarousel({ sessions, now }) {
   );
 }
 
+const DESKTOP_PER = 3;          // cards visible at once
+const DESKTOP_SLIDE_MS = 5000;  // a little slower than the phone: three cards take longer to read
+
+/**
+ * Laptop / desktop view: three cards in a row. When there are more than three sessions the row slides by a full
+ * "page" (three cards) every few seconds - the last step is clamped so the row is never half empty - and then jumps
+ * back to the newest. Hovering (or keyboard focus inside) pauses it, and so does the "Open YouTube?" dialog.
+ * While the latest session is upcoming / live it stays pinned (static), exactly like on phones.
+ * The counter reports the last card currently in view: 3 of 10, 6 of 10, 9 of 10, 10 of 10, then 3 of 10 again.
+ */
+function DesktopLiveCarousel({ sessions, now, onCount }) {
+  const pinned = sessions.length > 0 && viewState(sessions[0], now) !== "ended";
+  if (pinned || sessions.length <= DESKTOP_PER) {
+    return (
+      <div className="grid grid-cols-3 items-stretch gap-5">
+        {sessions.slice(0, DESKTOP_PER).map((s) => (
+          <div key={s.id}><LiveSessionCompactCard session={s} now={now} /></div>
+        ))}
+      </div>
+    );
+  }
+  return <SlidingDesktopCarousel sessions={sessions} now={now} onCount={onCount} />;
+}
+
+function SlidingDesktopCarousel({ sessions, now, onCount }) {
+  const n = sessions.length;
+  const maxI = n - DESKTOP_PER; // leftmost card of the last page
+  const [pos, setPos] = useState({ i: 0, anim: true });
+  const [paused, setPaused] = useState(false);
+  const [asking, setAsking] = useState(false);
+
+  useEffect(() => { setPos({ i: 0, anim: true }); }, [n]);
+  useEffect(() => { onCount?.(`${Math.min(pos.i + DESKTOP_PER, n)} of ${n}`); }, [pos.i, n, onCount]);
+  useEffect(() => () => onCount?.(null), [onCount]);
+  useEffect(() => {
+    if (paused || asking) return undefined;
+    const id = setTimeout(() => {
+      setPos((p) => (p.i >= maxI ? { i: 0, anim: false } : { i: Math.min(p.i + DESKTOP_PER, maxI), anim: true }));
+    }, DESKTOP_SLIDE_MS);
+    return () => clearTimeout(id);
+  }, [pos, maxI, paused, asking]);
+
+  return (
+    <div
+      dir="ltr"
+      className="-mx-1 overflow-hidden px-1 py-1"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
+      <div
+        className={`flex items-stretch gap-5 ${pos.anim ? "transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none" : ""}`}
+        style={{ transform: `translateX(calc(${-pos.i} * (100% + 1.25rem) / ${DESKTOP_PER}))` }}
+      >
+        {sessions.map((s) => (
+          <div key={s.id} className="shrink-0" style={{ flexBasis: `calc((100% - 2.5rem) / ${DESKTOP_PER})` }}>
+            <LiveSessionCompactCard session={s} now={now} onConfirmChange={setAsking} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Home page section — loads independently so a failure here never blanks the rest of the page. */
 export function LiveSessionsSection() {
   const { data, error, loading, reload } = useAsync((signal) => publicApi.liveSessions({ limit: 12 }, signal), []);
   const needsTick = (data || []).some((s) => s.status === "scheduled");
   const now = useNow(needsTick);
   const ordered = useMemo(() => sortNewestFirst(data || []), [data]); // newest -> oldest
+  const [mobCount, setMobCount] = useState(null);   // "n of n" while the phone carousel slides
+  const [deskCount, setDeskCount] = useState(null);  // "n of n" while the desktop carousel slides
 
   // While the latest session is upcoming/live the carousel is pinned; re-check the server every 30s so that when the
   // admin ends it (or a new one is added) the page updates by itself, without a reload.
@@ -382,8 +452,14 @@ export function LiveSessionsSection() {
 
   return (
     <section className="container-page py-14 sm:py-20" aria-labelledby="live-heading">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex items-end justify-between gap-3 sm:gap-4">
         <SectionHeading title={<span id="live-heading">Live Sessions</span>} />
+        {(mobCount || deskCount) && (
+          <p className="mb-2 shrink-0 text-[11px] tabular-nums text-mute sm:text-xs" aria-live="off" dir="ltr">
+            {mobCount && <span className="md:hidden">{mobCount}</span>}
+            {deskCount && <span className="hidden md:inline">{deskCount}</span>}
+          </p>
+        )}
         <Link to="/live" className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium view-all transition hover:bg-btn hover:text-white">
           View all <Icon name="arrow" size={15} className="rtl:rotate-180" />
         </Link>
@@ -392,13 +468,9 @@ export function LiveSessionsSection() {
         {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : ordered.length === 0 ? <LiveEmpty /> : (
           <>
             {/* Phones: auto-sliding single card, latest first. */}
-            <div className="md:hidden"><MobileLiveCarousel sessions={ordered} now={now} /></div>
-            {/* Desktop: the three latest, newest on the left. */}
-            <div className="hidden items-stretch gap-5 md:grid md:grid-cols-3">
-              {ordered.slice(0, 3).map((s) => (
-                <div key={s.id}><LiveSessionCompactCard session={s} now={now} /></div>
-              ))}
-            </div>
+            <div className="md:hidden"><MobileLiveCarousel sessions={ordered} now={now} onCount={setMobCount} /></div>
+            {/* Desktop: three cards in a row, newest on the left; slides a page of three at a time when there are more. */}
+            <div className="hidden md:block"><DesktopLiveCarousel sessions={ordered} now={now} onCount={setDeskCount} /></div>
           </>
         )}
       </div>
