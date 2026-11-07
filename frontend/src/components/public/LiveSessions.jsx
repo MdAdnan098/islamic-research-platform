@@ -269,6 +269,8 @@ function MobileLiveCarousel({ sessions, now, onCount }) {
   // While the latest session is still upcoming (countdown running) or live, it stays pinned: only that card is shown,
   // static, with no auto-slide and no swipe. The moment it ends it is simply the first card of the normal carousel.
   const pinned = sessions.length > 0 && viewState(sessions[0], now) !== "ended";
+  // The counter stays visible while the card is pinned (live / upcoming): it just does not move.
+  useEffect(() => { if (pinned) onCount?.(sessions.length >= 2 ? `1 of ${sessions.length}` : null); }, [pinned, sessions.length, onCount]);
   if (pinned) {
     return (
       <div className="py-1">
@@ -374,11 +376,13 @@ const DESKTOP_SLIDE_MS = 5000;  // a little slower than the phone: three cards t
  * Laptop / desktop view: three cards in a row. When there are more than three sessions the row slides by a full
  * "page" (three cards) every few seconds - the last step is clamped so the row is never half empty - and then jumps
  * back to the newest. Hovering (or keyboard focus inside) pauses it, and so does the "Open YouTube?" dialog.
- * While the latest session is upcoming / live it stays pinned (static), exactly like on phones.
+ * While the latest session is upcoming / live it stays pinned (static), exactly like on phones - the counter is still shown.
  * The counter reports the last card currently in view: 3 of 10, 6 of 10, 9 of 10, 10 of 10, then 3 of 10 again.
  */
 function DesktopLiveCarousel({ sessions, now, onCount }) {
   const pinned = sessions.length > 0 && viewState(sessions[0], now) !== "ended";
+  // Pinned (latest session live / upcoming): the three newest stay in place, but the counter still shows "3 of N".
+  useEffect(() => { if (pinned && sessions.length > DESKTOP_PER) onCount?.(`${DESKTOP_PER} of ${sessions.length}`); }, [pinned, sessions.length, onCount]);
   if (pinned || sessions.length <= DESKTOP_PER) {
     return (
       <div className="grid grid-cols-3 items-stretch gap-5">
