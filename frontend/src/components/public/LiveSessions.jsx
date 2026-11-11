@@ -9,8 +9,6 @@ import { formatDateTime } from "../../lib/format.js";
 import { Icon } from "../ui/icons.jsx";
 import { CardSkeletons, EmptyState, ErrorState, SectionHeading } from "../ui/feedback.jsx";
 import { Sortable } from "../ui/Sortable.jsx";
-import { useIsAdmin } from "../../lib/adminHint.js";
-import { applyOrder, reorderApi } from "../../lib/reorder.js";
 
 /** Splits a duration in milliseconds into countdown units accurately. */
 function parts(ms) {
@@ -428,12 +426,10 @@ function SlidingDesktopCarousel({ sessions, now, onCount }) {
 
 /** Home page section — loads independently so a failure here never blanks the rest of the page. */
 export function LiveSessionsSection() {
-  const { data, error, loading, reload, setData } = useAsync((signal) => publicApi.liveSessions({ limit: 12 }, signal), []);
+  const { data, error, loading, reload } = useAsync((signal) => publicApi.liveSessions({ limit: 12 }, signal), []);
   const needsTick = (data || []).some((s) => s.status === "scheduled");
   const now = useNow(needsTick);
   const ordered = useMemo(() => data || [], [data]); // the server order: the admin's drag order, else newest first
-  const isAdmin = useIsAdmin();
-  const saveOrder = async (ids) => { await reorderApi.liveSessions(ids); setData((d) => (d ? applyOrder(d, ids) : d)); };
   const [mobCount, setMobCount] = useState(null);   // "n of n" while the phone carousel slides
   const [deskCount, setDeskCount] = useState(null);  // "n of n" while the desktop carousel slides
 
@@ -462,22 +458,12 @@ export function LiveSessionsSection() {
       </div>
       <div className="mt-8">
         {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : ordered.length === 0 ? <LiveEmpty /> : (
-          isAdmin ? (
-            <>
-              {/* Admin: a still grid instead of the slider, so a card can be held and slid to a new place. Visitors keep the slider. */}
-              <p className="mb-3 text-xs text-mute">Admin: card ko lamba dabakar (long press) slide karein; naya sequence visitors ko dikhega. Visitors ko slider dikhta hai.</p>
-              <Sortable items={ordered} className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3" itemClassName="h-full min-w-0" onReorder={saveOrder}>
-                {(s) => <LiveSessionCompactCard session={s} now={now} />}
-              </Sortable>
-            </>
-          ) : (
           <>
             {/* Phones: auto-sliding single card, latest first. */}
             <div className="md:hidden"><MobileLiveCarousel sessions={ordered} now={now} onCount={setMobCount} /></div>
             {/* Desktop: three cards in a row, newest on the left; slides a page of three at a time when there are more. */}
             <div className="hidden md:block"><DesktopLiveCarousel sessions={ordered} now={now} onCount={setDeskCount} /></div>
           </>
-          )
         )}
       </div>
     </section>
