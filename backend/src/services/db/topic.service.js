@@ -120,7 +120,8 @@ export async function createTopic(config, input) {
     title: data.title.trim(),
     slug: data.slug,
     status: "active",
-    ordering: typeof data.ordering === "number" ? data.ordering : 0,
+    // A new folder goes to the END of the manual order (the admin may have dragged folders into a sequence before).
+    ordering: typeof data.ordering === "number" ? data.ordering : await nextOrdering(collection),
     intro: typeof data.intro === "string" ? data.intro.trim() : null,
     coverKey: data.coverKey || null,
     createdAt: now,
@@ -139,6 +140,23 @@ export async function createTopic(config, input) {
     }
     throw err;
   }
+}
+
+async function nextOrdering(collection) {
+  const top = await collection.find({}).sort({ ordering: -1 }).limit(1).project({ ordering: 1 }).toArray();
+  return typeof top[0]?.ordering === "number" ? top[0].ordering + 1 : 0;
+}
+
+/**
+ * Admin drag-and-drop writes: `changes` = [{ id, set: { ordering | homeRank | pinHome | pinAll } }]. Only those four fields
+ * can be written here, and updatedAt is left alone.
+ */
+export async function applyFolderOrder(config, changes) {
+  invalidatePublicCache();
+  const collection = await getTopicsCollection(config);
+  const ops = changes.filter((c) => ObjectId.isValid(c.id)).map((c) => ({ updateOne: { filter: { _id: new ObjectId(c.id) }, update: { $set: c.set } } }));
+  if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+  return { changed: ops.length };
 }
 
 export async function findTopicById(config, id) {
@@ -323,6 +341,7 @@ export function toSafeTopic(topic) {
     slug: topic.slug,
     status: topic.status,
     ordering: topic.ordering,
+    homeRank: typeof topic.homeRank === "number" ? topic.homeRank : null,
     intro: topic.intro || null,
     coverKey: topic.coverKey || null,
     // Admin pins: shown first on the homepage (max 3), on "View all folders", and on the Aqaid / Masail pages.

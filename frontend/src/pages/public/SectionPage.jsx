@@ -8,6 +8,8 @@ import { ArticleCard } from "../../components/public/Cards.jsx";
 import { FolderSet, CountText, FolderSearchBox } from "../../components/public/FolderGroups.jsx";
 import { useIsAdmin } from "../../lib/adminHint.js";
 import { togglePin } from "../../lib/pins.js";
+import { Sortable } from "../../components/ui/Sortable.jsx";
+import { applyOrder, reorderApi } from "../../lib/reorder.js";
 
 /** /aqaid and /masail - two separate areas: root Folders, and General Articles (articles with no folder). */
 export default function SectionPage({ section }) {
@@ -49,7 +51,7 @@ export default function SectionPage({ section }) {
               <h2 className="font-display text-xl font-bold sm:text-2xl">{t.home.folders}</h2>
               {typeof total === "number" && <CountText shown={folders.items.length} total={total} t={t} />}
             </div>
-            <FolderSet folders={folders.items} t={t} hrefFor={(f) => `/${section}/${f.slug}`} pinFor={pinFor} />
+            <FolderSet folders={folders.items} t={t} hrefFor={(f) => `/${section}/${f.slug}`} pinFor={pinFor} onOrder={async (scope, ids) => { await reorderApi.folders(scope, ids); folders.setItems((items) => applyOrder(items, ids)); }} />
             {folders.error && <div className="mt-6"><ErrorState error={folders.error} onRetry={folders.retryMore} /></div>}
             {folders.hasMore && <div className="mt-8 text-center"><button onClick={folders.loadMore} disabled={folders.more} className="btn-outline">{folders.more ? t.common.loading : t.home.loadMore}</button></div>}
           </>
@@ -61,9 +63,14 @@ export default function SectionPage({ section }) {
           <>
             <hr className="mt-10 border-rule" />
             <h2 className="mt-6 font-display text-xl font-bold sm:text-2xl">{t.home.generalArticles}</h2>
-            <div className="mt-5 grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-              {general.items.map((a) => <ArticleCard key={a.id} article={a} />)}
-            </div>
+            <Sortable
+              items={general.items}
+              className="mt-5 grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3"
+              itemClassName="h-full min-w-0"
+              onReorder={async (ids) => { await reorderApi.articles(ids); general.setItems((items) => applyOrder(items, ids)); }}
+            >
+              {(a) => <ArticleCard article={a} />}
+            </Sortable>
             {general.hasMore && <div className="mt-8 text-center"><button onClick={general.loadMore} disabled={general.more} className="btn-outline">{general.more ? t.common.loading : t.home.loadMore}</button></div>}
           </>
         )}

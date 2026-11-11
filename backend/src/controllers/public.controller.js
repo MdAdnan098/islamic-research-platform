@@ -21,6 +21,7 @@ import { CATEGORY_TYPES } from "../utils/contentEnums.js";
 import { buildNameFields, makeMatcher, normalizeForSearch, parseSearchQuery, phoneticNameMatch, phoneticQueryTokens } from "../utils/searchText.js";
 import { enforceRateLimit } from "../middleware/rateLimit.js";
 import { isValidObjectIdString } from "../utils/validate.js";
+import { homeFolderCompare } from "../utils/reorder.js";
 
 /** The homepage "Latest Posts" pool: 5 pages x 6 posts, newest first. The page shows 6 at a time with a 1-2-3-4-5 pager. */
 const HOME_LATEST_LIMIT = 30;
@@ -124,7 +125,7 @@ export async function topics(request, env) {
 }
 
 /** Root (top-level) visible folders in the public order, with section label data. Used by the homepage and /folders. */
-function rootFolders(ctx, pinKey = null) {
+export function rootFolders(ctx, pinKey = null) {
   const catOrder = (t) => ctx.categoryById.get(String(t.categoryId))?.ordering ?? 0;
   // Pinned folders (pinKey = "pinHome" | "pinAll" | "pinSection") come first, in the order they were pinned.
   const pinTime = (t) => (pinKey && t[pinKey] ? new Date(t[pinKey]).getTime() : null);
@@ -156,7 +157,7 @@ async function homeFolders(config, ctx) {
   const pinnedIds = new Set(pinned.map((f) => f.id));
   const newest = all
     .filter((f) => !pinnedIds.has(f.id))
-    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0) || String(b.id).localeCompare(String(a.id)))
+    .sort(homeFolderCompare) // folders the admin never placed: newest first; dragged ones follow in the admin's order
     .slice(0, Math.max(HOME_FOLDERS_LIMIT - pinned.length, 0))
     .map((f) => ({ ...f, pinHome: false }));
   const direct = await countPublishedByTopic(config, ctx.categoryIds);

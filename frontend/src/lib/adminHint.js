@@ -9,17 +9,27 @@ const KEY = "fs_admin_hint";
 export const setAdminHint = (on) => { try { on ? localStorage.setItem(KEY, "1") : localStorage.removeItem(KEY); } catch { /* ignore */ } };
 const hasHint = () => { try { return localStorage.getItem(KEY) === "1"; } catch { return false; } };
 
+/** One shared check per page (every list on the page asks "am I an admin?"; only one request is made). Re-checked after 30 s. */
+let adminCheck = null;
+function checkAdmin() {
+  if (!adminCheck) {
+    adminCheck = import("../services/admin.js")
+      .then((m) => m.adminApi.me())
+      .then(() => true)
+      .catch((e) => { if (e?.name !== "AbortError") setAdminHint(false); return false; });
+    setTimeout(() => { adminCheck = null; }, 30_000);
+  }
+  return adminCheck;
+}
+
 /** true only when the hint exists AND the server confirms an active admin session. */
 export function useIsAdmin() {
   const [admin, setAdmin] = useState(false);
   useEffect(() => {
     if (!hasHint()) return undefined;
-    const ctrl = new AbortController();
-    import("../services/admin.js")
-      .then((m) => m.adminApi.me(ctrl.signal))
-      .then(() => !ctrl.signal.aborted && setAdmin(true))
-      .catch((e) => { if (e?.name !== "AbortError") { setAdminHint(false); setAdmin(false); } });
-    return () => ctrl.abort();
+    let alive = true;
+    checkAdmin().then((ok) => { if (alive) setAdmin(ok); });
+    return () => { alive = false; };
   }, []);
   return admin;
 }

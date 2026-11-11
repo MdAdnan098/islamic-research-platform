@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "./mongo.service.js";
 import { LIVE_STATUSES } from "../../utils/courseEnums.js";
 import { parseDateInput } from "../../utils/validate.courses.js";
+import { permuteKeys } from "../../utils/reorder.js";
 import { extractYouTubeVideoId, youtubeThumbnailUrl, youtubeWatchUrl } from "../../utils/youtube.js";
 
 /**
@@ -221,4 +222,31 @@ export function toSafeLiveSession(s) {
 export function toPublicLiveSession(s) {
   const { isPublished, syncEnabled, source, lastSyncedAt, ...rest } = toSafeLiveSession(s);
   return { ...rest, status: effectiveStatus(s) };
+}
+
+/** Default display key of a session = the time the public site always sorted it by (newest first), in ms. */
+const defaultKey = (s) => {
+  const t = new Date(s.scheduledStartTime || s.actualStartTime || s.createdAt).getTime();
+  return Number.isFinite(t) ? t : 0;
+};
+/** The key the public lists sort by: the admin's manual `sortKey` if the session was ever dragged, else its time. */
+export const displayKey = (s) => (typeof s.sortKey === "number" ? s.sortKey : defaultKey(s));
+
+/** Public order: highest display key first (so a dragged card stays where the admin put it), newest created first on ties. */
+export function sortForPublic(sessions) {
+  const made = (s) => { const t = new Date(s.createdAt).getTime(); return Number.isFinite(t) ? t : 0; };
+  return [...sessions].sort((a, b) => displayKey(b) - displayKey(a) || made(b) - made(a));
+}
+
+/** Admin drag-and-drop: `ids` = the published sessions in the new top-to-bottom order; they swap display keys among themselves. */
+export async function reorderLiveSessions(config, ids) {
+  const valid = [...new Set((ids || []).map(String))].filter((id) => ObjectId.isValid(id));
+  if (valid.length < 2 || valid.length > 200) throw fail("Reorder needs between 2 and 200 sessions.", 400, "INVALID_INPUT");
+  const c = await getCollection(config);
+  const docs = await c.find({ _id: { $in: valid.map((id) => new ObjectId(id)) }, isPublished: true }).toArray();
+  const keyById = new Map(docs.map((d) => [String(d._id), displayKey(d)]));
+  const next = permuteKeys(keyById, valid);
+  const ops = [...next].filter(([id, key]) => keyById.get(id) !== key).map(([id, key]) => ({ updateOne: { filter: { _id: new ObjectId(id) }, update: { $set: { sortKey: key } } } }));
+  if (ops.length) await c.bulkWrite(ops, { ordered: false });
+  return { reordered: next.size, changed: ops.length };
 }

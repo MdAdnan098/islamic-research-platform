@@ -5,11 +5,12 @@ import { useMeta } from "../../lib/useMeta.js";
 import { BackLink } from "../../components/ui/BackLink.jsx";
 import { CardSkeletons, ErrorState } from "../../components/ui/feedback.jsx";
 import { LiveEmpty, LiveSessionGrid } from "../../components/public/LiveSessions.jsx";
+import { applyOrder, reorderApi } from "../../lib/reorder.js";
 
 /** /live — every published live session and recording. */
 export default function LivePage() {
   useMeta({ title: "Live Sessions", description: "AthariTV ke live YouTube sessions ka schedule aur links." });
-  const { data, error, loading, reload } = useAsync((signal) => publicApi.liveSessions({ limit: 48 }, signal), []);
+  const { data, error, loading, reload, setData } = useAsync((signal) => publicApi.liveSessions({ limit: 48 }, signal), []);
   const now = useNow((data || []).some((s) => s.status === "scheduled"));
 
   return (
@@ -17,7 +18,7 @@ export default function LivePage() {
       <BackLink to="/">Home</BackLink>
       <h1 className="mt-4 text-3xl font-bold sm:text-4xl">Live Sessions</h1>
       <div className="mt-8">
-        {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : data.length === 0 ? <LiveEmpty /> : <LiveSessionGrid sessions={data} now={now} />}
+        {loading && !data ? <CardSkeletons /> : error && !data ? <ErrorState error={error} onRetry={reload} /> : data.length === 0 ? <LiveEmpty /> : <LiveSessionGrid sessions={data} now={now} onReorder={async (ids) => { await reorderApi.liveSessions(ids); setData((d) => (d ? applyOrder(d, ids) : d)); }} />}
       </div>
     </div>
   );

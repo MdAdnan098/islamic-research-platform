@@ -5,6 +5,7 @@ import { useAsync } from "../../lib/useAsync.js";
 import { useMeta } from "../../lib/useMeta.js";
 import { useIsAdmin } from "../../lib/adminHint.js";
 import { togglePin } from "../../lib/pins.js";
+import { reorderApi } from "../../lib/reorder.js";
 import { CardSkeletons, EmptyState, ErrorState } from "../../components/ui/feedback.jsx";
 import { folderPath } from "../../components/public/FoldersCard.jsx";
 import { FolderSet, ViewAllLink, ViewAllText, CountText, FolderSearchBox } from "../../components/public/FolderGroups.jsx";
@@ -35,6 +36,7 @@ export default function FoldersPage() {
 
   const reloadAll = () => { sections.reload(); found.reload(); };
   const pinFor = (f) => (isAdmin ? { active: f.pinAll, onToggle: async () => { if (await togglePin(f, "all")) reloadAll(); } } : undefined);
+  const saveOrder = async (scope, ids) => { await reorderApi.folders(scope, ids); reloadAll(); };
   const jump = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   const visible = (sections.data || []).filter((s) => s.folders.length);
 
@@ -52,7 +54,7 @@ export default function FoldersPage() {
             : (
               <>
                 <CountText shown={found.data.folders.length} total={found.data.total} t={t} />
-                <FolderSet folders={found.data.folders} t={t} hrefFor={folderPath} labelFor={(f) => t.nav[sectionKeyOf(f)]} pinFor={pinFor} />
+                <FolderSet folders={found.data.folders} t={t} hrefFor={folderPath} labelFor={(f) => t.nav[sectionKeyOf(f)]} pinFor={pinFor} onOrder={saveOrder} />
               </>
             )
         ) : sections.loading && !sections.data ? <CardSkeletons count={3} />
@@ -74,7 +76,7 @@ export default function FoldersPage() {
                     <ViewAllLink to={`/${SECTION_PATH[s.type]}`} t={t} />
                   </div>
                   <hr className="mt-3 border-rule" />
-                  <FolderSet folders={s.folders} t={t} hrefFor={folderPath} labelFor={(f) => t.nav[sectionKeyOf(f)]} pinFor={pinFor} />
+                  <FolderSet folders={s.folders} t={t} hrefFor={folderPath} labelFor={(f) => t.nav[sectionKeyOf(f)]} pinFor={pinFor} onOrder={saveOrder} />
                   <div className="mt-6 flex items-center justify-between gap-3">
                     <CountText shown={s.folders.length} total={s.total} t={t} />
                     <ViewAllText to={`/${SECTION_PATH[s.type]}`} t={t} />

@@ -63,7 +63,9 @@ export async function onRequest({ request, env, waitUntil }) {
     const hit = await cache.match(key);
     const age = hit ? Date.now() - Number(hit.headers.get("x-cached-at") || 0) : Infinity;
     const freshMs = url.pathname.startsWith("/api/public/live-sessions") ? FRESH_MS_LIVE : FRESH_MS;
-    if (hit && age < freshMs) return forBrowser(hit);
+    // A request sent with cache:"reload" (the admin right after dragging cards into a new order) skips the edge copy, so the new order shows at once.
+    const forceFresh = /no-cache|no-store/i.test(request.headers.get("cache-control") || "");
+    if (hit && !forceFresh && age < freshMs) return forBrowser(hit);
 
     let res = null;
     try {

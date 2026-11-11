@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Icon } from "../ui/icons.jsx";
 import { SearchGo } from "../ui/SearchGo.jsx";
 import { TopicCard } from "./Cards.jsx";
+import { Sortable } from "../ui/Sortable.jsx";
 
 const GRID = "grid grid-cols-3 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-4";
 
@@ -42,8 +43,9 @@ export function CountText({ shown, total, t, className = "" }) {
 /**
  * Folder cards of ONE section (or one search result list): the pinned ones first under a small "Pinned by admin" heading,
  * then the rest. hrefFor(folder) -> link, labelFor(folder) -> optional small label, pinFor(folder) -> admin pin props (or undefined).
+ * onOrder(scope, ids) (admin only) saves a drag-and-drop order: scope "pinAll" for the pinned group, "roots" for the rest.
  */
-export function FolderSet({ folders, t, hrefFor, labelFor, pinFor }) {
+export function FolderSet({ folders, t, hrefFor, labelFor, pinFor, onOrder }) {
   const pinned = folders.filter((f) => f.pinAll);
   const rest = folders.filter((f) => !f.pinAll);
   const card = (f) => <TopicCard key={f.id} topic={f} to={hrefFor(f)} label={labelFor?.(f)} pinned={f.pinAll} pin={pinFor?.(f)} />;
@@ -52,10 +54,10 @@ export function FolderSet({ folders, t, hrefFor, labelFor, pinFor }) {
       {pinned.length > 0 && (
         <div className="mt-5">
           <p className="flex items-center gap-1.5 text-sm font-semibold text-mute"><Icon name="pin" size={14} className="cta-text" />{t.home.pinnedByAdmin}</p>
-          <div className={`mt-3 ${GRID}`}>{pinned.map(card)}</div>
+          <Sortable items={pinned} className={`mt-3 ${GRID}`} itemClassName="min-w-0" onReorder={onOrder && ((ids) => onOrder("pinAll", ids))}>{card}</Sortable>
         </div>
       )}
-      {rest.length > 0 && <div className={`${pinned.length ? "mt-6 border-t border-rule pt-6" : "mt-5"} ${GRID}`}>{rest.map(card)}</div>}
+      {rest.length > 0 && <Sortable items={rest} className={`${pinned.length ? "mt-6 border-t border-rule pt-6" : "mt-5"} ${GRID}`} itemClassName="min-w-0" onReorder={onOrder && ((ids) => onOrder("roots", ids))}>{card}</Sortable>}
     </>
   );
 }

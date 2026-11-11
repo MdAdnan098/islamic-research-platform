@@ -17,6 +17,7 @@ import {
   toAdminArticle,
   saveArticleDraft,
   discardArticleDraft,
+  reorderArticles,
 } from "../services/db/article.service.js";
 import { findReferencesByIds, toSafeReference } from "../services/db/reference.service.js";
 
@@ -248,4 +249,14 @@ export async function discardDraft(request, env, ctx, params) {
   await requireAdmin(request, env);
   const article = await discardArticleDraft(config, params.id);
   return jsonSuccess({ article: toAdminArticle(article), references: await workingReferences(config, article) }, { allowedOrigin: config.allowedOrigin });
+}
+
+/** POST /api/admin/articles/reorder  { ids: [...] } - the admin dragged posts on the public site; ids are in the new order. */
+export async function reorder(request, env) {
+  const config = loadConfig(env);
+  await requireAdmin(request, env);
+  const body = await safeParseJson(request);
+  if (!body || !Array.isArray(body.ids)) throwInvalidInput("ids must be an array of post ids.");
+  const result = await reorderArticles(config, body.ids);
+  return jsonSuccess(result, { allowedOrigin: config.allowedOrigin });
 }

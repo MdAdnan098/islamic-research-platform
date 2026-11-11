@@ -25,16 +25,16 @@ export const publicApi = {
     cached(`topics:${categoryId}`, 60_000, () => request(`/api/public/topics${qs({ categoryId })}`, { signal }).then((d) => d.topics)),
   articles: (params, signal) => request(`/api/public/articles${qs(params)}`, { signal }).then((d) => d.articles),
   /** Paged listing: { articles, hasMore, page }. params: { type, general, topicId, page, limit } */
-  articlePage: (params, signal) => request(`/api/public/articles${qs(params)}`, { signal }),
+  articlePage: (params, signal) => request(`/api/public/articles${qs(params)}`, { signal, cache: listCache() }),
   /** Root folders (top level only): { folders, total, hasMore }. params: { type, page, limit } */
   folders: (params, signal) => request(`/api/public/folders${qs(params)}`, { signal, cache: listCache() }),
-  folder: (type, slug, signal) => request(`/api/public/folders/by-slug${qs({ type, slug })}`, { signal }),
+  folder: (type, slug, signal) => request(`/api/public/folders/by-slug${qs({ type, slug })}`, { signal, cache: listCache() }),
   /** One combined newest-first feed (any section / folder depth). { articles, hasMore, page } */
-  latest: (params, signal) => request(`/api/public/latest${qs(params)}`, { signal }),
+  latest: (params, signal) => request(`/api/public/latest${qs(params)}`, { signal, cache: listCache() }),
   search: (params, signal) => request(`/api/public/search${qs(params)}`, { signal }),
   article: (slug, signal) => request(`/api/public/articles/${encodeURIComponent(slug)}`, { signal }),
 
-  liveSessions: (params, signal) => request(`/api/public/live-sessions${qs(params)}`, { signal }).then((d) => d.sessions),
+  liveSessions: (params, signal) => request(`/api/public/live-sessions${qs(params)}`, { signal, cache: listCache() }).then((d) => d.sessions),
   courses: (signal) => request("/api/public/courses", { signal }).then((d) => d.courses),
   course: (slug, signal) => request(`/api/public/courses/${encodeURIComponent(slug)}`, { signal }).then((d) => d.course),
 

@@ -14,6 +14,8 @@ import { CoursesSection } from "../../components/public/CourseCards.jsx";
 import { HeroBanner } from "../../components/public/HeroBanner.jsx";
 import { HeroImage } from "../../components/public/HeroImage.jsx";
 import { HERO_VARIANT } from "../../config/hero.js";
+import { Sortable } from "../../components/ui/Sortable.jsx";
+import { applyOrder, reorderApi } from "../../lib/reorder.js";
 
 /** Faint calligraphy behind the hero — Quranic phrases, set in a calligraphic face, very low contrast. */
 function HeroCalligraphy() {
@@ -73,7 +75,7 @@ function ClassicHero({ t, heroA, heroB }) {
 export default function Home() {
   const { t } = useI18n();
   useMeta({});
-  const { data, error, loading, reload } = useAsync(
+  const { data, error, loading, reload, setData } = useAsync(
     // ONE request for the whole homepage: categories, latest posts (exactly HOME_LATEST_LIMIT, set server-side) and folders.
     async (signal) => {
       const h = await publicApi.home(signal);
@@ -132,9 +134,16 @@ export default function Home() {
           ) : (
             <>
               {/* Phones: one card per row, 6 posts. Laptop / desktop: two cards per row. Newest first. */}
-              <div key={curPage} className="grid animate-fade-up items-stretch gap-x-5 gap-y-10 sm:grid-cols-2">
-                {latestShown.map((a) => <ArticleCard key={a.id} article={a} category={catById[a.categoryId]} showPath />)}
-              </div>
+              {/* Admin only: hold a card and slide it to a new place; the order is saved for every visitor. */}
+              <Sortable
+                key={curPage}
+                items={latestShown}
+                className="grid animate-fade-up items-stretch gap-x-5 gap-y-10 sm:grid-cols-2"
+                itemClassName="h-full min-w-0"
+                onReorder={async (ids) => { await reorderApi.articles(ids); setData((d) => (d ? { ...d, articles: applyOrder(d.articles, ids) } : d)); }}
+              >
+                {(a) => <ArticleCard article={a} category={catById[a.categoryId]} showPath />}
+              </Sortable>
               <PagerNumbers page={curPage} pages={latestPages} onPage={setLatestPage} />
             </>
           )}

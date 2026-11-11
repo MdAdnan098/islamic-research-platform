@@ -9,7 +9,8 @@ import {
   listLiveSessions,
   updateLiveSession,
   deleteLiveSession,
-  sortForDisplay,
+  sortForPublic,
+  reorderLiveSessions,
   toSafeLiveSession,
   toPublicLiveSession,
 } from "../services/db/liveSession.service.js";
@@ -38,7 +39,7 @@ export async function publicList(request, env) {
   const limit = Math.min(Math.max(Number(url.searchParams.get("limit")) || 12, 1), 48);
 
   const all = await listLiveSessions(config, { isPublished: true, limit: 200 });
-  const sessions = sortForDisplay(all).slice(0, limit);
+  const sessions = sortForPublic(all).slice(0, limit); // the admin's drag order, else newest first
   return jsonSuccess({ sessions: sessions.map(toPublicLiveSession) }, { allowedOrigin: config.allowedOrigin });
 }
 
@@ -112,4 +113,14 @@ export async function adminSync(request, env) {
   await requireAdmin(request, env);
   const summary = await syncLiveSessions(config, { discover: true });
   return jsonSuccess({ sync: summary }, { allowedOrigin: config.allowedOrigin });
+}
+
+/** POST /api/admin/live-sessions/reorder  { ids: [...] } - cards dragged on the public site, ids in the new order. */
+export async function adminReorder(request, env) {
+  const config = loadConfig(env);
+  await requireAdmin(request, env);
+  const body = await safeParseJson(request);
+  if (!body || !Array.isArray(body.ids)) throw fail("ids must be an array of session ids.", 400, "INVALID_INPUT");
+  const result = await reorderLiveSessions(config, body.ids);
+  return jsonSuccess(result, { allowedOrigin: config.allowedOrigin });
 }

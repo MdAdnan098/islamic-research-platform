@@ -4,6 +4,8 @@ import { usePaged } from "../../lib/usePaged.js";
 import { useMeta } from "../../lib/useMeta.js";
 import { CardSkeletons, EmptyState, ErrorState } from "../../components/ui/feedback.jsx";
 import { ArticleCard } from "../../components/public/Cards.jsx";
+import { Sortable } from "../../components/ui/Sortable.jsx";
+import { applyOrder, reorderApi } from "../../lib/reorder.js";
 
 /** /latest - ONE combined newest-first feed of every published article (all sections, all folder depths), server-paged. */
 export default function LatestPage() {
@@ -22,9 +24,14 @@ export default function LatestPage() {
           <EmptyState>{t.home.noPosts}</EmptyState>
         ) : (
           <>
-            <div className="grid items-stretch gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-              {list.items.map((a) => <ArticleCard key={a.id} article={a} showPath />)}
-            </div>
+            <Sortable
+              items={list.items}
+              className="grid items-stretch gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3"
+              itemClassName="h-full min-w-0"
+              onReorder={async (ids) => { await reorderApi.articles(ids); list.setItems((items) => applyOrder(items, ids)); }}
+            >
+              {(a) => <ArticleCard article={a} showPath />}
+            </Sortable>
             {list.error && <div className="mt-6"><ErrorState error={list.error} onRetry={list.retryMore} /></div>}
             {list.hasMore && <div className="mt-8 text-center"><button onClick={list.loadMore} disabled={list.more} className="btn-outline">{list.more ? t.common.loading : t.home.loadMore}</button></div>}
           </>

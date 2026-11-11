@@ -7,6 +7,7 @@ import { validateArticleInput } from "../../utils/validate.js";
 import { buildArticleSearchFields, escapeRegex, matchPlan, normalizeForSearch } from "../../utils/searchText.js";
 import { HL_LANGS, isHighlightable, MARK_FIELDS, normalizeRanges, versionText } from "../../utils/highlights.js";
 import { resolveSourceLanguage } from "../../utils/blockAlign.js";
+import { permuteKeys } from "../../utils/reorder.js";
 
 /**
  * Data access for the `articles` collection.
@@ -396,6 +397,8 @@ export function toListArticle(article) {
 const LIST_PROJECTION = { blocks: 0, searchText: 0, searchTitle: 0, searchPhonetic: 0, searchPhoneticTitle: 0, searchKeys: 0, searchKeysTitle: 0, authorId: 0, references: 0, seoTitle: 0, seoDescription: 0 };
 // publishedAt is the publication timestamp; legacy articles without one fall back to createdAt.
 const SORT_AT = { $addFields: { sortAt: { $ifNull: ["$publishedAt", "$createdAt"] } } };
+// Display order of the public lists: the admin's manual `sortKey` when the post was ever dragged, else its publication time (ms).
+const SORT_KEY = { $addFields: { _k: { $ifNull: ["$sortKey", { $toLong: { $ifNull: ["$publishedAt", "$createdAt"] } }] } } };
 
 function clampPaging(page, limit, { maxLimit = 50, defaultLimit = 12 } = {}) {
   const safeLimit = Math.min(Math.max(Number.isInteger(limit) ? limit : defaultLimit, 1), maxLimit);
@@ -420,8 +423,8 @@ export async function listPublicArticles(config, { categoryIds, topicId, general
 
   const collection = await getArticlesCollection(config);
   const rows = await collection
-    // Sort right after the match so MongoDB can walk the {status, publishedAt, _id} index; project afterwards.
-    .aggregate([{ $match: match }, { $sort: { publishedAt: -1, _id: -1 } }, { $skip: paging.skip }, { $limit: paging.limit + 1 }, { $project: LIST_PROJECTION }])
+    // Project first (no post bodies in the sort), then order by the admin's manual position / publication time.
+    .aggregate([{ $match: match }, { $project: LIST_PROJECTION }, SORT_KEY, { $sort: { _k: -1, _id: -1 } }, { $skip: paging.skip }, { $limit: paging.limit + 1 }])
     .toArray();
 
   return { articles: rows.slice(0, paging.limit).map(toListArticle), hasMore: rows.length > paging.limit, page: paging.page, limit: paging.limit };
@@ -678,4 +681,26 @@ export async function discardArticleDraft(config, id) {
   const collection = await getArticlesCollection(config);
   await collection.updateOne({ _id: existing._id }, { $unset: { pending: "" } });
   return findArticleById(config, id);
+}
+
+/**
+ * Admin drag-and-drop on the public site. `ids` = the posts as the admin now sees them, top to bottom. They swap their
+ * display keys among themselves (see utils/reorder.js), so posts that were not on screen keep their places.
+ * Only published posts take part; updatedAt is NOT touched, so an editor who has the post open never gets a save conflict.
+ */
+export async function reorderArticles(config, ids) {
+  const valid = [...new Set((ids || []).map(String))].filter((id) => ObjectId.isValid(id));
+  if (valid.length < 2 || valid.length > 200) {
+    const err = new Error("Reorder needs between 2 and 200 posts.");
+    err.status = 400;
+    err.code = "INVALID_INPUT";
+    throw err;
+  }
+  const collection = await getArticlesCollection(config);
+  const docs = await collection.find({ _id: { $in: valid.map((id) => new ObjectId(id)) }, status: "published" }).project({ sortKey: 1, publishedAt: 1, createdAt: 1 }).toArray();
+  const keyById = new Map(docs.map((d) => [String(d._id), typeof d.sortKey === "number" ? d.sortKey : new Date(d.publishedAt || d.createdAt || 0).getTime()]));
+  const next = permuteKeys(keyById, valid);
+  const ops = [...next].filter(([id, key]) => keyById.get(id) !== key).map(([id, key]) => ({ updateOne: { filter: { _id: new ObjectId(id) }, update: { $set: { sortKey: key } } } }));
+  if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+  return { reordered: next.size, changed: ops.length };
 }

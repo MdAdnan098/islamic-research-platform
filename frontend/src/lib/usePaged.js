@@ -36,6 +36,8 @@ export function usePaged(fetchPage, deps = [], keyOf = (x) => x.id) {
   return {
     ...state,
     loadMore: () => !state.loading && !state.more && state.hasMore && load(state.page + 1, false),
+    /** Replaces the loaded rows without a request (used after the admin drags cards into a new order). */
+    setItems: (updater) => setState((s) => ({ ...s, items: typeof updater === "function" ? updater(s.items) : updater })),
     reload: () => setTick((t) => t + 1),
     retryMore: () => load(state.page + 1, false),
   };

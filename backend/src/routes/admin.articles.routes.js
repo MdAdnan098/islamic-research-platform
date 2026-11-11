@@ -3,6 +3,7 @@ import * as articleController from "../controllers/article.controller.js";
 export const routes = [
   ["GET", "/api/admin/articles", articleController.list],
   ["POST", "/api/admin/articles", articleController.create],
+  ["POST", "/api/admin/articles/reorder", articleController.reorder],
   ["GET", "/api/admin/articles/:id", articleController.getOne],
   ["PATCH", "/api/admin/articles/:id", articleController.update],
   ["PATCH", "/api/admin/articles/:id/highlights", articleController.highlights],

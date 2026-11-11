@@ -8,6 +8,8 @@ import { mediaUrl } from "../../lib/media.js";
 import { Text } from "../../components/ui/Text.jsx";
 import { CardSkeletons, ErrorState, NotFoundState } from "../../components/ui/feedback.jsx";
 import { ArticleCard, TopicCard } from "../../components/public/Cards.jsx";
+import { Sortable } from "../../components/ui/Sortable.jsx";
+import { applyOrder, reorderApi } from "../../lib/reorder.js";
 
 /** /aqaid/:slug, /masail/:slug - a root folder OR a subfolder: breadcrumb, intro, immediate subfolders, direct articles. */
 export default function TopicPage({ section }) {
@@ -15,7 +17,7 @@ export default function TopicPage({ section }) {
   const { t } = useI18n();
   const type = PATH_TYPE[section];
 
-  const { data, error, loading, reload } = useAsync((signal) => publicApi.folder(type, topicSlug, signal), [type, topicSlug]);
+  const { data, error, loading, reload, setData } = useAsync((signal) => publicApi.folder(type, topicSlug, signal), [type, topicSlug]);
   const topic = data?.folder;
   const arts = usePaged(async (page, signal) => {
     if (!topic) return { items: [], hasMore: false };
@@ -56,16 +58,28 @@ export default function TopicPage({ section }) {
         {children.length > 0 && (
           <>
             <h2 className="mt-10 font-display text-xl font-bold sm:text-2xl">{t.home.subfolders}</h2>
-            <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-4">
-              {children.map((c) => <TopicCard key={c.id} topic={c} to={`/${section}/${c.slug}`} />)}
-            </div>
+            <Sortable
+              items={children}
+              className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-4"
+              itemClassName="min-w-0"
+              onReorder={async (ids) => { await reorderApi.folders("children", ids, { parentId: topic.id }); setData((d) => (d ? { ...d, children: applyOrder(d.children, ids) } : d)); }}
+            >
+              {(c) => <TopicCard topic={c} to={`/${section}/${c.slug}`} />}
+            </Sortable>
           </>
         )}
 
         {arts.loading ? <div className="mt-8"><CardSkeletons count={2} /></div> : arts.error && !arts.items.length ? <div className="mt-8"><ErrorState error={arts.error} onRetry={arts.reload} /></div> : arts.items.length > 0 && (
           <>
             {children.length > 0 && <h2 className="mt-10 font-display text-xl font-bold sm:text-2xl">{t.topic.tahreer}</h2>}
-            <div className="mt-6 grid gap-x-5 gap-y-10 sm:grid-cols-2">{arts.items.map((a) => <ArticleCard key={a.id} article={a} />)}</div>
+            <Sortable
+              items={arts.items}
+              className="mt-6 grid gap-x-5 gap-y-10 sm:grid-cols-2"
+              itemClassName="h-full min-w-0"
+              onReorder={async (ids) => { await reorderApi.articles(ids); arts.setItems((items) => applyOrder(items, ids)); }}
+            >
+              {(a) => <ArticleCard article={a} />}
+            </Sortable>
             {arts.hasMore && <div className="mt-8 text-center"><button onClick={arts.loadMore} disabled={arts.more} className="btn-outline">{arts.more ? t.common.loading : t.home.loadMore}</button></div>}
           </>
         )}

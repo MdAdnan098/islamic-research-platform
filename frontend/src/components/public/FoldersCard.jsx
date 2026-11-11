@@ -8,6 +8,8 @@ import { SECTION_PATH } from "../../services/public.js";
 import { Icon } from "../ui/icons.jsx";
 import { Skeleton } from "../ui/feedback.jsx";
 import { Text } from "../ui/Text.jsx";
+import { Sortable } from "../ui/Sortable.jsx";
+import { reorderApi } from "../../lib/reorder.js";
 
 /** How many root folders the homepage list shows (the backend sends the newest 10; the rest are under "View All Folders"). */
 const HOME_FOLDERS = 10;
@@ -17,10 +19,10 @@ export const folderPath = (folder) => `/${SECTION_PATH[folder.section] || "aqaid
 const sectionLabel = (t, type) => (type === "aqeedah" ? t.nav.aqaid : type === "masail" ? t.nav.masail : null);
 
 /** One row: folder icon, full folder name (with a small Aqaid / Masail label under it), article count on the right. */
-function FolderRow({ folder, to, label, pin }) {
+function FolderRow({ folder, to, label, pin, className = "" }) {
   const count = folder.articleCount;
   return (
-    <Link to={to} className="group flex items-center gap-3 border-t border-rule px-1 py-3 transition first:border-t-0 hover:bg-tint/60">
+    <Link to={to} className={`group flex items-center gap-3 border-t border-rule px-1 py-3 transition first:border-t-0 hover:bg-tint/60 ${className}`}>
       <FolderIcon size={22} className="shrink-0" />
       <div className="min-w-0 flex-1">
         <Text as="h3" className="font-display text-sm font-bold leading-snug sm:text-base">{folder.title}</Text>
@@ -78,13 +80,15 @@ export function FoldersCard({ folders: list, total, loading, error, onRetry, onC
                     <p className="flex items-center gap-1.5 pb-0.5 pt-2 text-[11px] font-medium text-mute">
                       <Icon name="pin" size={12} className="cta-text" />{t.home.pinnedByAdmin}
                     </p>
-                    {pinned.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />)}
+                    <Sortable items={pinned} onReorder={async (ids) => { await reorderApi.folders("pinHome", ids); onChanged?.(); }}>
+                      {(f) => <FolderRow folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} className="!border-t" />}
+                    </Sortable>
                   </div>
                 </div>
               )}
-              <div className="px-3">
-                {rest.map((f) => <FolderRow key={f.id} folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />)}
-              </div>
+              <Sortable items={rest} className="px-3" itemClassName="border-t border-rule first:border-t-0" onReorder={async (ids) => { await reorderApi.folders("home", ids); onChanged?.(); }}>
+                {(f) => <FolderRow folder={f} to={folderPath(f)} label={sectionLabel(t, f.section)} pin={pinFor(f)} />}
+              </Sortable>
             </div>
           </div>
         )}
