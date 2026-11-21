@@ -4,6 +4,7 @@ import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { formatDate } from "../../lib/format.js";
 import { ErrorBox, Spinner, StatusBadge } from "../components/ui.jsx";
+import { Icon } from "../../components/ui/icons.jsx";
 import AdminSearch from "../components/AdminSearch.jsx";
 
 export default function Dashboard() {
@@ -35,7 +36,7 @@ export default function Dashboard() {
   return (
     <>
       <AdminSearch value={text} onChange={setText} placeholder="Published article search karein…" className="mx-auto mb-3 w-full max-w-xl" />
-      <div className="mb-6 flex justify-center"><Link to="/admin/articles/new" className="a-btn-primary btn-cta">🖋 Write article</Link></div>
+      <div className="mb-6 flex justify-center"><Link to="/admin/articles/new" className="a-btn-primary btn-cta"><Icon name="edit" size={15} />Write article</Link></div>
 
       {searching ? (
         found.loading && !found.data ? <Spinner /> : found.error && !found.data ? <ErrorBox error={found.error} onRetry={found.reload} /> : (
