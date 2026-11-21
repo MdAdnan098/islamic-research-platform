@@ -26,7 +26,6 @@ const clock = (sec) => {
   return h ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}` : `${m}:${String(s).padStart(2, "0")}`;
 };
 
-const GREEN = "#16a34a"; // play button + sliders (fixed green, same in every theme)
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const HIDE_AFTER = 2500; // ms of playing before the controls fade away
 
@@ -88,12 +87,12 @@ export function YouTubeBlock({ videoId, caption }) {
         height: "100%",
         playerVars: { autoplay: 1, controls: 0, fs: 0, rel: 0, modestbranding: 1, playsinline: 1, iv_load_policy: 3, disablekb: 1, cc_load_policy: 0 },
         events: {
-          onReady: (e) => { if (dead) return; setReady(true); setDur(e.target.getDuration() || 0); setVol(e.target.getVolume?.() ?? 100); setMuted(!!e.target.isMuted?.()); e.target.playVideo(); },
+          onReady: (e) => { if (dead) return; setReady(true); setDur(e.target.getDuration() || 0); setVol(e.target.getVolume?.() ?? 100); setMuted(!!e.target.isMuted?.()); try { e.target.unloadModule("captions"); e.target.unloadModule("cc"); } catch { /* ignore */ } e.target.playVideo(); },
           onStateChange: (e) => {
             if (dead) return;
             if (e.data === 0) { e.target.seekTo(0, true); e.target.pauseVideo(); setPlaying(false); return; } // ended: back to the start (no "more videos" screen)
             setPlaying(e.data === 1 || e.data === 3);
-            if (e.data === 1) setDur(e.target.getDuration() || 0);
+            if (e.data === 1) { setDur(e.target.getDuration() || 0); try { e.target.unloadModule("captions"); e.target.unloadModule("cc"); } catch { /* ignore */ } }
           },
           onError: () => { if (!dead) setFailed(true); },
         },
@@ -172,7 +171,7 @@ export function YouTubeBlock({ videoId, caption }) {
                 ? <span className="rounded bg-black/70 px-3 py-1.5 text-sm text-white">Video load nahi ho paya</span>
                 : active
                   ? <span className="rounded bg-black/60 px-3 py-1.5 text-sm text-white">Loading…</span>
-                  : <span className="grid h-11 w-11 place-items-center rounded-full text-white shadow-lg transition group-hover:scale-105" style={{ background: GREEN }}><PlayIcon size={22} /></span>}
+                  : <span className="grid h-11 w-11 place-items-center rounded-full text-white shadow-lg transition group-hover:scale-105 btn-cta"><PlayIcon size={22} /></span>}
             </span>
           </button>
         )}
@@ -184,7 +183,7 @@ export function YouTubeBlock({ videoId, caption }) {
 
             <div className={`pointer-events-none absolute inset-0 z-20 grid place-items-center transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}>
               <button type="button" onClick={toggle} aria-label={playing ? "Pause" : "Play"} tabIndex={visible ? 0 : -1}
-                className={`grid h-11 w-11 place-items-center rounded-full text-white shadow-lg transition active:scale-95 ${visible ? "pointer-events-auto" : ""}`} style={{ background: GREEN }}>
+                className={`grid h-11 w-11 place-items-center rounded-full text-white shadow-lg transition active:scale-95 btn-cta ${visible ? "pointer-events-auto" : ""}`}>
                 {playing ? <PauseIcon size={22} /> : <PlayIcon size={22} />}
               </button>
             </div>
@@ -204,7 +203,7 @@ export function YouTubeBlock({ videoId, caption }) {
                       <p className="px-3 pb-1 text-[11px] uppercase tracking-wide text-white/60">Speed</p>
                       {SPEEDS.map((r) => (
                         <button key={r} type="button" onClick={() => pickRate(r)} className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-start hover:bg-white/10">
-                          <span>{r === 1 ? "Normal" : `${r}x`}</span>{rate === r && <span style={{ color: GREEN }}>✓</span>}
+                          <span>{r === 1 ? "Normal" : `${r}x`}</span>{rate === r && <span>✓</span>}
                         </button>
                       ))}
                     </div>
