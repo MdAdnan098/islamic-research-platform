@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Divider } from "../../components/article/Divider.jsx";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
@@ -511,9 +512,7 @@ export default function ArticleComposer() {
 
       {/* Settings: below the live page, after a divider, above the footer. */}
       <section id="post-settings" dir="ltr" className="container-article scroll-mt-24 pb-16 pt-6 font-sans text-ink" aria-label="Post settings">
-        <div className="my-8 flex items-center gap-4 text-gold" aria-hidden="true">
-          <span className="h-px flex-1 bg-rule" /><span className="text-xs">◆</span><span className="h-px flex-1 bg-rule" />
-        </div>
+        <Divider className="my-8" />
         <h2 className="text-lg font-semibold">Post settings</h2>
         <div className="mb-4" />
 
@@ -536,7 +535,7 @@ export default function ArticleComposer() {
               </select>
               <button type="button" className="a-btn mt-2 !py-1" onClick={() => setAddFolder(true)} disabled={!cats.data?.length}><Icon name="plus" size={14} />Add Folder</button>
               {topicsRes.error ? <span className="mt-1 block text-xs text-ad-danger">Topics load nahi hue. Page refresh karke dekhein.</span>
-                : topicsRes.data && topicOptions.length === 0 ? <span className="mt-1 block text-xs text-ad-mute">Is category mein abhi koi topic nahi hai. Add Folder se banayein.</span>
+                : topicsRes.data && topicOptions.length === 0 ? null
                 : <span className="mt-1 block text-xs text-ad-mute">Article publish hone par is topic ke andar dikhega.</span>}
             </Field>
           </div>

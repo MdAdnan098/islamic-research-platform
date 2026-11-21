@@ -132,7 +132,7 @@ export function Fields({ block, set }) {
 export const MENU_GROUPS = [
   { title: "Text", types: ["heading", "text", "quote", "divider"] },
   { title: "Reference", types: ["reference"] },
-  { title: "Media", types: ["image", "scan", "pdf", "video"] },
+  { title: "Media", types: ["image", "pdf", "video"] },
 ];
 
 function AddMenu({ onAdd, label = "Add block" }) {

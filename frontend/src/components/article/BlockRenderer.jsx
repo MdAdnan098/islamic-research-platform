@@ -9,6 +9,7 @@ import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
 import { YouTubeBlock } from "./YouTubeBlock.jsx";
+import { Divider } from "./Divider.jsx";
 import { spanOf, blockNumbers } from "../../lib/groups.js";
 import { BLOCK_META } from "../../lib/blocks.js";
 
@@ -262,9 +263,7 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
             return inline || edit || sel ? <GroupHeader n={blockNo.get(b.id) || 1} onDelete={sel && b.id ? () => sel.askDelete(b.id) : undefined} /> : null;
           case "divider":
             return (
-              <div key={key} className="my-10 flex items-center gap-4 text-gold" aria-hidden="true">
-                <span className="h-px flex-1 bg-rule" /><span className="text-xs">◆</span><span className="h-px flex-1 bg-rule" />
-              </div>
+              <Divider key={key} />
             );
           default:
             return null;

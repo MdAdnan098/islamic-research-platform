@@ -172,7 +172,7 @@ export default function ArticleEditor() {
               </select>
               <button type="button" className="a-btn mt-2 !py-1" onClick={() => setAddFolder(true)} disabled={!cats.data?.length}><Icon name="plus" size={14} />Add Folder</button>
               {topicsRes.error ? <span className="mt-1 block text-xs text-ad-danger">Topics load nahi hue. Page refresh karke dekhein.</span>
-                : topicsRes.data && topicOptions.length === 0 ? <span className="mt-1 block text-xs text-ad-mute">Is category mein abhi koi topic nahi hai. Pehle Topics page mein topic banayein.</span>
+                : topicsRes.data && topicOptions.length === 0 ? null
                 : <span className="mt-1 block text-xs text-ad-mute">Article publish hone par is topic ke andar dikhega. Latest Posts mein har published article aata hai.</span>}
             </Field>
           </div>
