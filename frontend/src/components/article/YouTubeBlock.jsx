@@ -172,7 +172,7 @@ export function YouTubeBlock({ videoId, caption }) {
                 ? <span className="rounded bg-black/70 px-3 py-1.5 text-sm text-white">Video load nahi ho paya</span>
                 : active
                   ? <span className="rounded bg-black/60 px-3 py-1.5 text-sm text-white">Loading…</span>
-                  : <span className="grid h-16 w-16 place-items-center rounded-full text-white shadow-lg transition group-hover:scale-105" style={{ background: GREEN }}><PlayIcon size={30} /></span>}
+                  : <span className="grid h-11 w-11 place-items-center rounded-full text-white shadow-lg transition group-hover:scale-105" style={{ background: GREEN }}><PlayIcon size={22} /></span>}
             </span>
           </button>
         )}
@@ -184,19 +184,19 @@ export function YouTubeBlock({ videoId, caption }) {
 
             <div className={`pointer-events-none absolute inset-0 z-20 grid place-items-center transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}>
               <button type="button" onClick={toggle} aria-label={playing ? "Pause" : "Play"} tabIndex={visible ? 0 : -1}
-                className={`grid h-16 w-16 place-items-center rounded-full text-white shadow-lg transition active:scale-95 ${visible ? "pointer-events-auto" : ""}`} style={{ background: GREEN }}>
-                {playing ? <PauseIcon size={30} /> : <PlayIcon size={30} />}
+                className={`grid h-11 w-11 place-items-center rounded-full text-white shadow-lg transition active:scale-95 ${visible ? "pointer-events-auto" : ""}`} style={{ background: GREEN }}>
+                {playing ? <PauseIcon size={22} /> : <PlayIcon size={22} />}
               </button>
             </div>
 
             <div className={`absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-3 pb-2 pt-8 text-white transition-opacity duration-200 ${visible ? "opacity-100" : "pointer-events-none opacity-0"}`}>
               <input type="range" min={0} max={Math.max(dur, 1)} step={1} value={Math.min(cur, Math.max(dur, 1))} onChange={move} onPointerUp={release} onKeyUp={release} aria-label="Seek"
-                className="block h-1.5 w-full cursor-pointer" style={{ accentColor: GREEN }} />
+                className="block h-1.5 w-full cursor-pointer" style={{ accentColor: "#fff" }} />
               <div className="mt-1 flex items-center gap-2 text-xs sm:gap-3">
                 <span className="shrink-0 tabular-nums">{clock(cur)} / {clock(dur)}</span>
                 <span className="flex-1" />
                 <button type="button" onClick={toggleMute} aria-label={muted || vol === 0 ? "Unmute" : "Mute"} className="grid h-8 w-8 shrink-0 place-items-center"><VolIcon muted={muted || vol === 0} /></button>
-                <input type="range" min={0} max={100} step={1} value={muted ? 0 : vol} onChange={setVolume} aria-label="Volume" className="hidden h-1 w-16 cursor-pointer sm:block" style={{ accentColor: GREEN }} />
+                <input type="range" min={0} max={100} step={1} value={muted ? 0 : vol} onChange={setVolume} aria-label="Volume" className="hidden h-1 w-16 cursor-pointer sm:block" style={{ accentColor: "#fff" }} />
                 <div className="relative">
                   <button type="button" onClick={() => { setMenu((m) => !m); wake(); }} aria-label="Speed" aria-expanded={menu} className="grid h-8 w-8 shrink-0 place-items-center"><GearIcon /></button>
                   {menu && (
