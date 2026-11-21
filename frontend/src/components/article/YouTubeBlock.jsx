@@ -26,7 +26,8 @@ const clock = (sec) => {
   return h ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}` : `${m}:${String(s).padStart(2, "0")}`;
 };
 
-const PLAY_BLUE = "#3399CC"; // the site's dark-mode button colour, used in light and dark mode alike
+const PLAY_RED = "#FF2D2D"; // bright red with a white ring + shadow: stands out on any thumbnail, light or dark mode
+const PLAY_STYLE = { background: PLAY_RED, border: "2px solid #fff", boxShadow: "0 2px 10px rgba(0,0,0,.55)" };
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const HIDE_AFTER = 2500; // ms of playing before the controls fade away
 
@@ -172,7 +173,7 @@ export function YouTubeBlock({ videoId, caption }) {
                 ? <span className="rounded bg-black/70 px-3 py-1.5 text-sm text-white">Video load nahi ho paya</span>
                 : active
                   ? <span className="rounded bg-black/60 px-3 py-1.5 text-sm text-white">Loading…</span>
-                  : <span className="grid h-11 w-11 place-items-center rounded-full text-white shadow-lg transition group-hover:scale-105" style={{ background: PLAY_BLUE }}><PlayIcon size={22} /></span>}
+                  : <span className="grid h-11 w-11 place-items-center rounded-full text-white transition group-hover:scale-105" style={PLAY_STYLE}><PlayIcon size={22} /></span>}
             </span>
           </button>
         )}
@@ -184,7 +185,7 @@ export function YouTubeBlock({ videoId, caption }) {
 
             <div className={`pointer-events-none absolute inset-0 z-20 grid place-items-center transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}>
               <button type="button" onClick={toggle} aria-label={playing ? "Pause" : "Play"} tabIndex={visible ? 0 : -1}
-                className={`grid h-11 w-11 place-items-center rounded-full text-white shadow-lg transition active:scale-95 ${visible ? "pointer-events-auto" : ""}`} style={{ background: PLAY_BLUE }}>
+                className={`grid h-11 w-11 place-items-center rounded-full text-white transition active:scale-95 ${visible ? "pointer-events-auto" : ""}`} style={PLAY_STYLE}>
                 {playing ? <PauseIcon size={22} /> : <PlayIcon size={22} />}
               </button>
             </div>
