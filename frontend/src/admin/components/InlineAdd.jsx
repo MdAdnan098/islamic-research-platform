@@ -109,11 +109,7 @@ function BlockFrame({ initial, onInsert, onDone, onCancel, backupKey, restored }
           <span className="rounded-full bg-accent px-2.5 py-0.5 text-on-accent">{grouped ? "Block" : "Naya block"}</span>
           {restored && <span className="rounded-full bg-rule/50 px-2 py-0.5 text-mute">pichla adhura likha hua wapas aaya</span>}
         </div>
-        <p className="-mt-1 text-xs text-mute">{grouped ? "Is Block ke andar heading, paragraph, quote, reference, image ya scan jitni chahiye jodein, phir Save dabayein." : "Ye ek naya block hai. Iske andar heading, paragraph, reference ya image jitni chahiye jodein, phir Save dabayein."}</p>
 
-        {items.length === 0 && !menu && (
-          <p className="rounded-lg border border-dashed border-rule px-3 py-4 text-center text-sm text-mute">Block abhi khali hai. Neeche "Add" se pehli cheez jodein.</p>
-        )}
 
         {items.map((it, i) => (
           <section key={it.id} className="rounded-lg border border-rule bg-paper">

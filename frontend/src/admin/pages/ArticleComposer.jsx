@@ -415,7 +415,7 @@ export default function ArticleComposer() {
         className="block w-full resize-none overflow-hidden border-0 border-b-2 border-dashed border-rule bg-transparent px-0 py-1 font-display text-3xl font-semibold leading-[1.25] text-ink outline-none transition-colors placeholder:text-mute/50 focus:border-accent sm:text-5xl"
         dir="auto"
         autoFocus={!routeId}
-        placeholder="Post ka heading yahan likhein"
+        placeholder="Heading"
         value={titleShown}
         onChange={(e) => {
           if (onTrTitle) { updateExtra({ titleTr: { ...extra.titleTr, [contentLang]: e.target.value } }, false); return; }
@@ -425,7 +425,6 @@ export default function ArticleComposer() {
         onBlur={onTitleBlur}
         aria-label="Heading"
       />
-      {!title.trim() && <p className="mt-2 text-xs text-mute">Pehle heading likhein, phir neeche <b>+ Add</b> se paragraph, image ya reference jodein.</p>}
     </div>
   );
 
@@ -516,7 +515,7 @@ export default function ArticleComposer() {
           <span className="h-px flex-1 bg-rule" /><span className="text-xs">◆</span><span className="h-px flex-1 bg-rule" />
         </div>
         <h2 className="text-lg font-semibold">Post settings</h2>
-        <p className="mb-4 mt-1 text-xs text-mute">{id ? "Yahan jo badlega wo post ke saath save ho jayega." : "Post pehli baar save hote hi ye settings lag jayengi."}</p>
+        <div className="mb-4" />
 
         <div className="space-y-4">
           <div className="a-card space-y-3 p-4">
