@@ -39,7 +39,7 @@ export function AdminLayout() {
       <div className="space-y-1 border-t border-ad-rule p-3">
         <Link to="/" target="_blank" className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ad-mute hover:bg-ad-bg"><Icon name="external" size={16} />View site</Link>
         <div className="flex items-center gap-1 px-1 py-1"><ThemeSwitcher showLabel /><LanguageDropdown up align="start" /></div>
-        <button onClick={async () => { await logout(); nav("/admin/login"); toast("Logout successful"); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ad-mute hover:bg-ad-bg"><Icon name="logout" size={16} />Sign out</button>
+        <button onClick={async () => { await logout(); nav("/admin/login"); toast("Logout successful"); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ad-mute hover:bg-ad-bg"><Icon name="logout" size={16} />Log out</button>
         <p className="truncate px-3 pt-1 text-xs text-ad-mute/80">{admin?.username}</p>
       </div>
     </div>

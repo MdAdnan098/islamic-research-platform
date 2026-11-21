@@ -34,7 +34,8 @@ export default function Dashboard() {
 
   return (
     <>
-      <AdminSearch value={text} onChange={setText} placeholder="Published article search karein…" className="mx-auto mb-6 w-full max-w-xl" />
+      <AdminSearch value={text} onChange={setText} placeholder="Published article search karein…" className="mx-auto mb-3 w-full max-w-xl" />
+      <div className="mb-6 flex justify-center"><Link to="/admin/articles/new" className="a-btn-primary btn-cta">🖋 Write article</Link></div>
 
       {searching ? (
         found.loading && !found.data ? <Spinner /> : found.error && !found.data ? <ErrorBox error={found.error} onRetry={found.reload} /> : (
@@ -45,13 +46,14 @@ export default function Dashboard() {
         )
       ) : loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : (
         <>
+          {data.drafts.length > 0 && (<>
           <h2 className="mb-2 text-lg font-bold">Drafts</h2>
           <div className="a-card divide-y divide-ad-rule overflow-hidden">
-            {data.drafts.length === 0 && <p className="p-6 text-center text-sm text-ad-mute">Koi draft nahi hai.</p>}
             {data.drafts.map((a, i) => row(a, i === 0 && <span className="font-semibold text-ad-ink">Last edited</span>))}
             {data.draftTotal > data.drafts.length && <Link to="/admin/articles" className="block px-4 py-2 text-center text-xs text-ad-mute hover:bg-ad-bg">Saare {data.draftTotal} drafts Articles page par dekhein →</Link>}
           </div>
-          <h2 className="mb-2 mt-6 text-lg font-bold">Recently published</h2>
+          </>)}
+          <h2 className={`mb-2 text-lg font-bold ${data.drafts.length > 0 ? "mt-6" : ""}`}>Recently published</h2>
           <div className="a-card divide-y divide-ad-rule overflow-hidden">
             {data.published.length === 0 && <p className="p-6 text-center text-sm text-ad-mute">Abhi koi article publish nahi hua.</p>}
             {data.published.map((a) => row(a, <StatusBadge status={a.status} />))}

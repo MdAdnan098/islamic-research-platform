@@ -8,8 +8,8 @@ import { LogoMark } from "../../components/brand/Logo.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
 
 const MODES = {
-  register: { title: "Create admin account", sub: "Needs the admin secret key", btn: "Create account", busy: "Creating…", ok: "Account created. You can sign in now." },
-  reset: { title: "Reset password", sub: "Use the admin secret key to set a new password", btn: "Set new password", busy: "Saving…", ok: "Password updated. You can sign in now." },
+  register: { title: "Create admin account", sub: "Needs the admin secret key", btn: "Create account", busy: "Creating…", ok: "Account created. You can log in now." },
+  reset: { title: "Reset password", sub: "Use the admin secret key to set a new password", btn: "Set new password", busy: "Saving…", ok: "Password updated. You can log in now." },
 };
 
 function Field({ id, label, type, ...p }) {
@@ -63,7 +63,7 @@ export default function AdminAccess({ mode }) {
         <Field id="pw" label={mode === "reset" ? "New password" : "Password"} type="password" autoComplete="new-password" minLength={12} value={f.password} onChange={set("password")} />
         <Field id="cf" label="Confirm password" type="password" autoComplete="new-password" value={f.confirm} onChange={set("confirm")} />
         <button className="a-btn-primary w-full !py-2.5" disabled={busy || done}>{busy ? m.busy : m.btn}</button>
-        <p className="text-center text-sm"><Link to="/admin/login" className="text-ad-brand hover:underline">Back to sign in</Link></p>
+        <p className="text-center text-sm"><Link to="/admin/login" className="text-ad-brand hover:underline">Back to log in</Link></p>
       </form>
     </div></AdminShell>
   );

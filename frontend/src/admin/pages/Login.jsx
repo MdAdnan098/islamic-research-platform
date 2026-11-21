@@ -25,7 +25,7 @@ export default function Login() {
         <div className="a-card w-full max-w-sm space-y-4 p-7 text-center">
           <h1 className="text-xl font-bold">Aap pehle se signed in hain</h1>
           <button type="button" className="a-btn-primary btn-cta w-full !py-2.5" onClick={() => nav(from, { replace: true })}>Go to Dashboard</button>
-          <button type="button" className="a-btn w-full !py-2.5" onClick={async () => { await logout(); toast("Logout successful"); }}>Sign out</button>
+          <button type="button" className="a-btn w-full !py-2.5" onClick={async () => { await logout(); toast("Logout successful"); }}>Log out</button>
         </div>
       </div></AdminShell>
     );
@@ -33,7 +33,7 @@ export default function Login() {
 
   const typed = (key) => (e) => { lastInput.current = Date.now(); setF((s) => ({ ...s, [key]: e.target.value })); };
 
-  // Signs in ONLY when the admin presses the "Sign in" button (no Enter-key or form submit).
+  // Logs in ONLY when the admin presses the "Log in" button (no Enter-key or form submit).
   // Browser autofill / password-manager "auto sign-in" submit the form or click the button programmatically
   // (untrusted events) - those are ignored, so autofill fills the fields but never logs in by itself.
   async function submit(e) {
@@ -52,7 +52,7 @@ export default function Login() {
   return (
     <AdminShell><HomeLink /><div className="grid min-h-screen place-items-center p-4">
       <form onSubmit={(e) => e.preventDefault()} className="a-card w-full max-w-sm space-y-4 p-7">
-        <div className="flex flex-col items-center gap-2 pb-2"><LogoMark size={46} /><h1 className="text-xl font-bold">Admin sign in</h1><p className="text-xs text-ad-mute">AthariTV content management</p></div>
+        <div className="flex flex-col items-center gap-2 pb-2"><LogoMark size={46} /><h1 className="text-xl font-bold">Admin log in</h1><p className="text-xs text-ad-mute">AthariTV content management</p></div>
         <div><label className="a-label" htmlFor="un">Username</label><input id="un" type="text" autoComplete="username" autoCapitalize="none" required className="a-input" value={f.username} onChange={typed("username")} /></div>
         <div>
           <label className="a-label" htmlFor="pw">Password</label>
@@ -61,7 +61,7 @@ export default function Login() {
             <button type="button" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? "Hide password" : "Show password"} aria-pressed={showPw} title={showPw ? "Hide" : "Show"} className="absolute inset-y-0 right-0 grid w-10 place-items-center text-ad-mute hover:text-ad-ink"><Icon name={showPw ? "eyeOff" : "eye"} size={16} /></button>
           </div>
         </div>
-        <button type="button" onClick={submit} className="a-btn-primary btn-cta w-full !py-2.5" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+        <button type="button" onClick={submit} className="a-btn-primary btn-cta w-full !py-2.5" disabled={busy}>{busy ? "Logging in…" : "Log in"}</button>
         <p className="text-center text-sm"><Link to="/admin/forgot-password" className="brand-text hover:underline">Forgot password?</Link></p>
       </form>
     </div></AdminShell>

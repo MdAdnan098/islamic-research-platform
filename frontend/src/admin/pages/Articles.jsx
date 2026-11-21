@@ -90,7 +90,7 @@ export default function Articles() {
   return (
     <>
       <PageHeader title="Articles" desc="Research articles, in every language.">
-        <Link to="/admin/articles/new" className="a-btn-primary btn-cta"><Icon name="plus" size={15} />New article</Link>
+        <Link to="/admin/articles/new" className="a-btn-primary btn-cta">🖋 Write article</Link>
       </PageHeader>
       <AdminSearch value={f.q} onChange={(v) => setF((s0) => ({ ...s0, q: v }))} placeholder="Article search karein (kisi bhi zubaan mein)…" className="mx-auto mb-5 w-full max-w-xl" />
 
