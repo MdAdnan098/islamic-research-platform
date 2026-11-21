@@ -34,6 +34,7 @@ function problem(b, onVersion, lang) {
   if (b.type === "reference" && !b.referenceId) return "Reference chuniye.";
   if (b.type === "image" && !b.key) return "Pehle image upload karein.";
   if (b.type === "pdf" && !b.key) return "Pehle PDF upload karein.";
+  if (b.type === "video" && !b.videoId) return "Sahi YouTube link daalein.";
   if (b.type === "scan" && !(b.pages || []).some((p) => p.key)) return "Kam se kam ek page upload karein.";
   return "";
 }

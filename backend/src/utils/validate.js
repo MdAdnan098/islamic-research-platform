@@ -122,6 +122,10 @@ export function validateBlocks(blocks, language) {
     if (hlError) errors.push(err(`blocks[${index}]: ${hlError}`, "INVALID_BLOCK"));
     const alignError = validateBlockAlign(block);
     if (alignError) errors.push(err(`blocks[${index}]: ${alignError}`, "INVALID_BLOCK"));
+    if (block.type === "video") {
+      if (typeof block.videoId !== "string" || !/^[A-Za-z0-9_-]{11}$/.test(block.videoId)) errors.push(err(`blocks[${index}].videoId must be a valid 11-character YouTube video id.`, "INVALID_BLOCK"));
+      if (block.url !== undefined && (typeof block.url !== "string" || block.url.length > 300)) errors.push(err(`blocks[${index}].url must be a string up to 300 characters.`, "INVALID_BLOCK"));
+    }
   });
 
   return errors;

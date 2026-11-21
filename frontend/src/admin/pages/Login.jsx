@@ -25,7 +25,7 @@ export default function Login() {
         <div className="a-card w-full max-w-sm space-y-4 p-7 text-center">
           <h1 className="text-xl font-bold">Aap pehle se signed in hain</h1>
           <button type="button" className="a-btn-primary btn-cta w-full !py-2.5" onClick={() => nav(from, { replace: true })}>Go to Dashboard</button>
-          <button type="button" className="a-btn w-full !py-2.5" onClick={() => logout()}>Sign out</button>
+          <button type="button" className="a-btn w-full !py-2.5" onClick={async () => { await logout(); toast("Logout successful"); }}>Sign out</button>
         </div>
       </div></AdminShell>
     );
@@ -40,7 +40,7 @@ export default function Login() {
     e.preventDefault();
     if (!e.isTrusted) return;
     // A click right after the fields changed is the browser's autofill auto-submitting, not the admin.
-    if (Date.now() - lastInput.current < 800) return toast("Details bhar gayi hain. Ab Sign in button dabayein.");
+    if (Date.now() - lastInput.current < 800) return; // silently ignored: no popup
     if (inFlight.current) return; // one request at a time, even on a double click / double Enter
     inFlight.current = true;
     setBusy(true);

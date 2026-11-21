@@ -4,13 +4,13 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { Icon } from "../components/ui/icons.jsx";
 import { BrandName, LogoMark } from "../components/brand/Logo.jsx";
 import { LanguageDropdown, ThemeSwitcher } from "../components/public/Controls.jsx";
+import { useToast } from "./components/ui.jsx";
 
 const NAV = [
   ["/admin", "Dashboard", "grid", true],
   ["/admin/articles", "Articles", "doc"],
   ["/admin/categories", "Categories", "folder"],
   ["/admin/topics", "Folders", "tag"],
-  ["/admin/references", "References", "book"],
   ["/admin/live-sessions", "Live Sessions", "monitor"],
   ["/admin/courses", "Courses", "cap"],
   ["/admin/enrollments", "Enrollments", "check"],
@@ -24,6 +24,7 @@ export function AdminShell({ children }) {
 export function AdminLayout() {
   const { admin, logout } = useAuth();
   const nav = useNavigate();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
 
   const link = ({ isActive }) => `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-semibold transition ${isActive ? "btn-cta" : "text-ad-mute hover:bg-ad-bg hover:text-ad-ink"}`;
@@ -38,7 +39,7 @@ export function AdminLayout() {
       <div className="space-y-1 border-t border-ad-rule p-3">
         <Link to="/" target="_blank" className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ad-mute hover:bg-ad-bg"><Icon name="external" size={16} />View site</Link>
         <div className="flex items-center gap-1 px-1 py-1"><ThemeSwitcher showLabel /><LanguageDropdown up align="start" /></div>
-        <button onClick={async () => { await logout(); nav("/admin/login"); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ad-mute hover:bg-ad-bg"><Icon name="logout" size={16} />Sign out</button>
+        <button onClick={async () => { await logout(); nav("/admin/login"); toast("Logout successful"); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ad-mute hover:bg-ad-bg"><Icon name="logout" size={16} />Sign out</button>
         <p className="truncate px-3 pt-1 text-xs text-ad-mute/80">{admin?.username}</p>
       </div>
     </div>

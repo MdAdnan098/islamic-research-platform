@@ -8,6 +8,7 @@ import { Icon } from "../../components/ui/icons.jsx";
 import { Field, IconBtn, Modal, moveItem } from "./ui.jsx";
 import { MediaUploader } from "./MediaUploader.jsx";
 import { ReferenceForm } from "./ReferenceForm.jsx";
+import { youtubeId } from "../../lib/youtube.js";
 
 const T = ({ value, onChange, rows = 5, ...p }) => (
   <textarea className="a-input" dir="auto" rows={rows} value={value || ""} onChange={(e) => onChange(e.target.value)} {...p} />
@@ -110,6 +111,16 @@ export function Fields({ block, set }) {
           <Field label="Title"><I value={block.title} onChange={(title) => set({ title })} /></Field>
         </div>
       );
+    case "video":
+      return (
+        <div className="space-y-2">
+          <Field label="YouTube link" hint="YouTube ka link paste karein (watch, youtu.be, shorts ya live).">
+            <I value={block.url} onChange={(url) => set({ url, videoId: youtubeId(url) })} placeholder="https://www.youtube.com/watch?v=…" inputMode="url" />
+          </Field>
+          {block.url && !block.videoId && <p className="text-xs text-ad-danger">Ye sahi YouTube link nahi lag raha.</p>}
+          {block.videoId && <p className="text-xs text-ad-ok">Link sahi hai — post mein yahin video chalega.</p>}
+        </div>
+      );
     case "group":
       return <p className="text-sm text-ad-mute">Block ki shuruaat. Iske neeche wale items (jo is Block ke andar hain) is Block ke saath hi hilte aur delete hote hain.</p>;
     default:
@@ -121,7 +132,7 @@ export function Fields({ block, set }) {
 export const MENU_GROUPS = [
   { title: "Text", types: ["heading", "text", "quote", "divider"] },
   { title: "Reference", types: ["reference"] },
-  { title: "Media", types: ["image", "scan", "pdf"] },
+  { title: "Media", types: ["image", "scan", "pdf", "video"] },
 ];
 
 function AddMenu({ onAdd, label = "Add block" }) {

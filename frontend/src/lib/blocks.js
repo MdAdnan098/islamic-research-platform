@@ -9,6 +9,7 @@
  *  image     { key, caption, alt }
  *  scan      { pages: [{ key, caption }], caption }
  *  pdf       { key, title }
+ *  video     { url, videoId }          a YouTube video played right inside the post
  *  divider   {}
  *  group     {}   a "Block": marks where it starts; the blocks after it with gid = this id belong to it (see lib/groups.js)
  */
@@ -20,6 +21,7 @@ export const BLOCK_META = {
   image: { label: "Image", icon: "▣" },
   scan: { label: "Book Scan", icon: "▤" },
   pdf: { label: "PDF Document", icon: "⎘" },
+  video: { label: "YouTube Video", icon: "▶" },
   divider: { label: "Divider", icon: "—" },
   group: { label: "Block", icon: "▢" },
 };
@@ -35,6 +37,7 @@ const DEFAULTS = {
   image: { key: "", caption: "", alt: "" },
   scan: { pages: [], caption: "" },
   pdf: { key: "", title: "" },
+  video: { url: "", videoId: "" },
   divider: {},
   group: {},
 };

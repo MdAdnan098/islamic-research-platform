@@ -10,7 +10,6 @@ import ArticleEditor from "./pages/ArticleEditor.jsx";
 import ArticleComposer from "./pages/ArticleComposer.jsx";
 import Categories from "./pages/Categories.jsx";
 import Topics from "./pages/Topics.jsx";
-import References from "./pages/References.jsx";
 import Preview from "./pages/Preview.jsx";
 import LiveSessions from "./pages/LiveSessions.jsx";
 import Courses from "./pages/Courses.jsx";
@@ -46,7 +45,6 @@ export default function AdminApp() {
               <Route path="articles/:id/form" element={<ArticleEditor />} />
               <Route path="categories" element={<Categories />} />
               <Route path="topics" element={<Topics />} />
-              <Route path="references" element={<References />} />
               <Route path="live-sessions" element={<LiveSessions />} />
               <Route path="courses" element={<Courses />} />
               <Route path="enrollments" element={<Enrollments />} />

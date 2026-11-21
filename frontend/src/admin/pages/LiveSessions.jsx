@@ -79,18 +79,8 @@ export default function LiveSessions() {
   const toast = useToast();
   const [confirm, dialog] = useConfirm();
   const [editing, setEditing] = useState(null);
-  const [syncing, setSyncing] = useState(false);
   const { data, error, loading, reload } = useAsync((s) => adminApi.liveSessions.listWithMeta({}, s), []);
 
-  async function sync() {
-    setSyncing(true);
-    try {
-      const r = await adminApi.liveSessions.sync();
-      toast(!r.configured ? "YouTube sync is not configured yet (no API key)." : r.error ? `Sync problem: ${r.error}` : `Synced — ${r.refreshed} updated, ${r.created} new.`, r.error ? "error" : undefined);
-      reload();
-    } catch (e) { toast(e.message, "error"); }
-    setSyncing(false);
-  }
   async function togglePublish(s) {
     try { await adminApi.liveSessions.update(s.id, { isPublished: !s.isPublished }); reload(); } catch (e) { toast(e.message, "error"); }
   }
@@ -102,13 +92,10 @@ export default function LiveSessions() {
   const sessions = data?.sessions || [];
   return (
     <>
-      <PageHeader title="Live Sessions" desc="YouTube live streams shown on the homepage. Only links and details are stored — never the video.">
-        <button className="a-btn" onClick={sync} disabled={syncing}>{syncing ? "Syncing…" : "Sync from YouTube"}</button>
+      <PageHeader title="Live Sessions">
+        <button type="button" className="a-btn" disabled title="Abhi band hai">Sync from YouTube</button>
         <button className="a-btn-primary btn-cta" onClick={() => setEditing("new")}><Icon name="plus" size={15} />Add live session</button>
       </PageHeader>
-      {data && !data.youtubeSync?.configured && (
-        <p className="a-card mb-4 px-4 py-3 text-sm text-ad-mute">Automatic YouTube sync is off (no API key configured). Add sessions manually here.</p>
-      )}
       {loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : sessions.length === 0 ? <Empty>No live sessions yet.</Empty> : (
         <ul className="a-card divide-y divide-ad-rule">
           {sessions.map((s) => (
@@ -119,7 +106,6 @@ export default function LiveSessions() {
               </div>
               <StatusBadge status={s.status} />
               <button className={`${s.isPublished ? "a-btn" : "a-btn-primary"} btn-cta`} onClick={() => togglePublish(s)}>{s.isPublished ? "Unpublish" : "Publish"}</button>
-              <a className="a-btn !px-2" href={s.youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label="Open on YouTube"><Icon name="external" size={15} /></a>
               <IconBtn icon="edit" label="Edit" onClick={() => setEditing(s)} />
               <IconBtn icon="trash" label="Delete" danger onClick={() => remove(s)} />
             </li>

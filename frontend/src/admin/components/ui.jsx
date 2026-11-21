@@ -51,7 +51,7 @@ export function ToastProvider({ children }) {
   const push = useCallback((message, type = "ok") => {
     const id = Math.random();
     setItems((l) => [...l, { id, message, type }]);
-    setTimeout(() => dismiss(id), 4000);
+    setTimeout(() => dismiss(id), type === "error" ? 2600 : 1100); // a quick confirmation: seen, then gone
   }, [dismiss]);
   return (
     <ToastCtx.Provider value={push}>

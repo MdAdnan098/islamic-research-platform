@@ -6,6 +6,7 @@ import { formatDate } from "../../lib/format.js";
 import { cloneBlocks } from "../../lib/blocks.js";
 import { Empty, ErrorBox, IconBtn, PageHeader, Spinner, StatusBadge, useConfirm, useToast } from "../components/ui.jsx";
 import { Icon } from "../../components/ui/icons.jsx";
+import AdminSearch from "../components/AdminSearch.jsx";
 
 const LIMIT = 20;
 const LANGS = { ur: "اردو", en: "Roman", hi: "हिन्दी", ar: "العربية" };
@@ -14,8 +15,7 @@ export default function Articles() {
   const toast = useToast();
   const nav = useNavigate();
   const [confirm, dialog] = useConfirm();
-  const [f, setF] = useState({ status: "", language: "", categoryId: "", q: "", page: 1 });
-  const set = (p) => setF((s) => ({ ...s, page: 1, ...p }));
+  const [f, setF] = useState({ q: "", page: 1 });
   // The search runs on the server (all articles, not just this page); it waits a moment after the last key.
   const [q, setQ] = useState("");
   useEffect(() => {
@@ -24,13 +24,13 @@ export default function Articles() {
   }, [f.q]);
   const cats = useAsync((s) => adminApi.categories.list({}, s), []);
   const { data, error, loading, reload } = useAsync(
-    (s) => adminApi.articles.listPage({ status: f.status, language: f.language, categoryId: f.categoryId, q, page: f.page, limit: LIMIT }, s),
-    [f.status, f.language, f.categoryId, q, f.page]
+    (s) => adminApi.articles.listPage({ q, page: f.page, limit: LIMIT }, s),
+    [q, f.page]
   );
   // Bulk select: ids ticked on THIS page (cleared whenever the list changes: filter, search or page).
   const [picked, setPicked] = useState(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
-  useEffect(() => { setPicked(new Set()); }, [f.status, f.language, f.categoryId, q, f.page]);
+  useEffect(() => { setPicked(new Set()); }, [q, f.page]);
   const catName = (id) => cats.data?.find((c) => c.id === id)?.name || "—";
   const rows = data?.articles || [];
   const toggle = (id) => setPicked((s0) => { const n = new Set(s0); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -92,13 +92,7 @@ export default function Articles() {
       <PageHeader title="Articles" desc="Research articles, in every language.">
         <Link to="/admin/articles/new" className="a-btn-primary btn-cta"><Icon name="plus" size={15} />New article</Link>
       </PageHeader>
-
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <input className="a-input" dir="auto" placeholder="Search title (saare articles mein)…" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} />
-        <select className="a-input" value={f.status} onChange={(e) => set({ status: e.target.value })}><option value="">All statuses</option><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select>
-        <select className="a-input" value={f.language} onChange={(e) => set({ language: e.target.value })}><option value="">All languages</option>{Object.entries(LANGS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-        <select className="a-input" value={f.categoryId} onChange={(e) => set({ categoryId: e.target.value })}><option value="">All categories</option>{(cats.data || []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
-      </div>
+      <AdminSearch value={f.q} onChange={(v) => setF((s0) => ({ ...s0, q: v }))} placeholder="Article search karein (kisi bhi zubaan mein)…" className="mx-auto mb-5 w-full max-w-xl" />
 
       {pickedRows.length > 0 && (
         <div className="sticky top-0 z-20 mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-ad-rule bg-ad-bg/95 px-3 py-2 text-sm backdrop-blur" role="toolbar" aria-label="Bulk actions">
@@ -110,37 +104,38 @@ export default function Articles() {
           {bulkBusy && <span className="w-full text-xs text-ad-mute">Ho raha hai… thodi der ruko, page band mat karna.</span>}
         </div>
       )}
-      {rows.length > 0 && (
-        <label className="mb-2 flex w-fit items-center gap-2 text-xs text-ad-mute">
-          <input type="checkbox" className="h-4 w-4" checked={allPicked} disabled={bulkBusy} onChange={() => setPicked(allPicked ? new Set() : new Set(rows.map((a) => a.id)))} />
-          Is page ke saare select karein
-        </label>
-      )}
       {loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : rows.length === 0 ? <Empty>No articles found.</Empty> : (
-        <ul className="a-card divide-y divide-ad-rule">
-          {rows.map((a) => (
-            <li key={a.id} className="flex min-h-[68px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-              <input type="checkbox" className="h-4 w-4 shrink-0" aria-label={`Select ${a.title}`} checked={picked.has(a.id)} disabled={bulkBusy} onChange={() => toggle(a.id)} />
-              <div className="min-w-0 flex-1 basis-64">
-                <Link to={`/admin/articles/${a.id}`} dir="auto" className="block truncate text-sm font-medium hover:text-ad-brand">{a.title}</Link>
-                <p className="text-xs text-ad-mute">{catName(a.categoryId)} · {LANGS[a.language]} · {formatDate(a.updatedAt)}</p>
-              </div>
-              <StatusBadge status={a.status} />
-              <div className="flex">
-                <IconBtn icon="edit" label="Edit" onClick={() => nav(`/admin/articles/${a.id}`)} />
-                <IconBtn icon="eye" label="Preview" onClick={() => window.open(`/admin/preview/${a.id}`, "_blank")} />
-                <IconBtn icon="copy" label="Duplicate" onClick={() => duplicate(a)} />
-                {a.status === "published" ? <button className="a-btn btn-cta ms-1 !py-1" onClick={() => act(a, "unpublish")}>Unpublish</button> : a.status !== "archived" ? <button className="a-btn-primary btn-cta ms-1 !py-1" onClick={() => act(a, "publish")}>Publish</button> : <button className="a-btn btn-cta ms-1 !py-1" onClick={() => act(a, "publish")}>Restore & publish</button>}
-                <IconBtn icon="trash" label="Delete" danger onClick={() => remove(a)} />
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="a-card overflow-hidden">
+          <div className="flex items-center justify-between gap-3 border-b border-ad-rule px-4 py-2 text-xs text-ad-mute">
+            <label className="flex w-fit items-center gap-2">
+              <input type="checkbox" className="h-4 w-4" checked={allPicked} disabled={bulkBusy} onChange={() => setPicked(allPicked ? new Set() : new Set(rows.map((a) => a.id)))} />
+              Select all articles
+            </label>
+            {data && <span className="shrink-0 text-[11px] opacity-70">{data.total} articles</span>}
+          </div>
+          <ul className="divide-y divide-ad-rule">
+            {rows.map((a) => (
+              <li key={a.id} className="flex min-h-[68px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+                <input type="checkbox" className="h-4 w-4 shrink-0" aria-label={`Select ${a.title}`} checked={picked.has(a.id)} disabled={bulkBusy} onChange={() => toggle(a.id)} />
+                <div className="min-w-0 flex-1 basis-64">
+                  <Link to={`/admin/articles/${a.id}`} dir="auto" className="block truncate text-sm font-medium hover:text-ad-brand">{a.title}</Link>
+                  <p className="text-xs text-ad-mute">{catName(a.categoryId)} · {LANGS[a.language]} · {formatDate(a.updatedAt)}</p>
+                </div>
+                <StatusBadge status={a.status} />
+                <div className="flex items-center gap-3">
+                  <IconBtn icon="copy" label="Duplicate" onClick={() => duplicate(a)} />
+                  {a.status === "published" ? <button className="a-btn btn-cta !px-2.5 !py-0.5 !text-xs" onClick={() => act(a, "unpublish")}>Unpublish</button> : a.status !== "archived" ? <button className="a-btn-primary btn-cta !px-2.5 !py-0.5 !text-xs" onClick={() => act(a, "publish")}>Publish</button> : <button className="a-btn btn-cta !px-2.5 !py-0.5 !text-xs" onClick={() => act(a, "publish")}>Restore & publish</button>}
+                  <span className="ms-3"><IconBtn icon="trash" label="Delete" danger onClick={() => remove(a)} /></span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
-      <div className="mt-4 flex items-center justify-between text-sm text-ad-mute">
-        <button className="a-btn" disabled={f.page === 1} onClick={() => setF({ ...f, page: f.page - 1 })}>← Previous</button>
-        <span>Page {f.page} of {pages}{data ? ` · ${data.total} articles` : ""}</span>
-        <button className="a-btn" disabled={f.page >= pages} onClick={() => setF({ ...f, page: f.page + 1 })}>Next →</button>
+      <div className="mt-4 grid grid-cols-3 items-center text-xs text-ad-mute">
+        <button className="a-btn justify-self-start !px-2.5 !py-1 !text-xs" disabled={f.page === 1} onClick={() => setF({ ...f, page: f.page - 1 })}>← Previous</button>
+        <span className="text-center">Page {f.page} of {pages}</span>
+        <button className="a-btn justify-self-end !px-2.5 !py-1 !text-xs" disabled={f.page >= pages} onClick={() => setF({ ...f, page: f.page + 1 })}>Next →</button>
       </div>
       <section className="mt-10 rounded-lg border border-ad-rule p-4" aria-label="Danger zone">
         <h2 className="text-sm font-semibold text-ad-danger">Danger zone</h2>

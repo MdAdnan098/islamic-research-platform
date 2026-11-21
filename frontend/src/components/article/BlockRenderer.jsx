@@ -8,6 +8,7 @@ import { TEXT_COLORS, layersOf, markClass, segmentsOf, shownLang, sliceLayers, s
 import { Icon } from "../ui/icons.jsx";
 import { ReferenceCard } from "./ReferenceCard.jsx";
 import { ScanViewer } from "./ScanViewer.jsx";
+import { YouTubeBlock } from "./YouTubeBlock.jsx";
 import { spanOf, blockNumbers } from "../../lib/groups.js";
 import { BLOCK_META } from "../../lib/blocks.js";
 
@@ -255,6 +256,8 @@ export function BlockRenderer({ blocks = [], references = [], baseLang = "ur", h
           }
           case "pdf":
             return <Pdf key={key} b={b} />;
+          case "video":
+            return b.videoId ? <YouTubeBlock key={key} videoId={b.videoId} caption={b.caption} /> : null;
           case "group":
             return inline || edit || sel ? <GroupHeader n={blockNo.get(b.id) || 1} onDelete={sel && b.id ? () => sel.askDelete(b.id) : undefined} /> : null;
           case "divider":

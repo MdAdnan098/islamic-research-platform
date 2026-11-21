@@ -1,73 +1,63 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../../services/admin.js";
 import { useAsync } from "../../lib/useAsync.js";
 import { formatDate } from "../../lib/format.js";
-import { ErrorBox, PageHeader, Spinner, StatusBadge } from "../components/ui.jsx";
+import { ErrorBox, Spinner, StatusBadge } from "../components/ui.jsx";
+import AdminSearch from "../components/AdminSearch.jsx";
 
 export default function Dashboard() {
-  const { data, error, loading, reload } = useAsync(async (signal) => {
-    const [{ articles, counts }, drafts, stats, categories, references] = await Promise.all([
-      adminApi.articles.listWithCounts({ limit: 6, sort: "updated" }, signal), // 6 recently edited + the real totals from the server
-      adminApi.articles.listPage({ status: "draft", sort: "updated", limit: 6 }, signal).then((d) => d.articles), // last edited drafts first
-      adminApi.dashboard.stats(signal).catch((e) => { if (e?.name === "AbortError") throw e; return null; }), // numbers only: never blocks the dashboard
-      adminApi.categories.list({}, signal),
-      adminApi.references.list({ limit: 100 }, signal),
-    ]);
-    return { articles, counts, drafts, stats, categories, references };
-  }, []);
+  // The search waits a moment after the last key, then asks the server (all published articles, not just the ones shown below).
+  const [text, setText] = useState("");
+  const [q, setQ] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setQ(text.trim()), 350);
+    return () => clearTimeout(t);
+  }, [text]);
 
-  if (loading && !data) return <Spinner />;
-  if (error && !data) return <ErrorBox error={error} onRetry={reload} />;
-  const { articles: recent, counts, drafts, stats: extra, categories, references } = data;
-  const n = (v) => (v === undefined || v === null ? "—" : v);
-  const articleStats = [["Articles", counts.total], ["Published", counts.published], ["Drafts", counts.draft], ["Archived", counts.archived], ["Categories", categories.length], ["References", references.length]];
-  const otherStats = [
-    ["Enrollments", n(extra?.enrollments.total), extra ? `${extra.enrollments.pending} pending` : ""],
-    ["Payments", n(extra?.payments.paid), extra ? `paid · ${extra.payments.total} total` : ""],
-    ["Live sessions", n(extra?.liveSessions.total), extra ? `${extra.liveSessions.live} live · ${extra.liveSessions.upcoming} upcoming` : ""],
-  ];
+  const { data, error, loading, reload } = useAsync(async (signal) => {
+    const [drafts, published] = await Promise.all([
+      adminApi.articles.listPage({ status: "draft", sort: "updated", limit: 6 }, signal), // last edited drafts first
+      adminApi.articles.listPage({ status: "published", sort: "updated", limit: 6 }, signal),
+    ]);
+    return { drafts: drafts.articles, draftTotal: drafts.total, published: published.articles };
+  }, []);
+  const found = useAsync((signal) => (q ? adminApi.articles.listPage({ status: "published", q, limit: 20 }, signal) : Promise.resolve(null)), [q]);
+
+  const searching = !!q;
+  const row = (a, extra) => (
+    <Link key={a.id} to={`/admin/articles/${a.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-ad-bg">
+      <span dir="auto" className="min-w-0 truncate text-sm font-medium">{a.title}</span>
+      <span className="flex shrink-0 items-center gap-3 text-xs text-ad-mute">{extra}{formatDate(a.updatedAt)}</span>
+    </Link>
+  );
 
   return (
     <>
-      <PageHeader title="Dashboard" desc="Overview of your research library.">
-        {drafts[0] && <Link to={`/admin/articles/${drafts[0].id}`} title={drafts[0].title} className="a-btn btn-cta">Continue draft</Link>}
-        <Link to="/admin/articles/new" className="a-btn-primary btn-cta">New article</Link>
-      </PageHeader>
-      {/* All the numbers in ONE compact card */}
-      <div className="a-card divide-y divide-ad-rule">
-        <div className="grid grid-cols-3 gap-x-3 gap-y-2 p-3 sm:grid-cols-6">
-          {articleStats.map(([l, v]) => <div key={l} className="min-w-0"><p className="truncate text-xs text-ad-mute">{l}</p><p className="text-xl font-bold leading-tight">{v}</p></div>)}
-        </div>
-        <ul className="px-3 py-1">
-          {otherStats.map(([l, v, sub]) => (
-            <li key={l} className="flex items-baseline justify-between gap-3 py-1 text-sm">
-              <span className="text-ad-mute">{l}</span>
-              <span><b className="text-base">{v}</b>{sub && <span className="ms-2 text-xs text-ad-mute">{sub}</span>}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <h2 className="mb-2 mt-6 text-lg font-bold">Drafts</h2>
-      <div className="a-card divide-y divide-ad-rule overflow-hidden">
-        {drafts.length === 0 && <p className="p-6 text-center text-sm text-ad-mute">Koi draft nahi hai.</p>}
-        {drafts.map((a, i) => (
-          <Link key={a.id} to={`/admin/articles/${a.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-ad-bg">
-            <span dir="auto" className="min-w-0 truncate text-sm font-medium">{a.title}</span>
-            <span className="flex shrink-0 items-center gap-3 text-xs text-ad-mute">{i === 0 && <span className="font-semibold text-ad-ink">Last edited</span>}{formatDate(a.updatedAt)}</span>
-          </Link>
-        ))}
-        {counts.draft > drafts.length && <Link to="/admin/articles" className="block px-4 py-2 text-center text-xs text-ad-mute hover:bg-ad-bg">Saare {counts.draft} drafts Articles page par dekhein →</Link>}
-      </div>
-      <h2 className="mb-2 mt-6 text-lg font-bold">Recently updated</h2>
-      <div className="a-card divide-y divide-ad-rule overflow-hidden">
-        {recent.length === 0 && <p className="p-6 text-center text-sm text-ad-mute">No articles yet.</p>}
-        {recent.map((a) => (
-          <Link key={a.id} to={`/admin/articles/${a.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-ad-bg">
-            <span dir="auto" className="min-w-0 truncate text-sm font-medium">{a.title}</span>
-            <span className="flex shrink-0 items-center gap-3 text-xs text-ad-mute">{formatDate(a.updatedAt)}<StatusBadge status={a.status} /></span>
-          </Link>
-        ))}
-      </div>
+      <AdminSearch value={text} onChange={setText} placeholder="Published article search karein…" className="mx-auto mb-6 w-full max-w-xl" />
+
+      {searching ? (
+        found.loading && !found.data ? <Spinner /> : found.error && !found.data ? <ErrorBox error={found.error} onRetry={found.reload} /> : (
+          <div className="a-card divide-y divide-ad-rule overflow-hidden">
+            {(found.data?.articles || []).length === 0 && <p className="p-6 text-center text-sm text-ad-mute">Koi published article nahi mila.</p>}
+            {(found.data?.articles || []).map((a) => row(a))}
+          </div>
+        )
+      ) : loading && !data ? <Spinner /> : error && !data ? <ErrorBox error={error} onRetry={reload} /> : (
+        <>
+          <h2 className="mb-2 text-lg font-bold">Drafts</h2>
+          <div className="a-card divide-y divide-ad-rule overflow-hidden">
+            {data.drafts.length === 0 && <p className="p-6 text-center text-sm text-ad-mute">Koi draft nahi hai.</p>}
+            {data.drafts.map((a, i) => row(a, i === 0 && <span className="font-semibold text-ad-ink">Last edited</span>))}
+            {data.draftTotal > data.drafts.length && <Link to="/admin/articles" className="block px-4 py-2 text-center text-xs text-ad-mute hover:bg-ad-bg">Saare {data.draftTotal} drafts Articles page par dekhein →</Link>}
+          </div>
+          <h2 className="mb-2 mt-6 text-lg font-bold">Recently published</h2>
+          <div className="a-card divide-y divide-ad-rule overflow-hidden">
+            {data.published.length === 0 && <p className="p-6 text-center text-sm text-ad-mute">Abhi koi article publish nahi hua.</p>}
+            {data.published.map((a) => row(a, <StatusBadge status={a.status} />))}
+          </div>
+        </>
+      )}
     </>
   );
 }

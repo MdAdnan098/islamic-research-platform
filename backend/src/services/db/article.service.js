@@ -4,7 +4,7 @@ import { findCategoryById } from "./category.service.js";
 import { findTopicById } from "./topic.service.js";
 import { normalizeSlug, slugify } from "../../utils/slug.js";
 import { validateArticleInput } from "../../utils/validate.js";
-import { buildArticleSearchFields, escapeRegex, matchPlan, normalizeForSearch } from "../../utils/searchText.js";
+import { buildArticleSearchFields, escapeRegex, matchPlan, normalizeForSearch, parseSearchQuery } from "../../utils/searchText.js";
 import { HL_LANGS, isHighlightable, MARK_FIELDS, normalizeRanges, versionText } from "../../utils/highlights.js";
 import { resolveSourceLanguage } from "../../utils/blockAlign.js";
 import { permuteKeys } from "../../utils/reorder.js";
@@ -215,15 +215,31 @@ function buildAdminQuery(filters = {}) {
   if (filters.status) query.status = filters.status;
   if (filters.language) query.language = filters.language;
   if (typeof filters.q === "string" && filters.q.trim()) {
-    const words = [...new Set(normalizeForSearch(filters.q.slice(0, 100)).split(" ").filter(Boolean))].slice(0, 6);
-    if (words.length) {
-      query.$and = words.map((w) => ({
-        $or: [
-          { searchTitle: { $regex: escapeRegex(w) } },
-          { title: { $regex: escapeRegex(w), $options: "i" } },
-          { slug: { $regex: escapeRegex(w) } },
-        ],
-      }));
+    const q = filters.q.slice(0, 100);
+    const parsed = parseSearchQuery(q);
+    if (parsed.ok) {
+      // Same sounds-alike logic as the public search (see searchPublicArticles): Roman / Hindi / Urdu spellings of a word meet,
+      // and a one-letter slip still matches. Plain title / link text stays as an extra way to match.
+      const plan = matchPlan(parsed.tokens);
+      const hit = (i) => ({ $or: plan.alts[i].filter((a) => a.match !== false).map((a) => ({ [a.field]: { $regex: a.re } })) });
+      const textClause = plan.kind === "pairs"
+        ? { $or: plan.pairs.map(([x, y]) => ({ $and: [hit(x), hit(y)] })) }
+        : { $and: plan.required.map(hit) };
+      const literal = { $or: [{ title: { $regex: escapeRegex(q.trim()), $options: "i" } }, { slug: { $regex: escapeRegex(q.trim().toLowerCase()) } }] };
+      query.$and = [{ $or: [textClause, literal] }];
+      query.__plan = plan; // consumed by listArticles (ranking); removed before the query reaches MongoDB
+      query.__phrase = parsed.normalized;
+    } else {
+      const words = [...new Set(normalizeForSearch(q).split(" ").filter(Boolean))].slice(0, 6);
+      if (words.length) {
+        query.$and = words.map((w) => ({
+          $or: [
+            { searchTitle: { $regex: escapeRegex(w) } },
+            { title: { $regex: escapeRegex(w), $options: "i" } },
+            { slug: { $regex: escapeRegex(w) } },
+          ],
+        }));
+      }
     }
   }
   return query;
@@ -232,15 +248,32 @@ function buildAdminQuery(filters = {}) {
 /** How many articles match the same filters (all pages together) - for "Page 2 of 7". */
 export async function countArticles(config, filters = {}) {
   const collection = await getArticlesCollection(config);
-  return collection.countDocuments(buildAdminQuery(filters));
+  const { __plan, __phrase, ...query } = buildAdminQuery(filters);
+  return collection.countDocuments(query);
 }
 
 export async function listArticles(config, filters = {}) {
   const collection = await getArticlesCollection(config);
-  const query = buildAdminQuery(filters);
+  const { __plan: plan, __phrase: phrase, ...query } = buildAdminQuery(filters);
 
   const limit = Math.min(Math.max(filters.limit || 20, 1), 100);
   const skip = Math.max(filters.skip || 0, 0);
+
+  // Searching: best match first (exact title > exact text > sounds-alike > one-letter slips), then newest.
+  if (plan) {
+    const has = (field, regex, points) => ({ $cond: [{ $regexMatch: { input: { $ifNull: [`$${field}`, ""] }, regex } }, points, 0] });
+    const score = { $add: [has("searchTitle", escapeRegex(phrase || ""), 200), ...plan.alts.flat().map((a) => has(a.field, a.re, a.pts))] };
+    return collection
+      .aggregate([
+        { $match: query },
+        { $addFields: { __score: score } },
+        { $sort: { __score: -1, updatedAt: -1, _id: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        { $project: { __score: 0 } },
+      ])
+      .toArray();
+  }
 
   return collection
     .find(query)
