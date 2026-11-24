@@ -42,7 +42,7 @@ export const SOCIALS = [
 export function Footer() {
   const { t } = useI18n();
   const links = [["/", t.nav.home], ["/aqaid", t.nav.aqaid], ["/masail", "Furu'i Masa'il"]];
-  const info = [["/about", t.nav.about], ["/disclaimer", t.nav.disclaimer], ["/privacy", "Privacy Policy"]];
+  const info = [["/about", t.nav.about], ["/disclaimer", t.nav.disclaimer], ["/privacy", "Privacy Policy"], ["/notifications", t.push.link]];
   return (
     <footer className="bar-teal mt-20 border-t border-rule bg-footer">
       <div className="container-page grid gap-10 py-14 md:grid-cols-[1.6fr_1fr_1.08fr_1.45fr] lg:gap-x-8 lg:grid-cols-[2.55fr_1.15fr_1.55fr_2.75fr_1.6fr]">

@@ -6,6 +6,7 @@ import {
   createLiveSession,
   applySyncedFields,
 } from "../db/liveSession.service.js";
+import { notifyLiveChange } from "../push/events.js";
 
 /**
  * YouTube Data API v3 → MongoDB synchronisation (server side only).
@@ -93,6 +94,9 @@ export async function syncLiveSessions(config, { discover = false } = {}) {
           actualEndTime: v.actualEndTime,
           status: v.status,
         });
+        if (session.isPublished && v.status === "live" && session.status !== "live") {
+          await notifyLiveChange(config, session, { ...session, status: v.status });
+        }
         summary.refreshed += 1;
       }
     }
@@ -108,7 +112,7 @@ export async function syncLiveSessions(config, { discover = false } = {}) {
       summary.discovered = newIds.length;
 
       for (const v of await fetchVideos(config, newIds)) {
-        await createLiveSession(config, {
+        const created = await createLiveSession(config, {
           youtubeVideoId: v.youtubeVideoId,
           title: v.title,
           description: v.description,
@@ -123,6 +127,7 @@ export async function syncLiveSessions(config, { discover = false } = {}) {
           source: "youtube",
           lastSyncedAt: new Date(),
         });
+        await notifyLiveChange(config, null, created);
         summary.created += 1;
       }
     }

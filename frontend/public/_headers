@@ -14,3 +14,8 @@
   X-Robots-Tag: noindex, nofollow
   X-Frame-Options: SAMEORIGIN
   Content-Security-Policy: frame-ancestors 'self'
+
+# Push notifications (Phase 3)
+/firebase-messaging-sw.js
+  Cache-Control: no-cache
+  Content-Type: text/javascript; charset=utf-8

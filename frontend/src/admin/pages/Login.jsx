@@ -51,17 +51,17 @@ export default function Login() {
 
   return (
     <AdminShell><HomeLink /><div className="grid min-h-screen place-items-center p-4">
-      <form onSubmit={(e) => e.preventDefault()} className="a-card w-full max-w-sm space-y-4 p-7">
+      <form onSubmit={submit} method="post" className="a-card w-full max-w-sm space-y-4 p-7">
         <div className="flex flex-col items-center gap-2 pb-2"><LogoMark size={46} /><h1 className="text-xl font-bold">Admin log in</h1><p className="text-xs text-ad-mute">AthariTV content management</p></div>
-        <div><label className="a-label" htmlFor="un">Username</label><input id="un" type="text" autoComplete="username" autoCapitalize="none" required className="a-input" value={f.username} onChange={typed("username")} /></div>
+        <div><label className="a-label" htmlFor="un">Username</label><input id="un" name="username" type="text" inputMode="text" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} required className="a-input" value={f.username} onChange={typed("username")} /></div>
         <div>
           <label className="a-label" htmlFor="pw">Password</label>
           <div className="relative">
-            <input id="pw" type={showPw ? "text" : "password"} autoComplete="current-password" required className="a-input !pr-10" value={f.password} onChange={typed("password")} />
+            <input id="pw" name="password" type={showPw ? "text" : "password"} autoComplete="current-password" autoCapitalize="none" autoCorrect="off" spellCheck={false} required className="a-input !pr-10" value={f.password} onChange={typed("password")} />
             <button type="button" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? "Hide password" : "Show password"} aria-pressed={showPw} title={showPw ? "Hide" : "Show"} className="absolute inset-y-0 right-0 grid w-10 place-items-center text-ad-mute hover:text-ad-ink"><Icon name={showPw ? "eyeOff" : "eye"} size={16} /></button>
           </div>
         </div>
-        <button type="button" onClick={submit} className="a-btn-primary btn-cta w-full !py-2.5" disabled={busy}>{busy ? "Logging in…" : "Log in"}</button>
+        <button type="submit" className="a-btn-primary btn-cta w-full !py-2.5" disabled={busy}>{busy ? "Logging in…" : "Log in"}</button>
         <p className="text-center text-sm"><Link to="/admin/forgot-password" className="brand-text hover:underline">Forgot password?</Link></p>
       </form>
     </div></AdminShell>

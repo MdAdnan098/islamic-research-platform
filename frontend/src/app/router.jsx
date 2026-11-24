@@ -6,6 +6,7 @@ import SectionPage from "../pages/public/SectionPage.jsx";
 import TopicPage from "../pages/public/TopicPage.jsx";
 import ArticlePage from "../pages/public/ArticlePage.jsx";
 import NotFound from "../pages/public/NotFound.jsx";
+import NotificationSettings from "../pages/public/NotificationSettings.jsx";
 import LatestPage from "../pages/public/LatestPage.jsx";
 import FoldersPage from "../pages/public/FoldersPage.jsx";
 import SearchPage from "../pages/public/SearchPage.jsx";
@@ -37,6 +38,7 @@ export function AppRouter() {
         <Route path="about" element={<About />} />
         <Route path="disclaimer" element={<LegalPage kind="disclaimer" />} />
         <Route path="privacy" element={<LegalPage kind="privacy" />} />
+        <Route path="notifications" element={<NotificationSettings />} />
         <Route path="home" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFound />} />
       </Route>

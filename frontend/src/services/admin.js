@@ -45,6 +45,20 @@ export const adminApi = {
     remove: (id) => request(`/api/admin/references/${id}`, { method: "DELETE" }),
   },
 
+  // Android APP release settings.
+  appRelease: {
+    get: (signal) => request("/api/admin/app-release", { signal }),
+    save: (body) => request("/api/admin/app-release", json("PUT", body)).then((d) => d.release),
+  },
+
+  // Push notification dashboard (Phase 3).
+  notifications: {
+    overview: (signal) => request("/api/admin/notifications", { signal }),
+    send: (body) => request("/api/admin/notifications", json("POST", body)).then((d) => d.notification),
+    continue: (id) => request(`/api/admin/notifications/${id}/continue`, json("POST", {})).then((d) => d.notification),
+    saveAuto: (body) => request("/api/admin/notifications/auto-settings", json("PUT", body)).then((d) => d.auto),
+  },
+
   liveSessions: {
     ...crud("/api/admin/live-sessions", "sessions", "session"),
     listWithMeta: (params, signal) => request(`/api/admin/live-sessions${qs(params)}`, { signal }), // { sessions, youtubeSync }

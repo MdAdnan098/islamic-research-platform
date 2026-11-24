@@ -20,6 +20,7 @@ import {
   reorderArticles,
 } from "../services/db/article.service.js";
 import { findReferencesByIds, toSafeReference } from "../services/db/reference.service.js";
+import { notifyArticlePublished } from "../services/push/events.js";
 
 function throwInvalidInput(message, code = "INVALID_INPUT") {
   const err = new Error(message);
@@ -158,6 +159,7 @@ export async function publish(request, env, ctx, params) {
 
   const existing = await findArticleById(config, params.id);
   if (!existing) throwNotFound();
+  const wasPublished = existing.status === "published";
 
   // Publishing also makes the unpublished copy (edits made from "View site") the live post.
   const pending = existing.pending;
@@ -170,6 +172,11 @@ export async function publish(request, env, ctx, params) {
   const article = pending
     ? await updateArticle(config, params.id, { ...(pending.meta || {}), blocks, references: (pending.references || []).map(String), status: "published" })
     : await updateArticle(config, params.id, { status: "published" });
+
+  if (!wasPublished && !existing.publishedAt) {
+    const body = await safeParseJson(request);
+    if (!(body && body.notify === false)) await notifyArticlePublished(config, article);
+  }
   return jsonSuccess({ article: toAdminArticle(article) }, { allowedOrigin: config.allowedOrigin });
 }
 

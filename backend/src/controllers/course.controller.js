@@ -19,6 +19,7 @@ import {
   toPublicCourse,
 } from "../services/db/course.service.js";
 import { countPaymentsForCourse } from "../services/db/payment.service.js";
+import { notifyCoursePublished } from "../services/push/events.js";
 
 function fail(message, status, code) {
   const err = new Error(message);
@@ -101,6 +102,7 @@ export async function adminCreate(request, env) {
   if (scheduleErrors.length > 0) throwValidation(scheduleErrors);
 
   const course = await createCourse(config, data);
+  if (isPubliclyVisible(course)) await notifyCoursePublished(config, course);
   return jsonSuccess({ course: toSafeCourse(course) }, { status: 201, allowedOrigin: config.allowedOrigin });
 }
 
@@ -125,6 +127,7 @@ export async function adminUpdate(request, env, ctx, params) {
   if (scheduleErrors.length > 0) throwValidation(scheduleErrors);
 
   const course = await updateCourse(config, params.id, data);
+  if (isPubliclyVisible(course) && !isPubliclyVisible(existing)) await notifyCoursePublished(config, course);
   return jsonSuccess({ course: toSafeCourse(course) }, { allowedOrigin: config.allowedOrigin });
 }
 

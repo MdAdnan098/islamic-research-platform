@@ -15,6 +15,7 @@ import {
   toPublicLiveSession,
 } from "../services/db/liveSession.service.js";
 import { syncLiveSessions, isYouTubeConfigured } from "../services/youtube/youtube.service.js";
+import { notifyLiveChange } from "../services/push/events.js";
 
 function fail(message, status, code) {
   const err = new Error(message);
@@ -82,6 +83,7 @@ export async function adminCreate(request, env) {
   if (errors.length > 0) throwValidation(errors);
 
   const session = await createLiveSession(config, body);
+  await notifyLiveChange(config, null, session);
   return jsonSuccess({ session: toSafeLiveSession(session) }, { status: 201, allowedOrigin: config.allowedOrigin });
 }
 
@@ -95,7 +97,9 @@ export async function adminUpdate(request, env, ctx, params) {
   const errors = validateLiveSessionInput(body, { partial: true });
   if (errors.length > 0) throwValidation(errors);
 
+  const before = await findLiveSessionById(config, params.id);
   const session = await updateLiveSession(config, params.id, body);
+  await notifyLiveChange(config, before, session);
   return jsonSuccess({ session: toSafeLiveSession(session) }, { allowedOrigin: config.allowedOrigin });
 }
 

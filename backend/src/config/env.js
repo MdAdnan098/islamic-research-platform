@@ -1,3 +1,5 @@
+import { parseAllowedHosts } from "../utils/appRelease.js";
+
 /**
  * CORS origin for credentialed (cookie) requests. Never a wildcard in production:
  * if ALLOWED_ORIGIN is missing (or "*") there, null is returned and no
@@ -52,6 +54,16 @@ export function loadConfig(env) {
       apiKey: env.YOUTUBE_API_KEY || null, // secret — backend only
       channelId: env.YOUTUBE_CHANNEL_ID || null,
       autoPublish: String(env.YOUTUBE_AUTO_PUBLISH || "").toLowerCase() === "true",
+    },
+    // Android app update system.
+    appUpdate: {
+      allowedHosts: parseAllowedHosts(env.APP_UPDATE_ALLOWED_HOSTS),
+    },
+    // Push notifications (Phase 3).
+    push: {
+      serviceAccountJson: env.FIREBASE_SERVICE_ACCOUNT || null,
+      batchSize: Math.min(Math.max(Math.floor(Number(env.PUSH_BATCH_SIZE)) || 40, 1), 400),
+      siteOrigin: String(env.PUSH_SITE_ORIGIN || (env.ALLOWED_ORIGIN !== "*" ? env.ALLOWED_ORIGIN : "") || "").trim().replace(/\/$/, ""),
     },
     // Razorpay. All optional — payment endpoints answer 503 until configured.
     razorpay: {

@@ -20,6 +20,7 @@ const P = {
   check: "M5 12l5 5 9-10",
   file: "M7 3h7l5 5v13H7zM14 3v5h5",
   download: "M12 4v11m-5-4 5 5 5-5M5 20h14",
+  bell: "M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0",
   external: "M14 4h6v6m0-6-9 9M18 14v6H4V6h6",
   image: "M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M9 9.5h.01",
   upload: "M12 16V5m-5 4 5-5 5 5M5 20h14",

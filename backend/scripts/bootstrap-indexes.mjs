@@ -28,6 +28,7 @@ import { ensureLiveSessionIndexes } from "../src/services/db/liveSession.service
 import { ensureCourseIndexes } from "../src/services/db/course.service.js";
 import { ensurePaymentIndexes } from "../src/services/db/payment.service.js";
 import { ensureEnrollmentIndexes } from "../src/services/db/enrollment.service.js";
+import { ensurePushIndexes } from "../src/services/db/push.service.js";
 
 function loadDevVars() {
   const path = new URL("../.dev.vars", import.meta.url);
@@ -71,6 +72,7 @@ async function main() {
     ["courses", ensureCourseIndexes],
     ["payments", ensurePaymentIndexes],
     ["enrollments", ensureEnrollmentIndexes],
+    ["push devices / notifications", ensurePushIndexes],
   ];
 
   for (const [name, ensureFn] of steps) {

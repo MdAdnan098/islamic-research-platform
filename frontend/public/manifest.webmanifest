@@ -1,0 +1,14 @@
+{
+  "name": "AthariTV",
+  "short_name": "AthariTV",
+  "description": "Quran, Sunnat aur salaf ke fahm par mabni tahqiqi library.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F3F0E7",
+  "theme_color": "#800020",
+  "icons": [
+    { "src": "/brand/favicon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

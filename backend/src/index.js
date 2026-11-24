@@ -19,6 +19,12 @@ import { routes as adminCourseRoutes } from "./routes/admin.courses.routes.js";
 import { routes as publicPaymentRoutes } from "./routes/public.payments.routes.js";
 import { routes as adminEnrollmentRoutes } from "./routes/admin.enrollments.routes.js";
 import { routes as adminDashboardRoutes } from "./routes/admin.dashboard.routes.js";
+import { routes as publicAppReleaseRoutes } from "./routes/public.appRelease.routes.js";
+import { routes as adminAppReleaseRoutes } from "./routes/admin.appRelease.routes.js";
+import { routes as publicPushRoutes } from "./routes/public.push.routes.js";
+import { routes as adminNotificationRoutes } from "./routes/admin.notifications.routes.js";
+import { processPending } from "./services/push/dispatcher.js";
+import { sweepLiveStarts } from "./services/push/events.js";
 import { runScheduledSync } from "./services/youtube/youtube.service.js";
 import { archiveExpiredCourses } from "./services/db/course.service.js";
 import { loadConfig, resolveAllowedOrigin } from "./config/env.js";
@@ -56,6 +62,10 @@ const routeDefs = [
   ...publicPaymentRoutes,
   ...adminEnrollmentRoutes,
   ...adminDashboardRoutes,
+  ...publicAppReleaseRoutes,
+  ...adminAppReleaseRoutes,
+  ...publicPushRoutes,
+  ...adminNotificationRoutes,
 ];
 
 const router = buildRouter(routeDefs);
@@ -143,5 +153,13 @@ export default {
         try { await archiveExpiredCourses(loadConfig(env)); } catch (err) { console.error("Course cleanup failed:", err.message); }
       })()
     );
+    ctx.waitUntil((async () => {
+      try {
+        const config = loadConfig(env);
+        if (!config.push.serviceAccountJson) return;
+        await sweepLiveStarts(config);
+        await processPending(config);
+      } catch (err) { console.error("Push cron failed:", err?.message); }
+    })());
   },
 };
